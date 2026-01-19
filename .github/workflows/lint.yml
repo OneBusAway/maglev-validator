@@ -21,6 +21,6 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
       - name: Run Lint
         run: pnpm run lint

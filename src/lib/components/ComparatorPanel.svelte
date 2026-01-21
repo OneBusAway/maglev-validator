@@ -192,7 +192,7 @@
 			<div>
 				<label
 					class="mb-2 block text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400"
-					>Local Server URL</label
+					>Server 1 URL</label
 				>
 				<input
 					type="text"
@@ -203,7 +203,7 @@
 			<div>
 				<label
 					class="mb-2 block text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400"
-					>Production Server URL</label
+					>Server 2 URL</label
 				>
 				<input
 					type="text"

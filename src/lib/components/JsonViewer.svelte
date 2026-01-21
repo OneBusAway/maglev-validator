@@ -6,10 +6,10 @@
 		otherData?: unknown;
 		focusPath?: string;
 		ignoredKeys?: string[];
-		mode?: 'local' | 'production';
+		mode?: 'server1' | 'server2';
 	}
 
-	let { data, otherData, ignoredKeys = [], mode = 'local' }: Props = $props();
+	let { data, otherData, ignoredKeys = [], mode = 'server1' }: Props = $props();
 
 	let globalExpand = $state<boolean | null>(null);
 	let copied = $state(false);
@@ -100,8 +100,8 @@
 			<JsonTree
 				value={data}
 				otherValue={otherData}
-				side={mode === 'local' ? 'left' : 'right'}
-				isReference={mode === 'production'}
+				side={mode === 'server1' ? 'left' : 'right'}
+				isReference={mode === 'server2'}
 				{ignoredKeys}
 				level={0}
 				{globalExpand}

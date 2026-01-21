@@ -41,7 +41,7 @@
 </script>
 
 <svelte:head>
-	<title>Maglev Helper | API Tools</title>
+	<title>Maglev Validator | API Tools</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 	<link
@@ -64,7 +64,7 @@
 					M
 				</div>
 				<span class="text-lg font-semibold tracking-tight text-slate-800 dark:text-white"
-					>Maglev Helper</span
+					>Maglev Validator</span
 				>
 			</div>
 

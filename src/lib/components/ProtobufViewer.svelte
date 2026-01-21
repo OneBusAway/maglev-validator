@@ -97,6 +97,16 @@
 		void activeTab;
 		globalExpand = null;
 	});
+
+	let copySuccess = $state(false);
+
+	async function copyRawText() {
+		await navigator.clipboard.writeText(currentRawText());
+		copySuccess = true;
+		setTimeout(() => {
+			copySuccess = false;
+		}, 2000);
+	}
 </script>
 
 <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
@@ -194,14 +204,16 @@
 
 				<div class="relative">
 					<button
-						onclick={() => navigator.clipboard.writeText(currentRawText())}
-						class="absolute top-2 right-2 z-10 rounded-lg bg-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-300 dark:hover:bg-slate-500"
+						onclick={copyRawText}
+						class="absolute top-2 right-2 z-10 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors {copySuccess
+							? 'bg-green-500 text-white dark:bg-green-600'
+							: 'bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-300 dark:hover:bg-slate-500'}"
 					>
-						📋 Copy
+						{copySuccess ? '✓ Copied!' : '📋 Copy'}
 					</button>
 					{#if currentRawText()}
 						<pre
-							class="max-h-[500px] overflow-auto rounded-lg bg-slate-50 p-4 pr-20 font-mono text-xs leading-relaxed break-words whitespace-pre-wrap text-slate-700 dark:bg-slate-900 dark:text-slate-300">{currentRawText()}</pre>
+							class="rounded-lg bg-slate-50 p-4 pr-20 font-mono text-xs leading-relaxed break-words whitespace-pre-wrap text-slate-700 dark:bg-slate-900 dark:text-slate-300">{currentRawText()}</pre>
 					{:else}
 						<div
 							class="flex flex-col items-center justify-center rounded-lg bg-slate-50 py-12 text-center dark:bg-slate-900"

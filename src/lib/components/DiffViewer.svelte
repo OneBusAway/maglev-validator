@@ -22,21 +22,21 @@
 	<div
 		class="bg-slate-50 px-4 py-2 text-xs font-semibold tracking-wide text-slate-500 uppercase dark:bg-slate-800 dark:text-slate-400"
 	>
-		Local Response
+		Server 1 Response
 	</div>
 	<div
 		class="border-l border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold tracking-wide text-slate-500 uppercase dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
 	>
-		Production Response
+		Server 2 Response
 	</div>
 
 	<!-- Viewers -->
 	<div class="max-h-[800px] overflow-auto bg-white dark:bg-slate-900">
-		<JsonViewer data={focused1} otherData={focused2} {focusPath} {ignoredKeys} mode="local" />
+		<JsonViewer data={focused1} otherData={focused2} {focusPath} {ignoredKeys} mode="server1" />
 	</div>
 	<div
 		class="max-h-[800px] overflow-auto border-l border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
 	>
-		<JsonViewer data={focused2} otherData={focused1} {focusPath} {ignoredKeys} mode="production" />
+		<JsonViewer data={focused2} otherData={focused1} {focusPath} {ignoredKeys} mode="server2" />
 	</div>
 </div>

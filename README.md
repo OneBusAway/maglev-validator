@@ -162,7 +162,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is part of the [OneBusAway](https://onebusaway.org/) open-source transit platform.
+This project is licensed under the [MIT License](LICENSE).
+
+Part of the [OneBusAway](https://onebusaway.org/) open-source transit platform.
 
 ---
 

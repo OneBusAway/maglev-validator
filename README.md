@@ -20,18 +20,19 @@
 
 ### Two Powerful Tools in One
 
-| **API Comparator** | **GTFS-Realtime Reader** |
-|----------------------|---------------------------|
-| Compare API responses between two OneBusAway servers side-by-side | Decode and inspect GTFS-Realtime Protocol Buffer feeds |
-| Visual diff highlighting with color-coded changes | Support for Trip Updates, Vehicle Positions & Service Alerts |
-| Auto-refresh for continuous monitoring | Human-readable JSON visualization |
-| Configurable key ignoring for flexible comparisons | Custom header support for authenticated feeds |
+| **API Comparator**                                                | **GTFS-Realtime Reader**                                     |
+| ----------------------------------------------------------------- | ------------------------------------------------------------ |
+| Compare API responses between two OneBusAway servers side-by-side | Decode and inspect GTFS-Realtime Protocol Buffer feeds       |
+| Visual diff highlighting with color-coded changes                 | Support for Trip Updates, Vehicle Positions & Service Alerts |
+| Auto-refresh for continuous monitoring                            | Human-readable JSON visualization                            |
+| Configurable key ignoring for flexible comparisons                | Custom header support for authenticated feeds                |
 
 ---
 
 ## Features
 
 ### API Comparator
+
 - **Real-time Comparison**: Fetch and compare API responses from two different OneBusAway servers simultaneously
 - **Visual Diff Highlighting**: Instantly spot differences with intuitive color-coding
   - 🟡 **Yellow** — Different values
@@ -43,6 +44,7 @@
 - **Path Focus**: Zoom into specific JSON paths for detailed analysis
 
 ### GTFS-Realtime Protobuf Reader
+
 - **Protocol Buffer Decoding**: Automatically decode binary GTFS-RT feeds into readable JSON
 - **Multi-Feed Support**: Fetch Trip Updates, Vehicle Positions, and Service Alerts simultaneously
 - **Custom Headers**: Add authentication headers for protected feeds
@@ -51,6 +53,7 @@
 - **Copy to Clipboard**: Quickly copy decoded JSON data for further analysis
 
 ### User Experience
+
 - **Dark Mode**: Easy on the eyes with full dark theme support
 - **Persistent Settings**: Your configuration is saved locally
 - **Responsive Design**: Works seamlessly on desktop and tablet
@@ -62,7 +65,7 @@
 
 ### Prerequisites
 
-- **Node.js** 18+ 
+- **Node.js** 18+
 - **pnpm** (recommended) or npm
 
 ### Installation
@@ -132,13 +135,13 @@ pnpm run format
 
 ## Tech Stack
 
-| Technology | Purpose |
-|------------|---------|
-| **[SvelteKit](https://kit.svelte.dev/)** | Full-stack web framework |
-| **[Svelte 5 Runes](https://svelte.dev/)** | Reactive state management |
-| **[TypeScript](https://www.typescriptlang.org/)** | Type safety |
-| **[Tailwind CSS](https://tailwindcss.com/)** | Utility-first styling |
-| **[gtfs-realtime-bindings](https://github.com/MobilityData/gtfs-realtime-bindings)** | GTFS-RT Protobuf parsing |
+| Technology                                                                           | Purpose                   |
+| ------------------------------------------------------------------------------------ | ------------------------- |
+| **[SvelteKit](https://kit.svelte.dev/)**                                             | Full-stack web framework  |
+| **[Svelte 5 Runes](https://svelte.dev/)**                                            | Reactive state management |
+| **[TypeScript](https://www.typescriptlang.org/)**                                    | Type safety               |
+| **[Tailwind CSS](https://tailwindcss.com/)**                                         | Utility-first styling     |
+| **[gtfs-realtime-bindings](https://github.com/MobilityData/gtfs-realtime-bindings)** | GTFS-RT Protobuf parsing  |
 
 ---
 

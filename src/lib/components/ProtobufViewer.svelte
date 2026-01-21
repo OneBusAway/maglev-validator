@@ -297,6 +297,13 @@
 												Route: {trip.routeId}
 											</span>
 										{/if}
+										{#if trip?.tripId}
+											<span
+												class="rounded bg-cyan-100 px-2 py-0.5 text-xs text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-400"
+											>
+												Trip: {trip.tripId}
+											</span>
+										{/if}
 									{:else if activeTab === 'alerts'}
 										{@const alert = item as Record<string, unknown>}
 										{@const headerText = alert.headerText as Record<string, unknown[]> | undefined}

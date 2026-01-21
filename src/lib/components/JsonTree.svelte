@@ -99,15 +99,15 @@
 		if (typeof val === 'string') return 'text-green-600 dark:text-green-400';
 		if (typeof val === 'number') return 'text-blue-600 dark:text-blue-400';
 		if (typeof val === 'boolean') return 'text-blue-600 dark:text-blue-400 font-bold';
-		if (val === null) return 'text-slate-500 dark:text-slate-400 italic';
-		if (val === undefined) return 'text-slate-500 dark:text-slate-400 italic';
-		return 'text-slate-900 dark:text-slate-100';
+		if (val === null) return 'text-gray-500 dark:text-gray-400 italic';
+		if (val === undefined) return 'text-gray-500 dark:text-gray-400 italic';
+		return 'text-gray-900 dark:text-gray-100';
 	}
 
 	function getDiffClass(): string {
 		if (isReference || status === 'same') return '';
 		if (status === 'different')
-			return 'bg-[#f8f8f8] dark:bg-slate-800/50 outline outline-1 outline-[#e0e0e0] dark:outline-slate-700'; // Very subtle gray bg
+			return 'bg-[#f8f8f8] dark:bg-gray-800/50 outline outline-1 outline-[#e0e0e0] dark:outline-gray-700'; // Very subtle gray bg
 		return '';
 	}
 
@@ -129,12 +129,12 @@
 <div class="font-sans text-[14px] leading-[1.8] tracking-wide">
 	{#if label !== undefined}
 		<div
-			class="group -mx-1 flex items-center rounded px-1 py-0.5 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 {getDiffClass()}"
+			class="group -mx-1 flex items-center rounded px-1 py-0.5 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 {getDiffClass()}"
 		>
 			{#if isArray(value) || isObject(value)}
 				<button
 					onclick={toggle}
-					class="mr-2 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-[11px] text-slate-400 transition-all hover:bg-slate-200 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+					class="mr-2 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-[11px] text-gray-400 transition-all hover:bg-gray-200 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-200"
 				>
 					<span class="transition-transform {expanded ? 'rotate-0' : '-rotate-90'}">▼</span>
 				</button>
@@ -143,7 +143,7 @@
 			{/if}
 
 			<span class="mr-1 flex-shrink-0 font-semibold text-cyan-700 select-text dark:text-cyan-400">
-				{label}<span class="text-slate-400 dark:text-slate-600">:</span>
+				{label}<span class="text-gray-400 dark:text-gray-600">:</span>
 			</span>
 
 			{#if isPrimitive(value)}
@@ -166,7 +166,7 @@
 				{/if}
 			{:else}
 				<span
-					class="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 select-text dark:bg-slate-800 dark:text-slate-400"
+					class="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500 select-text dark:bg-gray-800 dark:text-gray-400"
 				>
 					{isArray(value)
 						? `Array[${value.length}]`
@@ -225,9 +225,7 @@
 
 	{#if expanded}
 		<div
-			class={label !== undefined
-				? 'ml-4 border-l-2 border-slate-200 pl-4 dark:border-slate-700'
-				: ''}
+			class={label !== undefined ? 'ml-4 border-l-2 border-gray-200 pl-4 dark:border-gray-700' : ''}
 		>
 			{#if isArray(value)}
 				{#each arrayItems as item, index (index)}

@@ -66,9 +66,9 @@
 		if (typeof val === 'string') return 'text-green-600 dark:text-green-400';
 		if (typeof val === 'number') return 'text-blue-600 dark:text-blue-400';
 		if (typeof val === 'boolean') return 'text-purple-600 dark:text-purple-400 font-semibold';
-		if (val === null) return 'text-slate-500 dark:text-slate-400 italic';
-		if (val === undefined) return 'text-slate-500 dark:text-slate-400 italic';
-		return 'text-slate-900 dark:text-slate-100';
+		if (val === null) return 'text-gray-500 dark:text-gray-400 italic';
+		if (val === undefined) return 'text-gray-500 dark:text-gray-400 italic';
+		return 'text-gray-900 dark:text-gray-100';
 	}
 
 	function getTypeInfo(val: unknown): string {
@@ -81,12 +81,12 @@
 <div class="font-mono text-[14px] leading-[1.8]">
 	{#if label !== undefined}
 		<div
-			class="group flex items-center rounded py-0.5 hover:bg-slate-50/50 dark:hover:bg-slate-800/30"
+			class="group flex items-center rounded py-0.5 hover:bg-gray-50/50 dark:hover:bg-gray-800/30"
 		>
 			{#if isArray(value) || isObject(value)}
 				<button
 					onclick={toggle}
-					class="mr-2 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-[11px] text-slate-400 transition-all hover:bg-slate-200 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+					class="mr-2 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-[11px] text-gray-400 transition-all hover:bg-gray-200 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-200"
 				>
 					<span class="transition-transform {expanded ? 'rotate-0' : '-rotate-90'}">▼</span>
 				</button>
@@ -95,11 +95,11 @@
 			{/if}
 
 			<span class="font-semibold text-cyan-700 dark:text-cyan-400">{label}</span>
-			<span class="mx-1 text-slate-400 dark:text-slate-600">:</span>
+			<span class="mx-1 text-gray-400 dark:text-gray-600">:</span>
 
 			{#if isArray(value) || isObject(value)}
 				<span
-					class="ml-2 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+					class="ml-2 rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400"
 				>
 					{getTypeInfo(value)}
 				</span>
@@ -149,7 +149,7 @@
 		</div>
 
 		{#if expanded && isObject(value)}
-			<div class="ml-3 border-l-2 border-slate-200 pl-4 dark:border-slate-700">
+			<div class="ml-3 border-l-2 border-gray-200 pl-4 dark:border-gray-700">
 				{#each Object.entries(value) as [key, val] (key)}
 					<SimpleJsonTree
 						value={val}
@@ -163,7 +163,7 @@
 		{/if}
 
 		{#if expanded && isArray(value)}
-			<div class="ml-3 border-l-2 border-slate-200 pl-4 dark:border-slate-700">
+			<div class="ml-3 border-l-2 border-gray-200 pl-4 dark:border-gray-700">
 				{#each value as item, index (index)}
 					<SimpleJsonTree
 						value={item}

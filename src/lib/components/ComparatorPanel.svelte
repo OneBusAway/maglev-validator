@@ -185,30 +185,30 @@
 </script>
 
 <div
-	class="mb-6 rounded-xl border border-slate-200 bg-white shadow-sm transition-colors duration-300 dark:border-slate-700 dark:bg-slate-800"
+	class="mb-6 rounded-xl border border-gray-200 bg-white shadow-sm transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
 >
 	<div class="space-y-6 p-6">
 		<div class="grid grid-cols-2 gap-6">
 			<div>
 				<label
-					class="mb-2 block text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400"
+					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 					>Server 1 URL</label
 				>
 				<input
 					type="text"
 					bind:value={server1Base}
-					class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm text-slate-700 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:focus:ring-blue-500/40"
+					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
 				/>
 			</div>
 			<div>
 				<label
-					class="mb-2 block text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400"
+					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 					>Server 2 URL</label
 				>
 				<input
 					type="text"
 					bind:value={server2Base}
-					class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm text-slate-700 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:focus:ring-blue-500/40"
+					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
 				/>
 			</div>
 		</div>
@@ -216,13 +216,13 @@
 		<div class="grid grid-cols-12 gap-6">
 			<div class="col-span-3">
 				<label
-					class="mb-2 block text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400"
+					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 					>API Endpoint</label
 				>
 				<div class="relative">
 					<select
 						bind:value={selectedEndpoint}
-						class="w-full cursor-pointer appearance-none rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:focus:ring-blue-500/40"
+						class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:focus:ring-indigo-500/40"
 					>
 						{#each endpoints as endpoint (endpoint.id)}
 							<option value={endpoint.id}>{endpoint.name}</option>
@@ -234,7 +234,7 @@
 			{#each endpoints.find((e) => e.id === selectedEndpoint)?.params || [] as param (param.name)}
 				<div class="col-span-3">
 					<label
-						class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400"
+						class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 					>
 						{param.label}
 						{#if param.required}<span class="text-red-500"> * </span>{/if}
@@ -244,37 +244,37 @@
 						value={params[param.name] || ''}
 						oninput={(e) => handleParamChange(param.name, e.currentTarget.value)}
 						placeholder={param.placeholder || ''}
-						class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:focus:ring-blue-500/40"
+						class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
 					/>
 				</div>
 			{/each}
 
 			<div class="col-span-2">
 				<label
-					class="mb-2 block text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400"
+					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 					>JSON Path Filter</label
 				>
 				<input
 					type="text"
 					bind:value={focusPath}
 					placeholder="e.g. data.entry.status"
-					class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:placeholder:text-slate-600 dark:focus:ring-blue-500/40"
+					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-indigo-500/40"
 				/>
 			</div>
 
 			<div class="col-span-2">
 				<label
-					class="mb-2 block text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400"
+					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 					>Ignored Keys</label
 				>
 				<button
 					onclick={() => (showIgnoreModal = true)}
-					class="group flex w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm text-slate-700 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:focus:ring-blue-500/40"
+					class="group flex w-full items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-left text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
 				>
 					<span class="truncate">
 						{ignoredKeys.length ? `${ignoredKeys.length} keys ignored` : 'Select keys...'}
 					</span>
-					<span class="text-slate-400 transition-colors group-hover:text-blue-500">
+					<span class="text-gray-400 transition-colors group-hover:text-indigo-500">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							class="h-4 w-4"
@@ -295,16 +295,16 @@
 		</div>
 
 		<div
-			class="flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-700"
+			class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700"
 		>
 			<div class="flex items-center gap-4">
 				<label class="flex cursor-pointer items-center gap-2 select-none">
 					<input
 						type="checkbox"
 						bind:checked={autoRefresh}
-						class="h-4 w-4 rounded border-slate-300 bg-white text-blue-600 focus:ring-blue-500 focus:ring-offset-0 dark:border-slate-600 dark:bg-slate-700"
+						class="h-4 w-4 rounded border-gray-300 bg-white text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
 					/>
-					<span class="text-sm font-medium text-slate-600 dark:text-slate-400">Auto-refresh</span>
+					<span class="text-sm font-medium text-gray-600 dark:text-gray-400">Auto-refresh</span>
 				</label>
 				{#if autoRefresh}
 					<div class="flex items-center gap-2">
@@ -313,9 +313,9 @@
 							bind:value={refreshInterval}
 							min="1"
 							max="60"
-							class="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+							class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-indigo-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
 						/>
-						<span class="text-xs text-slate-400">sec</span>
+						<span class="text-xs text-gray-400">sec</span>
 					</div>
 				{/if}
 			</div>
@@ -323,7 +323,7 @@
 			<button
 				onclick={fetchBoth}
 				disabled={loading}
-				class="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 font-medium text-white transition-all hover:bg-blue-700 hover:shadow-lg active:scale-[0.98] disabled:bg-blue-400 disabled:shadow-none"
+				class="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white transition-all hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				{#if loading}
 					<svg
@@ -367,15 +367,15 @@
 
 {#if response1 || response2}
 	<div class="mb-4 flex items-center justify-between">
-		<h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Response Comparison</h2>
+		<h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Response Comparison</h2>
 		<div class="flex items-center gap-6 text-sm font-medium">
-			<span class="mr-4 flex items-center gap-2 text-slate-600 dark:text-slate-400">
+			<span class="mr-4 flex items-center gap-2 text-gray-600 dark:text-gray-400">
 				<span class="h-3 w-3 rounded bg-red-500"></span> Different
 			</span>
-			<span class="mr-4 flex items-center gap-2 text-slate-600 dark:text-slate-400">
+			<span class="mr-4 flex items-center gap-2 text-gray-600 dark:text-gray-400">
 				<span class="h-3 w-3 rounded bg-orange-400"></span> Missing
 			</span>
-			<span class="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+			<span class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
 				<span class="h-3 w-3 rounded bg-green-500"></span> Extra
 			</span>
 		</div>
@@ -384,16 +384,23 @@
 	<DiffViewer {response1} {response2} {focusPath} {ignoredKeys} />
 {:else if !loading}
 	<div
-		class="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-16 text-center transition-colors duration-300 dark:border-slate-700 dark:bg-slate-800"
+		class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-16 text-center transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
 	>
 		<div
-			class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-100 text-3xl dark:bg-slate-900"
+			class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-900"
 		>
-			🤖
+			<svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+				><path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+				></path></svg
+			>
 		</div>
-		<h3 class="mb-2 text-xl font-semibold text-slate-800 dark:text-white">Ready to Compare</h3>
-		<p class="max-w-md text-slate-500">
-			Configure your endpoints above, then click <strong class="text-blue-600"
+		<h3 class="mb-2 text-xl font-semibold text-gray-800 dark:text-white">Ready to Compare</h3>
+		<p class="max-w-md text-gray-500">
+			Configure your endpoints above, then click <strong class="text-indigo-600"
 				>Run Comparison</strong
 			> to analyze the API response differences.
 		</p>
@@ -402,20 +409,20 @@
 
 {#if showIgnoreModal}
 	<div
-		class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm transition-all sm:p-6"
+		class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 p-4 backdrop-blur-sm transition-all sm:p-6"
 		role="dialog"
 		aria-modal="true"
 	>
 		<div
-			class="flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl bg-white shadow-2xl dark:bg-slate-800"
+			class="flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl bg-white shadow-2xl dark:bg-gray-800"
 		>
 			<div
-				class="flex items-center justify-between border-b border-slate-100 p-4 dark:border-slate-700"
+				class="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700"
 			>
-				<h3 class="text-lg font-semibold text-slate-800 dark:text-white">Ignore Keys</h3>
+				<h3 class="text-lg font-semibold text-gray-800 dark:text-white">Ignore Keys</h3>
 				<button
 					onclick={() => (showIgnoreModal = false)}
-					class="text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-200"
+					class="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -435,19 +442,19 @@
 			</div>
 
 			<div
-				class="border-b border-slate-100 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-800/50"
+				class="border-b border-gray-100 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50"
 			>
 				<input
 					type="text"
 					bind:value={ignoreSearch}
 					placeholder="Search keys..."
-					class="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+					class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
 				/>
 			</div>
 
 			<div class="flex-1 overflow-y-auto p-2">
 				{#if availableKeys.length === 0}
-					<div class="p-8 text-center text-slate-400 italic">
+					<div class="p-8 text-center text-gray-400 italic">
 						No keys found. Run a comparison first!
 					</div>
 				{:else}
@@ -457,26 +464,26 @@
 					<div class="grid grid-cols-1 gap-1">
 						{#each filteredKeys as key (key)}
 							<label
-								class="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50"
+								class="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
 							>
 								<input
 									type="checkbox"
 									checked={ignoredKeys.includes(key)}
 									onchange={() => toggleIgnoreKey(key)}
-									class="h-4 w-4 rounded border-slate-300 bg-white text-blue-600 focus:ring-blue-500 focus:ring-offset-0 dark:border-slate-600 dark:bg-slate-700"
+									class="h-4 w-4 rounded border-gray-300 bg-white text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
 								/>
-								<span class="font-mono text-sm font-medium text-slate-700 dark:text-slate-300"
+								<span class="font-mono text-sm font-medium text-gray-700 dark:text-gray-300"
 									>{key}</span
 								>
 								{#if ignoredKeys.includes(key)}
-									<span class="ml-auto text-xs font-medium text-blue-600 dark:text-blue-400"
+									<span class="ml-auto text-xs font-medium text-indigo-600 dark:text-indigo-400"
 										>Ignored</span
 									>
 								{/if}
 							</label>
 						{/each}
 						{#if filteredKeys.length === 0}
-							<div class="p-4 text-center text-sm text-slate-400">
+							<div class="p-4 text-center text-sm text-gray-400">
 								No keys match "{ignoreSearch}"
 							</div>
 						{/if}
@@ -485,11 +492,11 @@
 			</div>
 
 			<div
-				class="flex justify-end gap-3 rounded-b-xl border-t border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50"
+				class="flex justify-end gap-3 rounded-b-xl border-t border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50"
 			>
 				<button
 					onclick={() => (showIgnoreModal = false)}
-					class="px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-800 dark:text-slate-300 dark:hover:text-white"
+					class="px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
 				>
 					Close
 				</button>

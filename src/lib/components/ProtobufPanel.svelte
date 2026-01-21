@@ -200,46 +200,46 @@
 </script>
 
 <div
-	class="mb-6 rounded-xl border border-slate-200 bg-white shadow-sm transition-colors duration-300 dark:border-slate-700 dark:bg-slate-800"
+	class="mb-6 rounded-xl border border-gray-200 bg-white shadow-sm transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
 >
 	<div class="space-y-6 p-6">
 		<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
 			<div>
 				<label
-					class="mb-2 block text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400"
+					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 				>
-					<span class="flex items-center gap-2"> 🚌 Trip Updates URL </span>
+					Trip Updates URL
 					<input
 						type="text"
 						bind:value={tripUpdatesUrl}
 						placeholder="https://example.com/gtfs-rt/trip-updates"
-						class="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm text-slate-700 transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:placeholder:text-slate-600 dark:focus:ring-blue-500/40"
+						class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-indigo-500/40"
 					/>
 				</label>
 			</div>
 			<div>
 				<label
-					class="mb-2 block text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400"
+					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 				>
-					<span class="flex items-center gap-2"> 📍 Vehicle Positions URL </span>
+					Vehicle Positions URL
 					<input
 						type="text"
 						bind:value={vehiclePositionsUrl}
 						placeholder="https://example.com/gtfs-rt/vehicle-positions"
-						class="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm text-slate-700 transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:placeholder:text-slate-600 dark:focus:ring-blue-500/40"
+						class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-indigo-500/40"
 					/>
 				</label>
 			</div>
 			<div>
 				<label
-					class="mb-2 block text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400"
+					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 				>
-					<span class="flex items-center gap-2"> ⚠️ Service Alerts URL </span>
+					Service Alerts URL
 					<input
 						type="text"
 						bind:value={serviceAlertsUrl}
 						placeholder="https://example.com/gtfs-rt/service-alerts"
-						class="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm text-slate-700 transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:placeholder:text-slate-600 dark:focus:ring-blue-500/40"
+						class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-indigo-500/40"
 					/>
 				</label>
 			</div>
@@ -248,13 +248,12 @@
 		<!-- Headers -->
 		<div>
 			<div class="mb-2 flex items-center justify-between">
-				<span
-					class="text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400"
+				<span class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 					>Custom Headers (API Key, etc.)</span
 				>
 				<button
 					onclick={addHeader}
-					class="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+					class="text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-blue-300"
 				>
 					+ Add Header
 				</button>
@@ -267,19 +266,19 @@
 							value={header.key}
 							oninput={(e) => updateHeader(index, 'key', e.currentTarget.value)}
 							placeholder="Header Name (e.g., x-api-key)"
-							class="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 font-mono text-sm text-slate-700 transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:placeholder:text-slate-600"
+							class="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600"
 						/>
 						<input
 							type="text"
 							value={header.value}
 							oninput={(e) => updateHeader(index, 'value', e.currentTarget.value)}
 							placeholder="Header Value"
-							class="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 font-mono text-sm text-slate-700 transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:placeholder:text-slate-600"
+							class="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600"
 						/>
 						{#if headers.length > 1}
 							<button
 								onclick={() => removeHeader(index)}
-								class="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+								class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
 								title="Remove header"
 							>
 								<svg
@@ -304,16 +303,16 @@
 		</div>
 
 		<div
-			class="flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-700"
+			class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700"
 		>
 			<div class="flex items-center gap-4">
 				<label class="flex cursor-pointer items-center gap-2 select-none">
 					<input
 						type="checkbox"
 						bind:checked={autoRefresh}
-						class="h-4 w-4 rounded border-slate-300 bg-white text-blue-600 focus:ring-blue-500 focus:ring-offset-0 dark:border-slate-600 dark:bg-slate-700"
+						class="h-4 w-4 rounded border-gray-300 bg-white text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
 					/>
-					<span class="text-sm font-medium text-slate-600 dark:text-slate-400">Auto-refresh</span>
+					<span class="text-sm font-medium text-gray-600 dark:text-gray-400">Auto-refresh</span>
 				</label>
 				{#if autoRefresh}
 					<div class="flex items-center gap-2">
@@ -322,13 +321,13 @@
 							bind:value={refreshInterval}
 							min="5"
 							max="300"
-							class="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+							class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-indigo-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
 						/>
-						<span class="text-xs text-slate-400">sec</span>
+						<span class="text-xs text-gray-400">sec</span>
 					</div>
 				{/if}
 				{#if lastFetchTime}
-					<span class="text-xs text-slate-400">
+					<span class="text-xs text-gray-400">
 						Last fetched: {lastFetchTime.toLocaleTimeString()}
 					</span>
 				{/if}
@@ -337,7 +336,7 @@
 			<button
 				onclick={fetchAllFeeds}
 				disabled={loading}
-				class="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 font-medium text-white transition-all hover:bg-blue-700 hover:shadow-lg active:scale-[0.98] disabled:bg-blue-400 disabled:shadow-none"
+				class="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 font-medium text-white transition-all hover:bg-indigo-700 hover:shadow-lg active:scale-[0.98] disabled:bg-indigo-400 disabled:shadow-none"
 			>
 				{#if loading}
 					<svg
@@ -381,9 +380,7 @@
 
 {#if feedData}
 	<div class="mb-4">
-		<h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100">
-			GTFS Realtime Feed Data
-		</h2>
+		<h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">GTFS Realtime Feed Data</h2>
 	</div>
 	<ProtobufViewer
 		tripUpdates={feedData.tripUpdates}
@@ -397,17 +394,24 @@
 	/>
 {:else if !loading}
 	<div
-		class="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-16 text-center transition-colors duration-300 dark:border-slate-700 dark:bg-slate-800"
+		class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-16 text-center transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
 	>
 		<div
-			class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-100 text-3xl dark:bg-slate-900"
+			class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-900"
 		>
-			📡
+			<svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+				><path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+				></path></svg
+			>
 		</div>
-		<h3 class="mb-2 text-xl font-semibold text-slate-800 dark:text-white">
+		<h3 class="mb-2 text-xl font-semibold text-gray-800 dark:text-white">
 			GTFS Realtime Protobuf Reader
 		</h3>
-		<p class="mb-4 max-w-md text-slate-500">
+		<p class="mb-4 max-w-md text-gray-500">
 			Enter your GTFS Realtime feed URLs above. You can use any combination of Trip Updates, Vehicle
 			Positions, and Service Alerts feeds.
 		</p>

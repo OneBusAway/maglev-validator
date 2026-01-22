@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import JsonTree from './JsonTree.svelte';
 	import {
 		countDifferences,
@@ -6,7 +7,6 @@
 		isArray,
 		isObject,
 		isPrimitive,
-		sortArrayValues,
 		sortEntries
 	} from '$lib/utils/jsonCompare';
 
@@ -20,7 +20,11 @@
 		ignoredKeys?: string[];
 		globalExpand?: boolean | null;
 		localExpand?: boolean | null;
+		skipComparison?: boolean;
 	}
+
+	const CHUNK_SIZE = 50;
+	const LARGE_THRESHOLD = 100;
 
 	let {
 		value,
@@ -31,10 +35,13 @@
 		isReference = false,
 		ignoredKeys = [],
 		globalExpand = null,
-		localExpand = null
+		localExpand = null,
+		skipComparison = false
 	}: Props = $props();
 
 	let manualExpanded = $state<boolean | null>(null);
+	let visibleCount = $state(CHUNK_SIZE);
+	let isLoadingMore = $state(false);
 
 	const expanded = $derived(
 		level === 0
@@ -48,11 +55,43 @@
 						: false
 	);
 
-	const status = $derived(getDiffStatus(value, otherValue, side, ignoredKeys));
+	const isPrimitiveValue = $derived(isPrimitive(value));
+	const status = $derived(
+		skipComparison
+			? 'same'
+			: isPrimitiveValue || expanded || level === 0
+				? getDiffStatus(value, otherValue, side, ignoredKeys)
+				: 'same'
+	);
 	const hasDiff = $derived(status !== 'same' && !isReference);
-	const diffCount = $derived(countDifferences(value, otherValue, ignoredKeys));
-	const arrayItems = $derived(isArray(value) ? sortArrayValues(value) : []);
-	const otherArrayItems = $derived(isArray(otherValue) ? sortArrayValues(otherValue) : []);
+
+	const diffCount = $derived(
+		skipComparison || expanded || isReference || isPrimitiveValue
+			? 0
+			: countDifferences(value, otherValue, ignoredKeys)
+	);
+
+	const arrayItems = $derived(isArray(value) ? value : []);
+	const otherArrayItems = $derived(isArray(otherValue) ? otherValue : []);
+
+	const totalItems = $derived(
+		isArray(value)
+			? value.length
+			: isObject(value)
+				? Object.keys(value as Record<string, unknown>).length
+				: 0
+	);
+
+	const isLargeCollection = $derived(totalItems > LARGE_THRESHOLD);
+
+	const visibleArrayItems = $derived(arrayItems.slice(0, visibleCount));
+	const hasMoreItems = $derived(isArray(value) && visibleCount < arrayItems.length);
+
+	$effect(() => {
+		if (!expanded) {
+			visibleCount = CHUNK_SIZE;
+		}
+	});
 
 	const otherValueFormatted = $derived(() => {
 		if (isPrimitive(otherValue)) {
@@ -66,6 +105,18 @@
 
 	function toggle() {
 		manualExpanded = !expanded;
+	}
+
+	async function loadMore() {
+		if (isLoadingMore) return;
+		isLoadingMore = true;
+		await tick();
+		visibleCount = Math.min(visibleCount + CHUNK_SIZE, arrayItems.length);
+		isLoadingMore = false;
+	}
+
+	function loadAll() {
+		visibleCount = arrayItems.length;
 	}
 
 	let childLocalExpand = $state<boolean | null>(null);
@@ -228,7 +279,14 @@
 			class={label !== undefined ? 'ml-4 border-l-2 border-gray-200 pl-4 dark:border-gray-700' : ''}
 		>
 			{#if isArray(value)}
-				{#each arrayItems as item, index (index)}
+				{#if isLargeCollection}
+					<div class="mb-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+						<span
+							>Showing {Math.min(visibleCount, arrayItems.length)} of {arrayItems.length} items</span
+						>
+					</div>
+				{/if}
+				{#each visibleArrayItems as item, index (index)}
 					{@const otherItem = otherArrayItems[index]}
 					<JsonTree
 						value={item}
@@ -240,26 +298,94 @@
 						{ignoredKeys}
 						{globalExpand}
 						localExpand={childExpand}
+						{skipComparison}
 					/>
 				{/each}
+				{#if hasMoreItems}
+					<div class="mt-2 flex items-center gap-2">
+						<button
+							onclick={loadMore}
+							disabled={isLoadingMore}
+							class="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:opacity-50 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+						>
+							{#if isLoadingMore}
+								<svg class="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+									<circle
+										class="opacity-25"
+										cx="12"
+										cy="12"
+										r="10"
+										stroke="currentColor"
+										stroke-width="4"
+									></circle>
+									<path
+										class="opacity-75"
+										fill="currentColor"
+										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+									></path>
+								</svg>
+								Loading...
+							{:else}
+								Load {Math.min(CHUNK_SIZE, arrayItems.length - visibleCount)} more
+							{/if}
+						</button>
+						{#if arrayItems.length - visibleCount > CHUNK_SIZE}
+							<button
+								onclick={loadAll}
+								class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+							>
+								Load all ({arrayItems.length - visibleCount} remaining)
+							</button>
+						{/if}
+					</div>
+				{/if}
 			{:else if isObject(value)}
-				{#each sortEntries(value as Record<string, unknown>) as [key, childValue] (key)}
-					{#if !ignoredKeys.includes(key)}
-						<JsonTree
-							value={childValue}
-							otherValue={isObject(otherValue)
-								? (otherValue as Record<string, unknown>)[key]
-								: undefined}
-							label={key}
-							{side}
-							level={level + 1}
-							{isReference}
-							{ignoredKeys}
-							{globalExpand}
-							localExpand={childExpand}
-						/>
-					{/if}
+				{@const entries = sortEntries(value as Record<string, unknown>).filter(
+					([key]) => !ignoredKeys.includes(key)
+				)}
+				{@const visibleEntries = entries.slice(0, visibleCount)}
+				{@const hasMoreEntries = entries.length > visibleCount}
+				{#if entries.length > LARGE_THRESHOLD}
+					<div class="mb-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+						<span
+							>Showing {Math.min(visibleCount, entries.length)} of {entries.length} properties</span
+						>
+					</div>
+				{/if}
+				{#each visibleEntries as [key, childValue] (key)}
+					<JsonTree
+						value={childValue}
+						otherValue={isObject(otherValue)
+							? (otherValue as Record<string, unknown>)[key]
+							: undefined}
+						label={key}
+						{side}
+						level={level + 1}
+						{isReference}
+						{ignoredKeys}
+						{globalExpand}
+						localExpand={childExpand}
+						{skipComparison}
+					/>
 				{/each}
+				{#if hasMoreEntries}
+					<div class="mt-2 flex items-center gap-2">
+						<button
+							onclick={() => (visibleCount = Math.min(visibleCount + CHUNK_SIZE, entries.length))}
+							class="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+						>
+							Load {Math.min(CHUNK_SIZE, entries.length - visibleCount)} more
+						</button>
+						{#if entries.length - visibleCount > CHUNK_SIZE}
+							<button
+								onclick={() => (visibleCount = entries.length)}
+								class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+							>
+								Load all ({entries.length - visibleCount} remaining)
+							</button>
+						{/if}
+					</div>
+				{/if}
 			{/if}
 		</div>
 	{:else if !label && isPrimitive(value)}

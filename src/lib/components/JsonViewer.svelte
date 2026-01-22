@@ -1,5 +1,6 @@
 <script lang="ts">
 	import JsonTree from './JsonTree.svelte';
+	import { deepEqualIgnoreOrder } from '$lib/utils/jsonCompare';
 
 	interface Props {
 		data: unknown;
@@ -13,6 +14,26 @@
 
 	let globalExpand = $state<boolean | null>(null);
 	let copied = $state(false);
+
+	let rootsAreEqual = $state<boolean | null>(null);
+	let lastDataRef = $state<unknown>(null);
+	let lastOtherDataRef = $state<unknown>(null);
+
+	$effect(() => {
+		if (data !== lastDataRef || otherData !== lastOtherDataRef) {
+			lastDataRef = data;
+			lastOtherDataRef = otherData;
+			rootsAreEqual = null; 
+
+			if (data !== undefined && otherData !== undefined) {
+				setTimeout(() => {
+					rootsAreEqual = deepEqualIgnoreOrder(data, otherData, ignoredKeys);
+				}, 0);
+			} else {
+				rootsAreEqual = false;
+			}
+		}
+	});
 
 	function expandAll() {
 		globalExpand = true;
@@ -105,6 +126,7 @@
 				{ignoredKeys}
 				level={0}
 				{globalExpand}
+				skipComparison={rootsAreEqual === true}
 			/>
 		{:else}
 			<div class="py-8 text-center text-gray-400 italic">No JSON data</div>

@@ -21,6 +21,9 @@
 		globalExpand?: boolean | null;
 		localExpand?: boolean | null;
 		skipComparison?: boolean;
+		searchQuery?: string;
+		matchingPaths?: Set<string>;
+		currentPath?: string;
 	}
 
 	const CHUNK_SIZE = 50;
@@ -36,23 +39,90 @@
 		ignoredKeys = [],
 		globalExpand = null,
 		localExpand = null,
-		skipComparison = false
+		skipComparison = false,
+		searchQuery = '',
+		matchingPaths = new Set<string>(),
+		currentPath = ''
 	}: Props = $props();
+
+	function matchesSearch(text: string): boolean {
+		if (!searchQuery.trim()) return false;
+		return text.toLowerCase().includes(searchQuery.toLowerCase());
+	}
+
+	function highlightText(text: string): Array<{ text: string; highlight: boolean }> {
+		if (!searchQuery.trim()) return [{ text, highlight: false }];
+		const lowerText = text.toLowerCase();
+		const lowerQuery = searchQuery.toLowerCase();
+		const parts: Array<{ text: string; highlight: boolean }> = [];
+		let lastIndex = 0;
+		let index = lowerText.indexOf(lowerQuery);
+		while (index !== -1) {
+			if (index > lastIndex) {
+				parts.push({ text: text.substring(lastIndex, index), highlight: false });
+			}
+			parts.push({ text: text.substring(index, index + searchQuery.length), highlight: true });
+			lastIndex = index + searchQuery.length;
+			index = lowerText.indexOf(lowerQuery, lastIndex);
+		}
+		if (lastIndex < text.length) {
+			parts.push({ text: text.substring(lastIndex), highlight: false });
+		}
+		return parts.length > 0 ? parts : [{ text, highlight: false }];
+	}
+
+	const labelMatchesSearch = $derived(label ? matchesSearch(label) : false);
+	const valueMatchesSearch = $derived(isPrimitive(value) ? matchesSearch(String(value)) : false);
+
+	const hasMatchingDescendant = $derived(() => {
+		if (!searchQuery.trim() || matchingPaths.size === 0) return false;
+		if (!currentPath) {
+			return matchingPaths.size > 0;
+		}
+		for (const path of matchingPaths) {
+			if (
+				path === currentPath ||
+				path.startsWith(currentPath + '.') ||
+				path.startsWith(currentPath + '[')
+			) {
+				return true;
+			}
+		}
+		return false;
+	});
+
+	const shouldAutoExpand = $derived(() => {
+		if (!searchQuery.trim()) return false;
+		if (labelMatchesSearch || valueMatchesSearch) return true;
+		return hasMatchingDescendant();
+	});
 
 	let manualExpanded = $state<boolean | null>(null);
 	let visibleCount = $state(CHUNK_SIZE);
 	let isLoadingMore = $state(false);
 
+	let lastSearchQuery = $state('');
+	$effect(() => {
+		if (searchQuery !== lastSearchQuery) {
+			lastSearchQuery = searchQuery;
+			if (searchQuery.trim()) {
+				manualExpanded = null;
+			}
+		}
+	});
+
 	const expanded = $derived(
 		level === 0
 			? true
-			: manualExpanded !== null
-				? manualExpanded
-				: localExpand !== null
-					? localExpand
-					: globalExpand !== null
-						? globalExpand
-						: false
+			: shouldAutoExpand()
+				? true
+				: manualExpanded !== null
+					? manualExpanded
+					: localExpand !== null
+						? localExpand
+						: globalExpand !== null
+							? globalExpand
+							: false
 	);
 
 	const isPrimitiveValue = $derived(isPrimitive(value));
@@ -180,7 +250,10 @@
 <div class="font-sans text-[14px] leading-[1.8] tracking-wide">
 	{#if label !== undefined}
 		<div
-			class="group -mx-1 flex items-center rounded px-1 py-0.5 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 {getDiffClass()}"
+			class="group -mx-1 flex items-center rounded px-1 py-0.5 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 {getDiffClass()} {labelMatchesSearch ||
+			valueMatchesSearch
+				? 'bg-yellow-50/30 ring-2 ring-yellow-400/50 dark:bg-yellow-900/20'
+				: ''}"
 		>
 			{#if isArray(value) || isObject(value)}
 				<button
@@ -194,12 +267,35 @@
 			{/if}
 
 			<span class="mr-1 flex-shrink-0 font-semibold text-cyan-700 select-text dark:text-cyan-400">
-				{label}<span class="text-gray-400 dark:text-gray-600">:</span>
+				{#if labelMatchesSearch}
+					{#each highlightText(label) as part, idx (idx)}
+						{#if part.highlight}
+							<mark
+								class="rounded bg-yellow-300 px-0.5 text-cyan-800 dark:bg-yellow-500/60 dark:text-cyan-200"
+								>{part.text}</mark
+							>
+						{:else}
+							{part.text}
+						{/if}
+					{/each}
+				{:else}
+					{label}
+				{/if}<span class="text-gray-400 dark:text-gray-600">:</span>
 			</span>
 
 			{#if isPrimitive(value)}
 				<span class="{getValueColorClass(value)} font-mono select-text">
-					{formatPrimitive(value)}
+					{#if valueMatchesSearch}
+						{#each highlightText(formatPrimitive(value)) as part, idx (idx)}
+							{#if part.highlight}
+								<mark class="rounded bg-yellow-300 px-0.5 dark:bg-yellow-500/60">{part.text}</mark>
+							{:else}
+								{part.text}
+							{/if}
+						{/each}
+					{:else}
+						{formatPrimitive(value)}
+					{/if}
 				</span>
 
 				{#if hasDiff}
@@ -299,6 +395,9 @@
 						{globalExpand}
 						localExpand={childExpand}
 						{skipComparison}
+						{searchQuery}
+						{matchingPaths}
+						currentPath={currentPath ? `${currentPath}[${index}]` : `[${index}]`}
 					/>
 				{/each}
 				{#if hasMoreItems}
@@ -366,6 +465,9 @@
 						{globalExpand}
 						localExpand={childExpand}
 						{skipComparison}
+						{searchQuery}
+						{matchingPaths}
+						currentPath={currentPath ? `${currentPath}.${key}` : key}
 					/>
 				{/each}
 				{#if hasMoreEntries}

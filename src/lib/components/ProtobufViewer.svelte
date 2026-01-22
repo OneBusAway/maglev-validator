@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SimpleJsonTree from './SimpleJsonTree.svelte';
+	import { filterGTFSEntities, getSearchStats } from '$lib/utils/search';
 
 	interface Props {
 		tripUpdates: unknown[];
@@ -28,17 +29,81 @@
 	);
 	let activeRawTextTab = $state<'tripUpdates' | 'vehiclePositions' | 'alerts'>('tripUpdates');
 
+	let searchQuery = $state('');
+	let debouncedQuery = $state('');
+	let isSearching = $state(false);
+
+	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+	function updateDebouncedQuery(query: string) {
+		if (debounceTimer) clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => {
+			debouncedQuery = query;
+			isSearching = false;
+		}, 300);
+	}
+
+	function handleSearchInput(e: Event) {
+		const value = (e.target as HTMLInputElement).value;
+		searchQuery = value;
+		isSearching = true;
+		updateDebouncedQuery(value);
+	}
+
+	function clearSearch() {
+		searchQuery = '';
+		debouncedQuery = '';
+		isSearching = false;
+	}
+
+	const filteredTripUpdates = $derived(
+		filterGTFSEntities(tripUpdates, debouncedQuery, 'tripUpdates')
+	);
+	const filteredVehiclePositions = $derived(
+		filterGTFSEntities(vehiclePositions, debouncedQuery, 'vehiclePositions')
+	);
+	const filteredAlerts = $derived(filterGTFSEntities(alerts, debouncedQuery, 'alerts'));
+
+	const searchStats = $derived(() => {
+		switch (activeTab) {
+			case 'tripUpdates':
+				return getSearchStats(tripUpdates.length, filteredTripUpdates.length, debouncedQuery);
+			case 'vehiclePositions':
+				return getSearchStats(
+					vehiclePositions.length,
+					filteredVehiclePositions.length,
+					debouncedQuery
+				);
+			case 'alerts':
+				return getSearchStats(alerts.length, filteredAlerts.length, debouncedQuery);
+			default:
+				return { message: '', hasResults: true };
+		}
+	});
+
 	const tabs = $derived([
-		{ id: 'tripUpdates' as const, label: 'Trip Updates', icon: 'trip', count: tripUpdates.length },
+		{
+			id: 'tripUpdates' as const,
+			label: 'Trip Updates',
+			icon: 'trip',
+			count: tripUpdates.length,
+			filteredCount: filteredTripUpdates.length
+		},
 		{
 			id: 'vehiclePositions' as const,
 			label: 'Vehicle Positions',
 			icon: 'vehicle',
-			count: vehiclePositions.length
+			count: vehiclePositions.length,
+			filteredCount: filteredVehiclePositions.length
 		},
-		{ id: 'alerts' as const, label: 'Alerts', icon: 'alert', count: alerts.length },
-		{ id: 'header' as const, label: 'Header', icon: 'header', count: null },
-		{ id: 'rawText' as const, label: 'Raw Text', icon: 'code', count: null }
+		{
+			id: 'alerts' as const,
+			label: 'Alerts',
+			icon: 'alert',
+			count: alerts.length,
+			filteredCount: filteredAlerts.length
+		},
+		{ id: 'header' as const, label: 'Header', icon: 'header', count: null, filteredCount: null },
+		{ id: 'rawText' as const, label: 'Raw Text', icon: 'code', count: null, filteredCount: null }
 	]);
 
 	const rawTextTabs = $derived([
@@ -73,11 +138,11 @@
 	const activeData = $derived(() => {
 		switch (activeTab) {
 			case 'tripUpdates':
-				return tripUpdates;
+				return filteredTripUpdates;
 			case 'vehiclePositions':
-				return vehiclePositions;
+				return filteredVehiclePositions;
 			case 'alerts':
-				return alerts;
+				return filteredAlerts;
 			case 'header':
 				return header;
 		}
@@ -178,13 +243,82 @@
 								? 'bg-indigo-200 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-200'
 								: 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-300'}"
 						>
-							{tab.count}
+							{#if debouncedQuery && tab.filteredCount !== tab.count}
+								{tab.filteredCount}/{tab.count}
+							{:else}
+								{tab.count}
+							{/if}
 						</span>
 					{/if}
 				</button>
 			{/each}
 		</div>
 		<div class="flex items-center gap-4">
+			{#if activeTab !== 'rawText' && activeTab !== 'header'}
+				<div class="relative">
+					<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+						{#if isSearching}
+							<svg
+								class="h-4 w-4 animate-spin text-indigo-500"
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+							>
+								<circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								></circle>
+								<path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+								></path>
+							</svg>
+						{:else}
+							<svg
+								class="h-4 w-4 text-gray-400"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+								></path>
+							</svg>
+						{/if}
+					</div>
+					<input
+						type="text"
+						value={searchQuery}
+						oninput={handleSearchInput}
+						placeholder="Search vehicle ID, trip, route..."
+						class="w-64 rounded-lg border border-gray-200 bg-gray-50 py-1.5 pr-8 pl-9 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+					/>
+					{#if searchQuery}
+						<button
+							onclick={clearSearch}
+							class="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+							title="Clear search"
+						>
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M6 18L18 6M6 6l12 12"
+								></path>
+							</svg>
+						</button>
+					{/if}
+				</div>
+			{/if}
 			{#if activeTab !== 'rawText'}
 				<div class="flex gap-2">
 					<button
@@ -226,6 +360,37 @@
 			</div>
 		</div>
 	</div>
+
+	{#if debouncedQuery && activeTab !== 'rawText' && activeTab !== 'header'}
+		<div class="border-b border-gray-200 px-4 py-2 dark:border-gray-700">
+			<div
+				class="flex items-center gap-2 text-sm {searchStats().hasResults
+					? 'text-gray-600 dark:text-gray-400'
+					: 'text-amber-600 dark:text-amber-400'}"
+			>
+				{#if !searchStats().hasResults}
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+						></path>
+					</svg>
+				{:else}
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+						></path>
+					</svg>
+				{/if}
+				<span>{searchStats().message}</span>
+			</div>
+		</div>
+	{/if}
 
 	<div class="max-h-[600px] overflow-auto p-4">
 		{#if activeTab === 'rawText'}

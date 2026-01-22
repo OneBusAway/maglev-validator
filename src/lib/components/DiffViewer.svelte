@@ -2,6 +2,7 @@
 	import JsonViewer from './JsonViewer.svelte';
 	import { getByPath } from '$lib/utils/jsonCompare';
 	import { deepSearchJSON } from '$lib/utils/search';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
 		response1: unknown;
@@ -22,8 +23,8 @@
 	let searchResults1 = $state<Array<{ path: string; value: unknown; context: string }>>([]);
 	let searchResults2 = $state<Array<{ path: string; value: unknown; context: string }>>([]);
 
-	function buildMatchingPaths(results: Array<{ path: string }>): Set<string> {
-		const paths = new Set<string>();
+	function buildMatchingPaths(results: Array<{ path: string }>): SvelteSet<string> {
+		const paths = new SvelteSet<string>();
 		for (const result of results) {
 			const parts = result.path.split(/\.|\[|\]/).filter(Boolean);
 			let currentPath = '';
@@ -36,8 +37,8 @@
 		return paths;
 	}
 
-	const matchingPaths1 = $derived(new Set([...buildMatchingPaths(searchResults1)]));
-	const matchingPaths2 = $derived(new Set([...buildMatchingPaths(searchResults2)]));
+	const matchingPaths1 = $derived(buildMatchingPaths(searchResults1));
+	const matchingPaths2 = $derived(buildMatchingPaths(searchResults2));
 
 	const MIN_SEARCH_LENGTH = 2;
 

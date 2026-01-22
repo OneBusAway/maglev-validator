@@ -22,26 +22,49 @@
 	let searchResults1 = $state<Array<{ path: string; value: unknown; context: string }>>([]);
 	let searchResults2 = $state<Array<{ path: string; value: unknown; context: string }>>([]);
 
+	function buildMatchingPaths(results: Array<{ path: string }>): Set<string> {
+		const paths = new Set<string>();
+		for (const result of results) {
+			const parts = result.path.split(/\.|\[|\]/).filter(Boolean);
+			let currentPath = '';
+			for (const part of parts) {
+				currentPath = currentPath ? `${currentPath}.${part}` : part;
+				paths.add(currentPath);
+			}
+			paths.add(result.path);
+		}
+		return paths;
+	}
+
+	const matchingPaths1 = $derived(new Set([...buildMatchingPaths(searchResults1)]));
+	const matchingPaths2 = $derived(new Set([...buildMatchingPaths(searchResults2)]));
+
+	const MIN_SEARCH_LENGTH = 2;
+
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	function updateSearch(query: string) {
 		if (debounceTimer) clearTimeout(debounceTimer);
+
+		if (query.trim().length < MIN_SEARCH_LENGTH) {
+			debouncedSearchQuery = '';
+			searchResults1 = [];
+			searchResults2 = [];
+			isSearching = false;
+			return;
+		}
+
 		debounceTimer = setTimeout(() => {
 			debouncedSearchQuery = query;
-			if (query.trim()) {
-				searchResults1 = deepSearchJSON(focused1, query, 500);
-				searchResults2 = deepSearchJSON(focused2, query, 500);
-			} else {
-				searchResults1 = [];
-				searchResults2 = [];
-			}
+			searchResults1 = deepSearchJSON(focused1, query, 200);
+			searchResults2 = deepSearchJSON(focused2, query, 200);
 			isSearching = false;
-		}, 300);
+		}, 400);
 	}
 
 	function handleSearchInput(e: Event) {
 		const value = (e.target as HTMLInputElement).value;
 		localSearchQuery = value;
-		isSearching = true;
+		isSearching = value.trim().length >= MIN_SEARCH_LENGTH;
 		updateSearch(value);
 	}
 
@@ -89,7 +112,7 @@
 			type="text"
 			bind:value={localSearchQuery}
 			oninput={handleSearchInput}
-			placeholder="Search keys & values..."
+			placeholder="Search (min 2 chars)..."
 			class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pr-10 pl-10 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:placeholder:text-gray-500"
 		/>
 		{#if localSearchQuery}
@@ -166,6 +189,7 @@
 			{ignoredKeys}
 			mode="server1"
 			searchQuery={debouncedSearchQuery}
+			matchingPaths={matchingPaths1}
 		/>
 	</div>
 	<div
@@ -178,6 +202,7 @@
 			{ignoredKeys}
 			mode="server2"
 			searchQuery={debouncedSearchQuery}
+			matchingPaths={matchingPaths2}
 		/>
 	</div>
 </div>

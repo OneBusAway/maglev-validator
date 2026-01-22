@@ -22,6 +22,8 @@
 		localExpand?: boolean | null;
 		skipComparison?: boolean;
 		searchQuery?: string;
+		matchingPaths?: Set<string>;
+		currentPath?: string;
 	}
 
 	const CHUNK_SIZE = 50;
@@ -38,7 +40,9 @@
 		globalExpand = null,
 		localExpand = null,
 		skipComparison = false,
-		searchQuery = ''
+		searchQuery = '',
+		matchingPaths = new Set<string>(),
+		currentPath = ''
 	}: Props = $props();
 
 	function matchesSearch(text: string): boolean {
@@ -70,33 +74,28 @@
 	const labelMatchesSearch = $derived(label ? matchesSearch(label) : false);
 	const valueMatchesSearch = $derived(isPrimitive(value) ? matchesSearch(String(value)) : false);
 
-	function hasDescendantMatch(val: unknown, query: string): boolean {
-		if (!query.trim()) return false;
-		const lowerQuery = query.toLowerCase();
-
-		if (val === null || val === undefined) return false;
-
-		if (typeof val !== 'object') {
-			return String(val).toLowerCase().includes(lowerQuery);
+	const hasMatchingDescendant = $derived(() => {
+		if (!searchQuery.trim() || matchingPaths.size === 0) return false;
+		if (!currentPath) {
+			return matchingPaths.size > 0;
 		}
-
-		if (Array.isArray(val)) {
-			return val.some((item) => hasDescendantMatch(item, query));
+		for (const path of matchingPaths) {
+			if (
+				path === currentPath ||
+				path.startsWith(currentPath + '.') ||
+				path.startsWith(currentPath + '[')
+			) {
+				return true;
+			}
 		}
+		return false;
+	});
 
-		const obj = val as Record<string, unknown>;
-		return Object.entries(obj).some(
-			([key, child]) => key.toLowerCase().includes(lowerQuery) || hasDescendantMatch(child, query)
-		);
-	}
-
-	const descendantMatchesSearch = $derived(
-		searchQuery.trim() && !isPrimitive(value) ? hasDescendantMatch(value, searchQuery) : false
-	);
-
-	const shouldAutoExpand = $derived(
-		searchQuery.trim() && (labelMatchesSearch || valueMatchesSearch || descendantMatchesSearch)
-	);
+	const shouldAutoExpand = $derived(() => {
+		if (!searchQuery.trim()) return false;
+		if (labelMatchesSearch || valueMatchesSearch) return true;
+		return hasMatchingDescendant();
+	});
 
 	let manualExpanded = $state<boolean | null>(null);
 	let visibleCount = $state(CHUNK_SIZE);
@@ -115,7 +114,7 @@
 	const expanded = $derived(
 		level === 0
 			? true
-			: shouldAutoExpand
+			: shouldAutoExpand()
 				? true
 				: manualExpanded !== null
 					? manualExpanded
@@ -397,6 +396,8 @@
 						localExpand={childExpand}
 						{skipComparison}
 						{searchQuery}
+						{matchingPaths}
+						currentPath={currentPath ? `${currentPath}[${index}]` : `[${index}]`}
 					/>
 				{/each}
 				{#if hasMoreItems}
@@ -465,6 +466,8 @@
 						localExpand={childExpand}
 						{skipComparison}
 						{searchQuery}
+						{matchingPaths}
+						currentPath={currentPath ? `${currentPath}.${key}` : key}
 					/>
 				{/each}
 				{#if hasMoreEntries}

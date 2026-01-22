@@ -9,9 +9,17 @@
 		ignoredKeys?: string[];
 		mode?: 'server1' | 'server2';
 		searchQuery?: string;
+		matchingPaths?: Set<string>;
 	}
 
-	let { data, otherData, ignoredKeys = [], mode = 'server1', searchQuery = '' }: Props = $props();
+	let {
+		data,
+		otherData,
+		ignoredKeys = [],
+		mode = 'server1',
+		searchQuery = '',
+		matchingPaths = new Set<string>()
+	}: Props = $props();
 
 	let globalExpand = $state<boolean | null>(null);
 	let copied = $state(false);
@@ -129,6 +137,7 @@
 				{globalExpand}
 				skipComparison={rootsAreEqual === true}
 				{searchQuery}
+				{matchingPaths}
 			/>
 		{:else}
 			<div class="py-8 text-center text-gray-400 italic">No JSON data</div>

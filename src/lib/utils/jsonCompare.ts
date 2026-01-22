@@ -68,19 +68,19 @@ function stableStringify(value: unknown, ignoredKeys: string[] = []): string {
 
 export function deepEqualIgnoreOrder(a: unknown, b: unknown, ignoredKeys: string[] = []): boolean {
 	if (Object.is(a, b)) return true;
-	
+
 	if (typeof a !== typeof b) return false;
 	if (a === null || b === null) return a === b;
-	
+
 	if (typeof a === 'object' && typeof b === 'object' && ignoredKeys.length === 0) {
 		const aCache = equalityCache.get(a as object);
 		if (aCache?.has(b as object)) {
 			return aCache.get(b as object)!;
 		}
 	}
-	
+
 	let result: boolean;
-	
+
 	if (isArray(a) && isArray(b)) {
 		if (a.length !== b.length) {
 			result = false;
@@ -110,7 +110,7 @@ export function deepEqualIgnoreOrder(a: unknown, b: unknown, ignoredKeys: string
 	} else {
 		result = false;
 	}
-	
+
 	if (typeof a === 'object' && typeof b === 'object' && ignoredKeys.length === 0) {
 		let aCache = equalityCache.get(a as object);
 		if (!aCache) {
@@ -120,7 +120,7 @@ export function deepEqualIgnoreOrder(a: unknown, b: unknown, ignoredKeys: string
 		aCache.set(b as object, result);
 		scheduleCacheCleanup();
 	}
-	
+
 	return result;
 }
 
@@ -202,7 +202,7 @@ export function countDifferences(
 		let diff = 0;
 		for (const key of keys) {
 			if (ignoredKeys.includes(key)) continue;
-			if (diff >= maxCount) break; 
+			if (diff >= maxCount) break;
 			diff += countDifferences(a[key], b[key], ignoredKeys, maxCount - diff);
 		}
 		return Math.min(diff, maxCount);

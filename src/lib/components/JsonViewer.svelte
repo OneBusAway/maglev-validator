@@ -23,7 +23,7 @@
 		if (data !== lastDataRef || otherData !== lastOtherDataRef) {
 			lastDataRef = data;
 			lastOtherDataRef = otherData;
-			rootsAreEqual = null; 
+			rootsAreEqual = null;
 
 			if (data !== undefined && otherData !== undefined) {
 				setTimeout(() => {

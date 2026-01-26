@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { endpoints } from '$lib/endpoints';
 	import DiffViewer from '$lib/components/DiffViewer.svelte';
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy, untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { browser } from '$app/environment';
 	import { logState } from '$lib/logState.svelte';
@@ -10,6 +10,8 @@
 	let response2 = $state<unknown>(undefined);
 	let loading = $state(false);
 	let error = $state<string | undefined>(undefined);
+	let isLogging = $state(false);
+	let lastLoggedValues = $state<Record<string, string>>({});
 
 	let server1Base = $state('http://localhost:4000/api/where/');
 	let server2Base = $state('https://unitrans-api.server.onebusawaycloud.com/api/where/');
@@ -29,7 +31,6 @@
 	let watchSearch = $state('');
 	let watchedKeysInput = $state('');
 	let lastLoggedTime = $state<number | null>(null);
-	let isLogging = $state(false);
 
 	const watchedKeys = $derived(
 		watchedKeysInput
@@ -105,7 +106,8 @@
 	});
 
 	$effect(() => {
-		updateParams();
+		const _ = selectedEndpoint;
+		untrack(() => updateParams());
 	});
 
 	let lastEndpoint = '';
@@ -120,11 +122,18 @@
 	});
 
 	$effect(() => {
-		if (autoRefresh) {
-			startAutoRefresh();
-		} else {
-			stopAutoRefresh();
-		}
+		const isAuto = autoRefresh;
+		const interval = refreshInterval;
+
+		untrack(() => {
+			if (isAuto) {
+				console.log(`[Comparator] Starting auto-refresh (Interval: ${interval}s)`);
+				startAutoRefresh();
+			} else {
+				console.log('[Comparator] Stopping auto-refresh');
+				stopAutoRefresh();
+			}
+		});
 		return () => stopAutoRefresh();
 	});
 
@@ -166,12 +175,17 @@
 	async function logWatchedKeys(resp1: unknown, resp2: unknown) {
 		if (watchedKeys.length === 0) return;
 
-		const timestamp = new Date().toISOString();
 		const keys = watchedKeys.map((keyPath) => ({
 			path: keyPath,
 			server1Value: getValueByPath(resp1, keyPath),
 			server2Value: getValueByPath(resp2, keyPath)
 		}));
+
+		const currentValuesStr = JSON.stringify(keys);
+		const logKey = `${selectedEndpoint}:${watchedKeys.join(',')}`;
+		if (lastLoggedValues[logKey] === currentValuesStr) {
+			return;
+		}
 
 		try {
 			isLogging = true;
@@ -180,12 +194,13 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					endpoint: selectedEndpoint,
-					timestamp,
+					timestamp: new Date().toISOString(),
 					keys,
 					response1: resp1,
 					response2: resp2
 				})
 			});
+			lastLoggedValues[logKey] = currentValuesStr;
 			logState.triggerUpdate();
 			lastLoggedTime = Date.now();
 			setTimeout(() => {
@@ -228,6 +243,7 @@
 	}
 
 	async function fetchBoth() {
+		if (loading) return;
 		loading = true;
 		error = undefined;
 
@@ -281,8 +297,16 @@
 		return base + path + (queryParams.length ? '?' + queryParams.join('&') : '');
 	}
 
+	let paramDebounceTimer: number | undefined = undefined;
 	function handleParamChange(paramName: string, value: string) {
 		params = { ...params, [paramName]: value };
+		if (paramDebounceTimer !== undefined) {
+			clearTimeout(paramDebounceTimer);
+		}
+		paramDebounceTimer = window.setTimeout(() => {
+			fetchBoth();
+			paramDebounceTimer = undefined;
+		}, 600);
 	}
 </script>
 

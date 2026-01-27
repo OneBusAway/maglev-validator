@@ -3,7 +3,7 @@
 	import { onMount, untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { logState } from '$lib/logState.svelte';
-	import { fade, fly } from 'svelte/transition';
+	import { fly } from 'svelte/transition';
 
 	import JsonViewer from '$lib/components/JsonViewer.svelte';
 
@@ -35,7 +35,7 @@
 	let selectedRequestLog = $state<{ response1: unknown; response2: unknown } | null>(null);
 	let isLoadingDetail = $state(false);
 
-	let syncedExpandedPaths = $state(new SvelteSet<string>());
+	let syncedExpandedPaths = new SvelteSet<string>();
 	let server1ScrollContainer = $state<HTMLElement | undefined>(undefined);
 	let server2ScrollContainer = $state<HTMLElement | undefined>(undefined);
 	let isScrollSyncing = false;
@@ -110,7 +110,7 @@
 
 	$effect(() => {
 		if (timeRange === 'live') {
-			const _ = logState.lastUpdated;
+			void logState.lastUpdated;
 
 			untrack(() => {
 				if (selectedEndpoint) {
@@ -291,7 +291,7 @@
 					class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
 				>
 					<option value="">Select endpoint...</option>
-					{#each configuredEndpoints as endpoint}
+					{#each configuredEndpoints as endpoint (endpoint.id)}
 						<option value={endpoint.id}>
 							{endpoint.name}
 							{loggedEndpoints.includes(endpoint.id) ? ' (Has logs)' : ''}
@@ -314,7 +314,7 @@
 					class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
 				>
 					<option value="">All keys</option>
-					{#each keyPaths as kp}
+					{#each keyPaths as kp (kp)}
 						<option value={kp}>{kp}</option>
 					{/each}
 				</select>
@@ -388,9 +388,9 @@
 					<div
 						class="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-900"
 					>
-						{#each ['live', '1h', '24h', 'all'] as range}
+						{#each ['live', '1h', '24h', 'all'] as range (range)}
 							<button
-								onclick={() => (timeRange = range as any)}
+								onclick={() => (timeRange = range as 'live' | '1h' | '24h' | 'all')}
 								class="rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-all {timeRange ===
 								range
 									? 'bg-white text-indigo-700 shadow-sm dark:bg-indigo-900/30 dark:text-indigo-300'

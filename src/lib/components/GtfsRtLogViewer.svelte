@@ -246,8 +246,6 @@
 		<div
 			class="relative h-[70vh] overflow-y-auto rounded-b-xl border border-t-0 border-gray-800 bg-gray-900 p-6 pt-8 shadow-md"
 		>
-			<div class="absolute top-0 bottom-0 left-6 w-0.5 bg-gray-700"></div>
-
 			{#each snapshots as snapshot (snapshot.id)}
 				{@const data = JSON.parse(snapshot.data)}
 				<div class="group relative pb-4 last:pb-0">

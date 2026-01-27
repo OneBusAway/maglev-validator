@@ -84,6 +84,11 @@
 			e.preventDefault();
 			fetchBoth();
 		}
+
+		if (e.key === 'Escape') {
+			if (showIgnoreModal) showIgnoreModal = false;
+			if (showWatchModal) showWatchModal = false;
+		}
 	}
 
 	onMount(() => {
@@ -309,10 +314,12 @@
 		<div class="grid grid-cols-2 gap-6">
 			<div>
 				<label
+					for="server1-url"
 					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 					>Server 1 URL</label
 				>
 				<input
+					id="server1-url"
 					type="text"
 					bind:value={server1Base}
 					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
@@ -320,10 +327,12 @@
 			</div>
 			<div>
 				<label
+					for="server2-url"
 					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 					>Server 2 URL</label
 				>
 				<input
+					id="server2-url"
 					type="text"
 					bind:value={server2Base}
 					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
@@ -334,11 +343,13 @@
 		<div class="grid grid-cols-12 gap-6">
 			<div class="col-span-3">
 				<label
+					for="api-endpoint"
 					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 					>API Endpoint</label
 				>
 				<div class="relative">
 					<select
+						id="api-endpoint"
 						bind:value={selectedEndpoint}
 						class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:focus:ring-indigo-500/40"
 					>
@@ -352,12 +363,14 @@
 			{#each endpoints.find((e) => e.id === selectedEndpoint)?.params || [] as param (param.name)}
 				<div class="col-span-3">
 					<label
+						for={'param-' + param.name}
 						class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 					>
 						{param.label}
 						{#if param.required}<span class="text-red-500"> * </span>{/if}
 					</label>
 					<input
+						id={'param-' + param.name}
 						type="text"
 						value={params[param.name] || ''}
 						oninput={(e) => handleParamChange(param.name, e.currentTarget.value)}
@@ -369,10 +382,12 @@
 
 			<div class="col-span-2">
 				<label
+					for="json-path-filter"
 					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 					>JSON Path Filter</label
 				>
 				<input
+					id="json-path-filter"
 					type="text"
 					bind:value={focusPath}
 					placeholder="e.g. data.entry.status"
@@ -382,10 +397,12 @@
 
 			<div class="col-span-2">
 				<label
+					for="ignore-keys-trigger"
 					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 					>Ignored Keys</label
 				>
 				<button
+					id="ignore-keys-trigger"
 					onclick={() => (showIgnoreModal = true)}
 					class="group flex w-full items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-left text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
 				>
@@ -413,10 +430,12 @@
 
 			<div class="col-span-2">
 				<label
+					for="watch-keys-trigger"
 					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 					>Watch Keys <span class="text-indigo-500">(Log)</span></label
 				>
 				<button
+					id="watch-keys-trigger"
 					onclick={() => (showWatchModal = true)}
 					class="group flex w-full items-center justify-between rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-left text-sm text-indigo-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-indigo-900/30 dark:bg-indigo-900/20 dark:text-indigo-300 dark:focus:ring-indigo-500/40"
 				>
@@ -584,6 +603,7 @@
 				<button
 					onclick={() => (showIgnoreModal = false)}
 					class="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
+					aria-label="Close"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -697,6 +717,7 @@
 				<button
 					onclick={() => (showWatchModal = false)}
 					class="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
+					aria-label="Close"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"

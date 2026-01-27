@@ -25,7 +25,7 @@
 	let totalCount = $state(0);
 
 	let selectedEndpoint = $state('');
-	let selectedKeyPath = $state('');
+	let selectedKeyPaths = new SvelteSet<string>();
 	let limit = $state(100);
 	let timeRange = $state<'live' | '1h' | '24h' | 'all'>('live');
 	let filterMode = $state<'all' | 'match' | 'mismatch'>('all');
@@ -66,7 +66,7 @@
 		selectedLogEntry = log;
 		showDetailModal = true;
 		selectedRequestLog = null;
-		syncedExpandedPaths = new SvelteSet<string>();
+		syncedExpandedPaths.clear();
 
 		if (log.request_id) {
 			isLoadingDetail = true;
@@ -99,12 +99,20 @@
 
 	$effect(() => {
 		if (selectedEndpoint) {
-			fetchKeyPaths(selectedEndpoint);
-			fetchLogs(false);
-			fetchCount();
+			untrack(() => fetchKeyPaths(selectedEndpoint));
 		} else {
 			keyPaths = [];
-			selectedKeyPath = '';
+			selectedKeyPaths.clear();
+		}
+	});
+
+	$effect(() => {
+		void limit;
+		void timeRange;
+		void selectedKeyPaths.size;
+		if (selectedEndpoint) {
+			fetchLogs(false);
+			fetchCount();
 		}
 	});
 
@@ -143,7 +151,16 @@
 
 	async function fetchCount() {
 		try {
-			const res = await fetch('/api/keylog?meta=count');
+			let url = `/api/keylog?meta=count`;
+			if (selectedEndpoint) {
+				url += `&endpoint=${encodeURIComponent(selectedEndpoint)}`;
+				if (selectedKeyPaths.size > 0) {
+					for (const kp of selectedKeyPaths) {
+						url += `&keyPath=${encodeURIComponent(kp)}`;
+					}
+				}
+			}
+			const res = await fetch(url);
 			const data = await res.json();
 			totalCount = data.count || 0;
 		} catch (e) {
@@ -175,8 +192,10 @@
 				url += `&limit=${limit}`;
 			}
 
-			if (selectedKeyPath) {
-				url += `&keyPath=${encodeURIComponent(selectedKeyPath)}`;
+			if (selectedKeyPaths.size > 0) {
+				for (const kp of selectedKeyPaths) {
+					url += `&keyPath=${encodeURIComponent(kp)}`;
+				}
 			}
 
 			const res = await fetch(url);
@@ -257,6 +276,14 @@
 	}
 </script>
 
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Escape' && showDetailModal) {
+			showDetailModal = false;
+		}
+	}}
+/>
+
 <div class="space-y-6">
 	<div
 		class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
@@ -305,19 +332,62 @@
 					for="keypath-select"
 					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 				>
-					Key Path
+					Key Paths
 				</label>
-				<select
-					id="keypath-select"
-					bind:value={selectedKeyPath}
-					disabled={!selectedEndpoint}
-					class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-				>
-					<option value="">All keys</option>
-					{#each keyPaths as kp (kp)}
-						<option value={kp}>{kp}</option>
-					{/each}
-				</select>
+				<div class="space-y-2">
+					<select
+						id="keypath-select"
+						value=""
+						onchange={(e) => {
+							const val = (e.target as HTMLSelectElement).value;
+							if (val) selectedKeyPaths.add(val);
+							(e.target as HTMLSelectElement).value = '';
+						}}
+						disabled={!selectedEndpoint}
+						class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+					>
+						<option value="" disabled selected>Add key path...</option>
+						{#each keyPaths as kp (kp)}
+							{#if !selectedKeyPaths.has(kp)}
+								<option value={kp}>{kp}</option>
+							{/if}
+						{/each}
+					</select>
+
+					{#if selectedKeyPaths.size > 0}
+						<div class="flex flex-wrap gap-2">
+							{#each [...selectedKeyPaths] as kp (kp)}
+								<span
+									class="flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-1 text-[11px] font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
+								>
+									{kp}
+									<button
+										onclick={() => selectedKeyPaths.delete(kp)}
+										class="hover:text-indigo-900 dark:hover:text-indigo-100"
+										aria-label="Remove key path"
+									>
+										<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M6 18L18 6M6 6l12 12"
+											/>
+										</svg>
+									</button>
+								</span>
+							{/each}
+							<button
+								onclick={() => selectedKeyPaths.clear()}
+								class="text-[11px] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+							>
+								Clear
+							</button>
+						</div>
+					{:else}
+						<div class="text-[11px] text-gray-400 italic">All keys showing</div>
+					{/if}
+				</div>
 			</div>
 
 			<div class="col-span-2">

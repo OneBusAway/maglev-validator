@@ -87,11 +87,16 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		if (meta === 'count') {
 			const endpoint = url.searchParams.get('endpoint') || undefined;
-			return json({ count: getKeyLogCount(endpoint) });
+			const keyPaths = url.searchParams.getAll('keyPath');
+			const keyPath =
+				keyPaths.length > 0 ? (keyPaths.length === 1 ? keyPaths[0] : keyPaths) : undefined;
+			return json({ count: getKeyLogCount(endpoint, keyPath) });
 		}
 
 		const endpoint = url.searchParams.get('endpoint') || undefined;
-		const keyPath = url.searchParams.get('keyPath') || undefined;
+		const keyPaths = url.searchParams.getAll('keyPath');
+		const keyPath =
+			keyPaths.length > 0 ? (keyPaths.length === 1 ? keyPaths[0] : keyPaths) : undefined;
 		const since = url.searchParams.get('since') || undefined;
 		const limitStr = url.searchParams.get('limit');
 		const limit = limitStr ? parseInt(limitStr, 10) : undefined;

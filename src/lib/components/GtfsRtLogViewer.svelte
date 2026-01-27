@@ -121,6 +121,14 @@
 	}
 </script>
 
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Escape' && showDetail) {
+			showDetail = false;
+		}
+	}}
+/>
+
 <div class="space-y-6">
 	<div
 		class="rounded-xl border border-gray-800 bg-gray-900 p-6 shadow-md transition-colors dark:border-gray-600"
@@ -343,6 +351,8 @@
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 backdrop-blur-sm sm:p-6"
 		transition:fade={{ duration: 150 }}
+		role="dialog"
+		aria-modal="true"
 	>
 		<div
 			class="flex h-[96vh] w-full max-w-[98vw] flex-col overflow-hidden rounded-2xl border border-gray-700 bg-gray-900 shadow-2xl sm:max-w-400"

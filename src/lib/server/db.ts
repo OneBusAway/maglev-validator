@@ -198,7 +198,7 @@ export function insertKeyLogs(entries: InsertKeyLogParams[]): void {
 
 export interface GetKeyLogsParams {
 	endpoint?: string;
-	keyPath?: string;
+	keyPath?: string | string[];
 	since?: string;
 	limit?: number;
 }
@@ -215,8 +215,16 @@ export function getKeyLogs(params: GetKeyLogsParams = {}): KeyLogEntry[] {
 	}
 
 	if (params.keyPath) {
-		query += ' AND key_path = ?';
-		queryParams.push(params.keyPath);
+		if (Array.isArray(params.keyPath)) {
+			if (params.keyPath.length > 0) {
+				const placeholders = params.keyPath.map(() => '?').join(',');
+				query += ` AND key_path IN (${placeholders})`;
+				queryParams.push(...params.keyPath);
+			}
+		} else {
+			query += ' AND key_path = ?';
+			queryParams.push(params.keyPath);
+		}
 	}
 
 	if (params.since) {
@@ -261,16 +269,32 @@ export function clearKeyLogs(endpoint?: string): number {
 	}
 }
 
-export function getKeyLogCount(endpoint?: string): number {
+export function getKeyLogCount(endpoint?: string, keyPath?: string | string[]): number {
 	const db = getDatabase();
 
+	let query = 'SELECT COUNT(*) as count FROM key_logs WHERE 1=1';
+	const queryParams: unknown[] = [];
+
 	if (endpoint) {
-		const stmt = db.prepare('SELECT COUNT(*) as count FROM key_logs WHERE endpoint = ?');
-		return (stmt.get(endpoint) as { count: number }).count;
-	} else {
-		const stmt = db.prepare('SELECT COUNT(*) as count FROM key_logs');
-		return (stmt.get() as { count: number }).count;
+		query += ' AND endpoint = ?';
+		queryParams.push(endpoint);
 	}
+
+	if (keyPath) {
+		if (Array.isArray(keyPath)) {
+			if (keyPath.length > 0) {
+				const placeholders = keyPath.map(() => '?').join(',');
+				query += ` AND key_path IN (${placeholders})`;
+				queryParams.push(...keyPath);
+			}
+		} else {
+			query += ' AND key_path = ?';
+			queryParams.push(keyPath);
+		}
+	}
+
+	const stmt = db.prepare(query);
+	return (stmt.get(...queryParams) as { count: number }).count;
 }
 
 export function getRequestLog(id: number): RequestLogEntry | undefined {

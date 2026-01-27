@@ -1,7 +1,8 @@
 <script lang="ts">
+	import ProtobufViewer from '$lib/components/ProtobufViewer.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
-	import ProtobufViewer from '$lib/components/ProtobufViewer.svelte';
+	import { logState } from '$lib/logState.svelte';
 
 	let tripUpdatesUrl = $state('https://webservices.umoiq.com/api/gtfs-rt/v1/trip-updates/unitrans');
 	let vehiclePositionsUrl = $state(
@@ -104,7 +105,10 @@
 		}
 	}
 
-	async function fetchSingleFeed(url: string): Promise<{
+	async function fetchSingleFeed(
+		url: string,
+		sessionId?: string
+	): Promise<{
 		tripUpdates: unknown[];
 		vehiclePositions: unknown[];
 		alerts: unknown[];
@@ -117,7 +121,8 @@
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				url,
-				headers: headers.filter((h) => h.key && h.value)
+				headers: headers.filter((h) => h.key && h.value),
+				sessionId
 			})
 		});
 
@@ -137,18 +142,19 @@
 		error = undefined;
 		saveToLocalStorage();
 
+		const sessionId = crypto.randomUUID();
+
 		try {
 			const results = await Promise.allSettled([
-				fetchSingleFeed(tripUpdatesUrl),
-				fetchSingleFeed(vehiclePositionsUrl),
-				fetchSingleFeed(serviceAlertsUrl)
+				fetchSingleFeed(tripUpdatesUrl, sessionId),
+				fetchSingleFeed(vehiclePositionsUrl, sessionId),
+				fetchSingleFeed(serviceAlertsUrl, sessionId)
 			]);
 
 			const tripData = results[0].status === 'fulfilled' ? results[0].value : null;
 			const vehicleData = results[1].status === 'fulfilled' ? results[1].value : null;
 			const alertData = results[2].status === 'fulfilled' ? results[2].value : null;
 
-			// Collect errors
 			const errors: string[] = [];
 			if (tripUpdatesUrl && results[0].status === 'rejected') {
 				errors.push(`Trip Updates: ${results[0].reason?.message || 'Failed'}`);
@@ -165,7 +171,6 @@
 				return;
 			}
 
-			// Merge all data
 			const allTripUpdates = [
 				...(tripData?.tripUpdates || []),
 				...(vehicleData?.tripUpdates || []),
@@ -186,7 +191,6 @@
 
 			const header = tripData?.header || vehicleData?.header || alertData?.header;
 
-			// Get raw text for each feed type separately
 			const rawTextTripUpdates = (tripData as { rawText?: string })?.rawText || '';
 			const rawTextVehiclePositions = (vehicleData as { rawText?: string })?.rawText || '';
 			const rawTextAlerts = (alertData as { rawText?: string })?.rawText || '';
@@ -204,6 +208,18 @@
 
 			if (errors.length > 0) {
 				error = `Partial success. Errors: ${errors.join('; ')}`;
+			}
+
+			if (feedData) {
+				await fetch('/api/gtfs-rt', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						timestamp: new Date().toISOString(),
+						data: feedData
+					})
+				});
+				logState.triggerUpdate();
 			}
 
 			lastFetchTime = new Date();

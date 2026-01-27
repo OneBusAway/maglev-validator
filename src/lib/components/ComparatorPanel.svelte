@@ -11,7 +11,6 @@
 	let loading = $state(false);
 	let error = $state<string | undefined>(undefined);
 	let isLogging = $state(false);
-	let lastLoggedValues = $state<Record<string, string>>({});
 
 	let server1Base = $state('http://localhost:4000/api/where/');
 	let server2Base = $state('https://unitrans-api.server.onebusawaycloud.com/api/where/');
@@ -106,7 +105,7 @@
 	});
 
 	$effect(() => {
-		const _ = selectedEndpoint;
+		void selectedEndpoint;
 		untrack(() => updateParams());
 	});
 
@@ -181,12 +180,6 @@
 			server2Value: getValueByPath(resp2, keyPath)
 		}));
 
-		const currentValuesStr = JSON.stringify(keys);
-		const logKey = `${selectedEndpoint}:${watchedKeys.join(',')}`;
-		if (lastLoggedValues[logKey] === currentValuesStr) {
-			return;
-		}
-
 		try {
 			isLogging = true;
 			await fetch('/api/keylog', {
@@ -200,7 +193,6 @@
 					response2: resp2
 				})
 			});
-			lastLoggedValues[logKey] = currentValuesStr;
 			logState.triggerUpdate();
 			lastLoggedTime = Date.now();
 			setTimeout(() => {

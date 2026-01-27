@@ -250,11 +250,7 @@
 
 			{#each snapshots as snapshot (snapshot.id)}
 				{@const data = JSON.parse(snapshot.data)}
-				<div class="group relative pb-4 pl-14 last:pb-0">
-					<div
-						class="absolute top-6 left-4 z-10 h-4 w-4 rounded-full border-2 border-gray-600 bg-gray-900 transition-all group-hover:border-indigo-500 group-hover:bg-indigo-600"
-					></div>
-
+				<div class="group relative pb-4 last:pb-0">
 					<button
 						onclick={() => openDetail(snapshot.id)}
 						class="group w-full rounded-lg border border-gray-800 bg-gray-800/60 p-4 text-left transition-all hover:border-indigo-600/60 hover:bg-gray-800 hover:shadow-md"

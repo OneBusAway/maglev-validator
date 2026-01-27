@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import GtfsRealtimeBindings from 'gtfs-realtime-bindings';
+import { insertGtfsRtLog } from '$lib/server/db';
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {
@@ -92,6 +93,21 @@ export const POST: RequestHandler = async ({ request }) => {
 					});
 				}
 			});
+		}
+
+		try {
+			const { sessionId } = await request.clone().json();
+			insertGtfsRtLog({
+				sessionId,
+				timestamp: feedObject.header?.timestamp
+					? new Date(Number(feedObject.header.timestamp) * 1000).toISOString()
+					: new Date().toISOString(),
+				url,
+				header: feedObject.header,
+				entities: feedObject.entity
+			});
+		} catch (dbError) {
+			console.error('Failed to log GTFS-RT to database:', dbError);
 		}
 
 		return json({

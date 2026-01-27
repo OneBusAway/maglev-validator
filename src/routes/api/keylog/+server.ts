@@ -12,7 +12,6 @@ import {
 	type InsertKeyLogParams
 } from '$lib/server/db';
 
-
 export const POST: RequestHandler = async ({ request }) => {
 	try {
 		const body = await request.json();
@@ -56,7 +55,6 @@ export const POST: RequestHandler = async ({ request }) => {
 		);
 	}
 };
-
 
 export const GET: RequestHandler = async ({ url }) => {
 	try {
@@ -115,7 +113,6 @@ export const GET: RequestHandler = async ({ url }) => {
 		);
 	}
 };
-
 
 export const DELETE: RequestHandler = async ({ url }) => {
 	try {

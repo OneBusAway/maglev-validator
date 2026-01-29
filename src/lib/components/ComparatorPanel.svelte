@@ -245,19 +245,36 @@
 		error = undefined;
 
 		const endpoint = endpoints.find((e) => e.id === selectedEndpoint);
-		if (!endpoint) return;
+		if (!endpoint) {
+			loading = false;
+			return;
+		}
 
+		let timeoutId: number | undefined = undefined;
+		let didTimeout = false;
 		try {
 			const url1 = buildUrl(server1Base, endpoint, params);
 			const url2 = buildUrl(server2Base, endpoint, params);
 
-			const response = await fetch('/api/proxy', {
+			const timeoutPromise = new Promise((_, reject) => {
+				timeoutId = window.setTimeout(() => {
+					didTimeout = true;
+					reject(new Error('Request timed out after 5 seconds'));
+				}, 5000);
+			});
+
+			const fetchPromise = fetch('/api/proxy', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ url1, url2 })
 			});
 
-			const data = await response.json();
+			const response = await Promise.race([fetchPromise, timeoutPromise]);
+			if (didTimeout) return;
+
+			if (timeoutId !== undefined) clearTimeout(timeoutId);
+
+			const data = await (response as Response).json();
 
 			if (data.error) {
 				error = data.error;
@@ -269,8 +286,13 @@
 
 			await logWatchedKeys(data.response1, data.response2);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Unknown error';
+			if (didTimeout) {
+				error = 'Request timed out. Please try again.';
+			} else {
+				error = e instanceof Error ? e.message : 'Unknown error';
+			}
 		} finally {
+			if (timeoutId !== undefined) clearTimeout(timeoutId);
 			loading = false;
 		}
 	}

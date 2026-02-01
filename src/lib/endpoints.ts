@@ -51,8 +51,7 @@ export const endpoints = [
 				inPath: false,
 				default: 'true',
 				placeholder: 'true/false (optional)'
-			},
-	
+			}
 		]
 	},
 	{

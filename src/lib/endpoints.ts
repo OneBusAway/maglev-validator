@@ -19,7 +19,40 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
-			}
+			},
+			{
+				name: 'serviceDate',
+				label: 'Service Date',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Unix time in ms (optional)'
+			},
+			{
+				name: 'includeTrip',
+				label: 'Include Trip',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'true/false (optional)'
+			},
+			{
+				name: 'includeSchedule',
+				label: 'Include Schedule',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'true/false (optional)'
+			},
+			{
+				name: 'includeStatus',
+				label: 'Include Status',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'true/false (optional)'
+			},
+	
 		]
 	},
 	{

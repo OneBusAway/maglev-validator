@@ -135,12 +135,16 @@
 	>
 		<div class="mb-5 flex items-center justify-between">
 			<div>
-				<h2 class="text-lg font-semibold text-gray-900 dark:text-white">GTFS-RT Snapshot History</h2>
+				<h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+					GTFS-RT Snapshot History
+				</h2>
 				<p class="text-sm text-gray-500 dark:text-gray-400">
 					Track full system state captures across all real-time feeds
 				</p>
 			</div>
-			<span class="rounded-full bg-indigo-100 px-3 py-1 text-sm font-medium text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300">
+			<span
+				class="rounded-full bg-indigo-100 px-3 py-1 text-sm font-medium text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300"
+			>
 				{#if totalSnapshotsLoading}
 					Loading...
 				{:else if totalSnapshots !== null}
@@ -234,7 +238,9 @@
 	</div>
 
 	{#if snapshots.length === 0 && !loading}
-		<div class="rounded-xl border border-gray-200 bg-white p-16 text-center dark:border-gray-800 dark:bg-gray-900">
+		<div
+			class="rounded-xl border border-gray-200 bg-white p-16 text-center dark:border-gray-800 dark:bg-gray-900"
+		>
 			<div
 				class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
 			>
@@ -248,7 +254,9 @@
 				</svg>
 			</div>
 			<h3 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">No Snapshots Found</h3>
-			<p class="text-gray-500 dark:text-gray-400">Fetches in the "GTFS Realtime" tab will appear here.</p>
+			<p class="text-gray-500 dark:text-gray-400">
+				Fetches in the "GTFS Realtime" tab will appear here.
+			</p>
 		</div>
 	{:else}
 		<div
@@ -264,7 +272,9 @@
 						<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 							<div class="flex flex-col gap-6 sm:flex-row sm:items-center">
 								<div class="min-w-35">
-									<div class="text-xs font-bold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+									<div
+										class="text-xs font-bold tracking-wide text-gray-400 uppercase dark:text-gray-500"
+									>
 										Timestamp
 									</div>
 									<div class="mt-0.5 text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -272,9 +282,15 @@
 									</div>
 								</div>
 
-								<div class="flex flex-wrap gap-6 border-l border-gray-200 pl-6 dark:border-gray-700">
+								<div
+									class="flex flex-wrap gap-6 border-l border-gray-200 pl-6 dark:border-gray-700"
+								>
 									<div class="min-w-15">
-										<div class="text-xs font-bold tracking-wide text-gray-400 uppercase dark:text-gray-500">Trips</div>
+										<div
+											class="text-xs font-bold tracking-wide text-gray-400 uppercase dark:text-gray-500"
+										>
+											Trips
+										</div>
 										<div
 											class="text-xl font-black {data.tripUpdates?.length
 												? 'text-blue-500 dark:text-blue-400'
@@ -284,7 +300,9 @@
 										</div>
 									</div>
 									<div class="min-w-15">
-										<div class="text-xs font-bold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+										<div
+											class="text-xs font-bold tracking-wide text-gray-400 uppercase dark:text-gray-500"
+										>
 											Vehicles
 										</div>
 										<div
@@ -349,13 +367,13 @@
 
 {#if showDetail && selectedData}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 backdrop-blur-sm dark:bg-black/80 sm:p-6"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 backdrop-blur-sm sm:p-6 dark:bg-black/80"
 		transition:fade={{ duration: 150 }}
 		role="dialog"
 		aria-modal="true"
 	>
 		<div
-			class="flex h-[96vh] w-full max-w-[98vw] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 sm:max-w-400"
+			class="flex h-[96vh] w-full max-w-[98vw] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl sm:max-w-400 dark:border-gray-700 dark:bg-gray-900"
 			in:fly={{ y: 30, duration: 250 }}
 		>
 			<div
@@ -408,7 +426,9 @@
 				/>
 			</div>
 
-			<div class="flex justify-end border-t border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-800 dark:bg-gray-950/50">
+			<div
+				class="flex justify-end border-t border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-800 dark:bg-gray-950/50"
+			>
 				<button
 					onclick={() => (showDetail = false)}
 					class="rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700"

@@ -17,7 +17,6 @@ import {
 } from '$lib/server/db';
 
 function parseCSV(content: string): { columns: string[]; data: Record<string, string>[] } {
-
 	if (content.charCodeAt(0) === 0xfeff) {
 		content = content.slice(1);
 	}

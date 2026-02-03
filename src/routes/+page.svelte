@@ -1,12 +1,12 @@
-<!-- UI Version 2.0.1 - Cache Busting -->
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import ComparatorPanel from '$lib/components/ComparatorPanel.svelte';
 	import ProtobufPanel from '$lib/components/ProtobufPanel.svelte';
 	import KeyLogViewer from '$lib/components/KeyLogViewer.svelte';
 	import GtfsRtLogViewer from '$lib/components/GtfsRtLogViewer.svelte';
+	import GtfsStaticViewer from '$lib/components/GtfsStaticViewer.svelte';
 
-	let activeTab = $state<'comparator' | 'protobuf' | 'logger'>('comparator');
+	let activeTab = $state<'comparator' | 'protobuf' | 'logger' | 'gtfs-static'>('comparator');
 	let loggerSubTab = $state<'api' | 'gtfsrt'>('api');
 	let theme = $state('light');
 
@@ -19,7 +19,7 @@
 					activeTab = 'logger';
 					loggerSubTab = saved === 'keylogger' ? 'api' : 'gtfsrt';
 				} else {
-					activeTab = saved as 'comparator' | 'protobuf' | 'logger';
+					activeTab = saved as 'comparator' | 'protobuf' | 'logger' | 'gtfs-static';
 				}
 			}
 			if (localStorage.loggerSubTab) loggerSubTab = localStorage.loggerSubTab as 'api' | 'gtfsrt';
@@ -81,7 +81,6 @@
 				>
 			</div>
 
-			<!-- Main Tabs - centered -->
 			<div class="absolute left-1/2 -translate-x-1/2">
 				<div
 					class="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-100 p-1 dark:border-gray-800 dark:bg-gray-800"
@@ -119,6 +118,23 @@
 							></path></svg
 						>
 						<span>GTFS Realtime</span>
+					</button>
+					<button
+						onclick={() => (activeTab = 'gtfs-static')}
+						class="flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium transition-all {activeTab ===
+						'gtfs-static'
+							? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+							: 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}"
+					>
+						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+							><path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+							></path></svg
+						>
+						<span>GTFS Static</span>
 					</button>
 					<button
 						onclick={() => (activeTab = 'logger')}
@@ -176,6 +192,9 @@
 		</div>
 		<div class={activeTab === 'protobuf' ? '' : 'hidden'}>
 			<ProtobufPanel />
+		</div>
+		<div class={activeTab === 'gtfs-static' ? '' : 'hidden'}>
+			<GtfsStaticViewer />
 		</div>
 		<div class={activeTab === 'logger' ? '' : 'hidden'}>
 			<div class="mb-6 flex justify-center">

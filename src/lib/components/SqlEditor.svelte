@@ -20,7 +20,7 @@
 
 	let editorContainer: HTMLDivElement;
 	let editorView: EditorView | null = null;
-	let lastExternalValue = value; 
+	let lastExternalValue = value;
 
 	function getCompletions(context: CompletionContext) {
 		const word = context.matchBefore(/\w*/);

@@ -77,6 +77,37 @@ function initializeDatabase(database: Database.Database) {
 
 		CREATE INDEX IF NOT EXISTS idx_gtfs_rt_snapshots_created
 		ON gtfs_rt_snapshots(created_at);
+
+		-- GTFS Static tables
+		CREATE TABLE IF NOT EXISTS gtfs_static_feeds (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL,
+			source_url TEXT,
+			created_at INTEGER DEFAULT (strftime('%s', 'now'))
+		);
+
+		CREATE TABLE IF NOT EXISTS gtfs_static_files (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			feed_id INTEGER NOT NULL,
+			filename TEXT NOT NULL,
+			columns TEXT NOT NULL,
+			row_count INTEGER NOT NULL,
+			created_at INTEGER DEFAULT (strftime('%s', 'now')),
+			FOREIGN KEY(feed_id) REFERENCES gtfs_static_feeds(id) ON DELETE CASCADE
+		);
+
+		CREATE INDEX IF NOT EXISTS idx_gtfs_static_files_feed
+		ON gtfs_static_files(feed_id);
+
+		CREATE TABLE IF NOT EXISTS gtfs_static_data (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			file_id INTEGER NOT NULL,
+			row_data TEXT NOT NULL,
+			FOREIGN KEY(file_id) REFERENCES gtfs_static_files(id) ON DELETE CASCADE
+		);
+
+		CREATE INDEX IF NOT EXISTS idx_gtfs_static_data_file
+		ON gtfs_static_data(file_id);
 	`);
 }
 
@@ -394,4 +425,362 @@ export function clearGtfsRtSnapshots(): number {
 	const db = getDatabase();
 	const stmt = db.prepare('DELETE FROM gtfs_rt_snapshots');
 	return stmt.run().changes;
+}
+
+export interface GtfsStaticFeed {
+	id: number;
+	name: string;
+	source_url: string | null;
+	created_at: number;
+}
+
+export interface GtfsStaticFile {
+	id: number;
+	feed_id: number;
+	filename: string;
+	columns: string;
+	row_count: number;
+	created_at: number;
+}
+
+export interface GtfsStaticDataRow {
+	id: number;
+	file_id: number;
+	row_data: string;
+}
+
+export function createGtfsStaticFeed(name: string, sourceUrl?: string): number {
+	const db = getDatabase();
+	const stmt = db.prepare(`
+		INSERT INTO gtfs_static_feeds (name, source_url)
+		VALUES (?, ?)
+	`);
+	const info = stmt.run(name, sourceUrl || null);
+	return info.lastInsertRowid as number;
+}
+
+export function getGtfsStaticFeeds(): GtfsStaticFeed[] {
+	const db = getDatabase();
+	const stmt = db.prepare('SELECT * FROM gtfs_static_feeds ORDER BY created_at DESC');
+	return stmt.all() as GtfsStaticFeed[];
+}
+
+export function deleteGtfsStaticFeed(feedId: number): number {
+	const db = getDatabase();
+	const stmt = db.prepare('DELETE FROM gtfs_static_feeds WHERE id = ?');
+	return stmt.run(feedId).changes;
+}
+
+export function createGtfsStaticFile(
+	feedId: number,
+	filename: string,
+	columns: string[],
+	rowCount: number
+): number {
+	const db = getDatabase();
+	const stmt = db.prepare(`
+		INSERT INTO gtfs_static_files (feed_id, filename, columns, row_count)
+		VALUES (?, ?, ?, ?)
+	`);
+	const info = stmt.run(feedId, filename, JSON.stringify(columns), rowCount);
+	return info.lastInsertRowid as number;
+}
+
+export function getGtfsStaticFiles(feedId: number): GtfsStaticFile[] {
+	const db = getDatabase();
+	const stmt = db.prepare('SELECT * FROM gtfs_static_files WHERE feed_id = ? ORDER BY filename');
+	return stmt.all(feedId) as GtfsStaticFile[];
+}
+
+export function insertGtfsStaticDataBatch(fileId: number, rows: Record<string, string>[]): void {
+	const db = getDatabase();
+	const stmt = db.prepare(`
+		INSERT INTO gtfs_static_data (file_id, row_data)
+		VALUES (?, ?)
+	`);
+
+	const batchSize = 1000;
+	const insertBatch = db.transaction((batch: Record<string, string>[]) => {
+		for (const row of batch) {
+			stmt.run(fileId, JSON.stringify(row));
+		}
+	});
+
+	// Insert in batches to avoid memory issues
+	for (let i = 0; i < rows.length; i += batchSize) {
+		const batch = rows.slice(i, i + batchSize);
+		insertBatch(batch);
+	}
+}
+
+export interface QueryGtfsStaticDataParams {
+	fileId: number;
+	search?: string;
+	searchColumns?: string[];
+	sortColumn?: string;
+	sortDirection?: 'asc' | 'desc';
+	page?: number;
+	pageSize?: number;
+}
+
+export interface QueryGtfsStaticDataResult {
+	rows: Record<string, string>[];
+	totalCount: number;
+	page: number;
+	pageSize: number;
+	totalPages: number;
+}
+
+export function queryGtfsStaticData(params: QueryGtfsStaticDataParams): QueryGtfsStaticDataResult {
+	const db = getDatabase();
+	const {
+		fileId,
+		search,
+		searchColumns,
+		sortColumn,
+		sortDirection = 'asc',
+		page = 1,
+		pageSize = 50
+	} = params;
+
+	let countQuery = 'SELECT COUNT(*) as count FROM gtfs_static_data WHERE file_id = ?';
+	const countParams: unknown[] = [fileId];
+
+	if (search && search.trim()) {
+		countQuery += ' AND row_data LIKE ?';
+		countParams.push(`%${search}%`);
+	}
+
+	const countStmt = db.prepare(countQuery);
+	const totalCount = (countStmt.get(...countParams) as { count: number }).count;
+
+	let dataQuery = 'SELECT row_data FROM gtfs_static_data WHERE file_id = ?';
+	const dataParams: unknown[] = [fileId];
+
+	if (search && search.trim()) {
+		dataQuery += ' AND row_data LIKE ?';
+		dataParams.push(`%${search}%`);
+	}
+
+	const offset = (page - 1) * pageSize;
+	dataQuery += ' LIMIT ? OFFSET ?';
+	dataParams.push(pageSize, offset);
+
+	const dataStmt = db.prepare(dataQuery);
+	const rawRows = dataStmt.all(...dataParams) as { row_data: string }[];
+
+	let rows = rawRows.map((r) => JSON.parse(r.row_data) as Record<string, string>);
+
+	if (sortColumn) {
+		rows.sort((a, b) => {
+			const aVal = a[sortColumn] || '';
+			const bVal = b[sortColumn] || '';
+
+			const aNum = parseFloat(aVal);
+			const bNum = parseFloat(bVal);
+			if (!isNaN(aNum) && !isNaN(bNum)) {
+				return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+			}
+
+			const cmp = aVal.localeCompare(bVal);
+			return sortDirection === 'asc' ? cmp : -cmp;
+		});
+	}
+
+	return {
+		rows,
+		totalCount,
+		page,
+		pageSize,
+		totalPages: Math.ceil(totalCount / pageSize) || 1
+	};
+}
+
+export function getGtfsStaticFileInfo(fileId: number): GtfsStaticFile | undefined {
+	const db = getDatabase();
+	const stmt = db.prepare('SELECT * FROM gtfs_static_files WHERE id = ?');
+	return stmt.get(fileId) as GtfsStaticFile | undefined;
+}
+
+export function clearGtfsStaticData(): number {
+	const db = getDatabase();
+	db.exec('DELETE FROM gtfs_static_data');
+	db.exec('DELETE FROM gtfs_static_files');
+	const stmt = db.prepare('DELETE FROM gtfs_static_feeds');
+	return stmt.run().changes;
+}
+
+export interface CustomQueryResult {
+	columns: string[];
+	rows: Record<string, unknown>[];
+	rowCount: number;
+	executionTime: number;
+	truncated: boolean;
+}
+
+export function executeCustomQuery(query: string, limit: number = 1000): CustomQueryResult {
+	const db = getDatabase();
+	const startTime = performance.now();
+
+	let cleanQuery = query.trim();
+	while (cleanQuery.endsWith(';')) {
+		cleanQuery = cleanQuery.slice(0, -1).trim();
+	}
+
+	let finalQuery = cleanQuery;
+	if (!cleanQuery.toLowerCase().includes(' limit ')) {
+		finalQuery = `${cleanQuery} LIMIT ${limit + 1}`;
+	}
+
+	const stmt = db.prepare(finalQuery);
+	const rawRows = stmt.all() as Record<string, unknown>[];
+
+	const executionTime = performance.now() - startTime;
+
+	const truncated = rawRows.length > limit;
+	const rows = truncated ? rawRows.slice(0, limit) : rawRows;
+
+	const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
+
+	return {
+		columns,
+		rows,
+		rowCount: rows.length,
+		executionTime: Math.round(executionTime * 100) / 100,
+		truncated
+	};
+}
+
+export interface GtfsTableInfo {
+	name: string;
+	displayName: string;
+	columns: string[];
+	rowCount: number;
+}
+
+export function getGtfsTableNames(feedId?: number): GtfsTableInfo[] {
+	const db = getDatabase();
+
+	let targetFeedId = feedId;
+	if (!targetFeedId) {
+		const latestFeed = db
+			.prepare(
+				`
+			SELECT id FROM gtfs_static_feeds ORDER BY created_at DESC LIMIT 1
+		`
+			)
+			.get() as { id: number } | undefined;
+		targetFeedId = latestFeed?.id;
+	}
+
+	if (!targetFeedId) {
+		return [];
+	}
+
+	const files = db
+		.prepare(
+			`
+		SELECT f.id, f.filename, f.columns, f.row_count
+		FROM gtfs_static_files f
+		WHERE f.feed_id = ?
+		ORDER BY f.filename
+	`
+		)
+		.all(targetFeedId) as { id: number; filename: string; columns: string; row_count: number }[];
+
+	return files.map((f) => {
+		const columns = JSON.parse(f.columns) as string[];
+		const tableName = f.filename.replace('.txt', '');
+		return {
+			name: tableName,
+			displayName: f.filename,
+			columns,
+			rowCount: f.row_count
+		};
+	});
+}
+
+export function createGtfsViews(feedId: number): void {
+	const db = getDatabase();
+	
+	const files = db
+		.prepare(
+			`
+		SELECT id, filename, columns FROM gtfs_static_files WHERE feed_id = ?
+	`
+		)
+		.all(feedId) as { id: number; filename: string; columns: string }[];
+
+	const existingViews = db
+		.prepare(
+			`
+		SELECT name FROM sqlite_master WHERE type='view'
+	`
+		)
+		.all() as { name: string }[];
+
+	for (const view of existingViews) {
+		try {
+			db.exec(`DROP VIEW IF EXISTS "${view.name}"`);
+		} catch {}
+	}
+
+	for (const file of files) {
+		const columns = JSON.parse(file.columns) as string[];
+		const viewName = file.filename.replace('.txt', '');
+
+		const columnExprs = columns
+			.map((col) => `json_extract(row_data, '$.${col}') as "${col}"`)
+			.join(', ');
+
+		const viewQuery = `
+			CREATE VIEW "${viewName}" AS
+			SELECT ${columnExprs}
+			FROM gtfs_static_data
+			WHERE file_id = ${file.id}
+		`;
+
+		try {
+			db.exec(viewQuery);
+			console.log(`Created view: ${viewName}`);
+		} catch (e) {
+			console.warn(`Failed to create view ${viewName}:`, e);
+		}
+	}
+}
+
+export function recreateLatestFeedViews(): {
+	success: boolean;
+	feedId?: number;
+	viewCount?: number;
+} {
+	const db = getDatabase();
+
+	const latestFeed = db
+		.prepare(
+			`
+		SELECT id FROM gtfs_static_feeds ORDER BY created_at DESC LIMIT 1
+	`
+		)
+		.get() as { id: number } | undefined;
+
+	if (!latestFeed) {
+		return { success: false };
+	}
+
+	createGtfsViews(latestFeed.id);
+
+	const views = db
+		.prepare(
+			`
+		SELECT COUNT(*) as count FROM sqlite_master WHERE type='view'
+	`
+		)
+		.get() as { count: number };
+
+	return {
+		success: true,
+		feedId: latestFeed.id,
+		viewCount: views.count
+	};
 }

@@ -702,7 +702,7 @@ export function getGtfsTableNames(feedId?: number): GtfsTableInfo[] {
 
 export function createGtfsViews(feedId: number): void {
 	const db = getDatabase();
-	
+
 	const files = db
 		.prepare(
 			`

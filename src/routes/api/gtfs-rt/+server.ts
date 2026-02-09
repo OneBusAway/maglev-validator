@@ -26,11 +26,24 @@ export const GET: RequestHandler = async ({ url }) => {
 	if (type === 'snapshot') {
 		const limit = url.searchParams.get('limit');
 		const since = url.searchParams.get('since');
+		const offset = url.searchParams.get('offset');
+
+		const requestedLimit = limit ? Number(limit) : 10;
+
 		const snapshots = getGtfsRtSnapshots({
-			limit: limit ? Number(limit) : 100,
-			since: since || undefined
+			limit: requestedLimit,
+			since: since || undefined,
+			offset: offset ? Number(offset) : undefined
 		});
-		return json({ snapshots });
+
+		return json({
+			snapshots,
+			pagination: {
+				limit: requestedLimit,
+				offset: offset ? Number(offset) : 0,
+				hasMore: snapshots.length === requestedLimit
+			}
+		});
 	}
 
 	const logs = getGtfsRtLogs(limit ? Number(limit) : 100);

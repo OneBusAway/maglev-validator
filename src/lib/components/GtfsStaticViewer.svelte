@@ -276,6 +276,7 @@
 	let fileInputRef = $state<HTMLInputElement | null>(null);
 	let dragOver = $state(false);
 	let isSearching = $state(false);
+	let showGtfsInput = $state(true);
 
 	let activeTab = $state<'browser' | 'sql'>('browser');
 	let sqlQuery = $state('SELECT * FROM stops LIMIT 100');
@@ -302,6 +303,8 @@
 	let newFavoriteName = $state('');
 	let isDarkMode = $state(false);
 	let sqlResultSearch = $state('');
+	let sqlResultPage = $state(1);
+	let sqlResultPageSize = $state(50);
 
 	let filteredSqlRows = $derived.by(() => {
 		if (!sqlResult || !sqlResultSearch.trim()) {
@@ -315,6 +318,20 @@
 					.includes(searchLower)
 			)
 		);
+	});
+
+	let sqlTotalPages = $derived(Math.ceil(filteredSqlRows.length / sqlResultPageSize) || 1);
+
+	let paginatedSqlRows = $derived.by(() => {
+		const start = (sqlResultPage - 1) * sqlResultPageSize;
+		const end = start + sqlResultPageSize;
+		return filteredSqlRows.slice(start, end);
+	});
+
+	$effect(() => {
+		if (sqlResultSearch) {
+			sqlResultPage = 1;
+		}
 	});
 
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -648,6 +665,7 @@
 			uploadProgress = '';
 			uploadProgressPercent = 0;
 			currentProcessingFile = '';
+			showGtfsInput = false; // Auto-collapse input section after successful load
 			console.log('Successfully loaded', gtfsFiles.length, 'GTFS files to database');
 		} catch (e) {
 			console.error('Error processing zip:', e);
@@ -1027,6 +1045,7 @@
 		sqlError = null;
 		sqlResult = null;
 		sqlResultSearch = '';
+		sqlResultPage = 1;
 
 		try {
 			const response = await fetch('/api/gtfs-static-db', {
@@ -1035,7 +1054,7 @@
 				body: JSON.stringify({
 					action: 'sql',
 					query: sqlQuery,
-					limit: 1000
+					limit: 10000
 				})
 			});
 
@@ -1145,90 +1164,246 @@
 </script>
 
 <div class="space-y-6">
-	<div
-		class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
-	>
-		<h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Load GTFS Static Feed</h2>
-
-		<div class="mb-4">
-			<label
-				for="gtfs-url-input"
-				class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+	{#if gtfsFiles.length > 0 && !showGtfsInput && !loading}
+		<!-- Collapsed state: show small button to expand -->
+		<div class="flex items-center gap-3">
+			<button
+				onclick={() => {
+					showGtfsInput = true;
+				}}
+				class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
 			>
-				Fetch from URL
-			</label>
-			<div class="flex gap-2">
-				<div class="relative flex-1">
-					<input
-						id="gtfs-url-input"
-						type="url"
-						bind:value={feedUrl}
-						placeholder="https://example.com/gtfs.zip"
-						disabled={loading}
-						class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
-						onkeydown={(e) => e.key === 'Enter' && !loading && fetchFromUrl()}
+				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M12 4v16m8-8H4"
 					/>
-					{#if savedUrls.length > 0}
-						<div class="absolute top-1/2 right-2 -translate-y-1/2">
-							<div class="group relative">
-								<button
-									class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-									title="Recent URLs"
-								>
-									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-										/>
-									</svg>
-								</button>
-								<div
-									class="absolute top-full right-0 z-10 mt-1 hidden max-h-48 w-80 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg group-hover:block dark:border-gray-700 dark:bg-gray-800"
-								>
-									{#each savedUrls as url}
-										<div
-											class="flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700"
-										>
-											<button
-												onclick={() => {
-													feedUrl = url;
-													fetchFromUrl();
-												}}
-												class="flex-1 truncate text-left text-sm text-gray-700 dark:text-gray-300"
+				</svg>
+				Load New GTFS Feed
+			</button>
+			<span class="text-sm text-gray-500 dark:text-gray-400">
+				{gtfsFiles.length} files loaded
+			</span>
+		</div>
+	{:else}
+		<div
+			class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+		>
+			<div class="mb-4 flex items-center justify-between">
+				<h2 class="text-lg font-semibold text-gray-900 dark:text-white">Load GTFS Static Feed</h2>
+				{#if gtfsFiles.length > 0 && !loading}
+					<button
+						onclick={() => {
+							showGtfsInput = false;
+						}}
+						class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+						title="Collapse this section"
+					>
+						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M5 15l7-7 7 7"
+							/>
+						</svg>
+						Collapse
+					</button>
+				{/if}
+			</div>
+
+			<div class="mb-4">
+				<label
+					for="gtfs-url-input"
+					class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+				>
+					Fetch from URL
+				</label>
+				<div class="flex gap-2">
+					<div class="relative flex-1">
+						<input
+							id="gtfs-url-input"
+							type="url"
+							bind:value={feedUrl}
+							placeholder="https://example.com/gtfs.zip"
+							disabled={loading}
+							class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+							onkeydown={(e) => e.key === 'Enter' && !loading && fetchFromUrl()}
+						/>
+						{#if savedUrls.length > 0}
+							<div class="absolute top-1/2 right-2 -translate-y-1/2">
+								<div class="group relative">
+									<button
+										class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+										title="Recent URLs"
+									>
+										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+											/>
+										</svg>
+									</button>
+									<div
+										class="absolute top-full right-0 z-10 mt-1 hidden max-h-48 w-80 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg group-hover:block dark:border-gray-700 dark:bg-gray-800"
+									>
+										{#each savedUrls as url}
+											<div
+												class="flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700"
 											>
-												{url}
-											</button>
-											<button
-												onclick={() => removeUrl(url)}
-												class="ml-2 text-gray-400 hover:text-red-500"
-												title="Remove URL"
-												aria-label="Remove URL from history"
-											>
-												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M6 18L18 6M6 6l12 12"
-													/>
-												</svg>
-											</button>
-										</div>
-									{/each}
+												<button
+													onclick={() => {
+														feedUrl = url;
+														fetchFromUrl();
+													}}
+													class="flex-1 truncate text-left text-sm text-gray-700 dark:text-gray-300"
+												>
+													{url}
+												</button>
+												<button
+													onclick={() => removeUrl(url)}
+													class="ml-2 text-gray-400 hover:text-red-500"
+													title="Remove URL"
+													aria-label="Remove URL from history"
+												>
+													<svg
+														class="h-4 w-4"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="2"
+															d="M6 18L18 6M6 6l12 12"
+														/>
+													</svg>
+												</button>
+											</div>
+										{/each}
+									</div>
 								</div>
 							</div>
-						</div>
-					{/if}
+						{/if}
+					</div>
+					<button
+						onclick={fetchFromUrl}
+						disabled={loading}
+						class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						{#if loading}
+							<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+								<circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								></circle>
+								<path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+								></path>
+							</svg>
+						{:else}
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+								/>
+							</svg>
+						{/if}
+						Fetch
+					</button>
 				</div>
-				<button
-					onclick={fetchFromUrl}
-					disabled={loading}
-					class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+			</div>
+
+			<div class="mb-4">
+				<label
+					for="gtfs-file-input"
+					class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
 				>
-					{#if loading}
-						<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+					Or upload a file
+				</label>
+				<div
+					class="relative rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition-colors dark:border-gray-700 {loading
+						? 'cursor-not-allowed opacity-50'
+						: ''} {dragOver && !loading
+						? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+						: 'hover:border-gray-400 dark:hover:border-gray-600'}"
+					ondrop={loading ? undefined : handleDrop}
+					ondragover={loading ? undefined : handleDragOver}
+					ondragleave={loading ? undefined : handleDragLeave}
+					role="button"
+					tabindex={loading ? -1 : 0}
+				>
+					<input
+						id="gtfs-file-input"
+						type="file"
+						accept=".zip"
+						bind:this={fileInputRef}
+						onchange={handleFileUpload}
+						disabled={loading}
+						class="absolute inset-0 cursor-pointer opacity-0 {loading ? 'pointer-events-none' : ''}"
+					/>
+					<svg
+						class="mx-auto h-10 w-10 text-gray-400"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+						/>
+					</svg>
+					<p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+						<span class="font-medium text-blue-600 dark:text-blue-400">Click to upload</span> or drag
+						and drop
+					</p>
+					<p class="mt-1 text-xs text-gray-500 dark:text-gray-500">GTFS zip file</p>
+				</div>
+			</div>
+
+			{#if error}
+				<div
+					class="rounded-lg bg-red-50 p-4 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400"
+				>
+					<div class="flex items-center gap-2">
+						<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+							/>
+						</svg>
+						{error}
+					</div>
+				</div>
+			{/if}
+
+			{#if loading}
+				<div
+					class="flex flex-col items-center justify-center gap-4 rounded-lg bg-blue-50 p-6 dark:bg-blue-900/20"
+				>
+					<div class="flex items-center gap-3">
+						<svg
+							class="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400"
+							fill="none"
+							viewBox="0 0 24 24"
+						>
 							<circle
 								class="opacity-25"
 								cx="12"
@@ -1243,128 +1418,29 @@
 								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 							></path>
 						</svg>
-					{:else}
-						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-							/>
-						</svg>
-					{/if}
-					Fetch
-				</button>
-			</div>
-		</div>
-
-		<div class="mb-4">
-			<label
-				for="gtfs-file-input"
-				class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
-			>
-				Or upload a file
-			</label>
-			<div
-				class="relative rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition-colors dark:border-gray-700 {loading
-					? 'cursor-not-allowed opacity-50'
-					: ''} {dragOver && !loading
-					? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-					: 'hover:border-gray-400 dark:hover:border-gray-600'}"
-				ondrop={loading ? undefined : handleDrop}
-				ondragover={loading ? undefined : handleDragOver}
-				ondragleave={loading ? undefined : handleDragLeave}
-				role="button"
-				tabindex={loading ? -1 : 0}
-			>
-				<input
-					id="gtfs-file-input"
-					type="file"
-					accept=".zip"
-					bind:this={fileInputRef}
-					onchange={handleFileUpload}
-					disabled={loading}
-					class="absolute inset-0 cursor-pointer opacity-0 {loading ? 'pointer-events-none' : ''}"
-				/>
-				<svg
-					class="mx-auto h-10 w-10 text-gray-400"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-					/>
-				</svg>
-				<p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-					<span class="font-medium text-blue-600 dark:text-blue-400">Click to upload</span> or drag and
-					drop
-				</p>
-				<p class="mt-1 text-xs text-gray-500 dark:text-gray-500">GTFS zip file</p>
-			</div>
-		</div>
-
-		{#if error}
-			<div
-				class="rounded-lg bg-red-50 p-4 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400"
-			>
-				<div class="flex items-center gap-2">
-					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-						/>
-					</svg>
-					{error}
-				</div>
-			</div>
-		{/if}
-
-		{#if loading}
-			<div
-				class="flex flex-col items-center justify-center gap-4 rounded-lg bg-blue-50 p-6 dark:bg-blue-900/20"
-			>
-				<div class="flex items-center gap-3">
-					<svg
-						class="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400"
-						fill="none"
-						viewBox="0 0 24 24"
-					>
-						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
-						></circle>
-						<path
-							class="opacity-75"
-							fill="currentColor"
-							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-						></path>
-					</svg>
-					<span class="text-sm font-medium text-blue-700 dark:text-blue-300">
-						{uploadProgress || 'Loading GTFS feed...'}
-					</span>
-				</div>
-
-				{#if uploadProgressPercent > 0}
-					<div class="w-full max-w-md">
-						<div class="mb-1 flex justify-between text-xs text-gray-600 dark:text-gray-400">
-							<span>{currentProcessingFile || 'Processing...'}</span>
-							<span>{uploadProgressPercent}%</span>
-						</div>
-						<div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-							<div
-								class="h-full rounded-full bg-blue-600 transition-all duration-300 ease-out dark:bg-blue-500"
-								style="width: {uploadProgressPercent}%"
-							></div>
-						</div>
+						<span class="text-sm font-medium text-blue-700 dark:text-blue-300">
+							{uploadProgress || 'Loading GTFS feed...'}
+						</span>
 					</div>
-				{/if}
-			</div>
-		{/if}
-	</div>
+
+					{#if uploadProgressPercent > 0}
+						<div class="w-full max-w-md">
+							<div class="mb-1 flex justify-between text-xs text-gray-600 dark:text-gray-400">
+								<span>{currentProcessingFile || 'Processing...'}</span>
+								<span>{uploadProgressPercent}%</span>
+							</div>
+							<div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+								<div
+									class="h-full rounded-full bg-blue-600 transition-all duration-300 ease-out dark:bg-blue-500"
+									style="width: {uploadProgressPercent}%"
+								></div>
+							</div>
+						</div>
+					{/if}
+				</div>
+			{/if}
+		</div>
+	{/if}
 
 	{#if gtfsFiles.length > 0}
 		<div class="mb-4 flex border-b border-gray-200 dark:border-gray-700">
@@ -2136,7 +2212,7 @@
 											<span
 												class="rounded bg-yellow-100 px-2 py-0.5 text-xs text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
 											>
-												Results truncated to 1000 rows
+												Results truncated to 10,000 rows
 											</span>
 										{/if}
 									</div>
@@ -2216,7 +2292,7 @@
 										</tr>
 									</thead>
 									<tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-										{#each filteredSqlRows as row}
+										{#each paginatedSqlRows as row}
 											<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
 												{#each sqlResult.columns as column}
 													<td class="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
@@ -2236,6 +2312,105 @@
 									{:else}
 										Query returned no results
 									{/if}
+								</div>
+							{:else if sqlTotalPages > 1}
+								<div
+									class="flex items-center justify-between border-t border-gray-200 px-4 py-3 dark:border-gray-700"
+								>
+									<div class="flex items-center gap-2">
+										<span class="text-sm text-gray-600 dark:text-gray-400">Rows per page:</span>
+										<select
+											bind:value={sqlResultPageSize}
+											onchange={() => {
+												sqlResultPage = 1;
+											}}
+											class="rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+										>
+											<option value={25}>25</option>
+											<option value={50}>50</option>
+											<option value={100}>100</option>
+											<option value={250}>250</option>
+										</select>
+									</div>
+
+									<div class="flex items-center gap-2">
+										<span class="text-sm text-gray-600 dark:text-gray-400">
+											Page {sqlResultPage} of {sqlTotalPages}
+											<span class="text-gray-400"
+												>({filteredSqlRows.length.toLocaleString()} rows)</span
+											>
+										</span>
+										<div class="flex gap-1">
+											<button
+												onclick={() => {
+													sqlResultPage = 1;
+												}}
+												disabled={sqlResultPage === 1}
+												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
+												title="First page"
+											>
+												<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+													/>
+												</svg>
+											</button>
+											<button
+												onclick={() => {
+													sqlResultPage = Math.max(1, sqlResultPage - 1);
+												}}
+												disabled={sqlResultPage === 1}
+												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
+												title="Previous page"
+											>
+												<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M15 19l-7-7 7-7"
+													/>
+												</svg>
+											</button>
+											<button
+												onclick={() => {
+													sqlResultPage = Math.min(sqlTotalPages, sqlResultPage + 1);
+												}}
+												disabled={sqlResultPage === sqlTotalPages}
+												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
+												title="Next page"
+											>
+												<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M9 5l7 7-7 7"
+													/>
+												</svg>
+											</button>
+											<button
+												onclick={() => {
+													sqlResultPage = sqlTotalPages;
+												}}
+												disabled={sqlResultPage === sqlTotalPages}
+												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
+												title="Last page"
+											>
+												<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M13 5l7 7-7 7M5 5l7 7-7 7"
+													/>
+												</svg>
+											</button>
+										</div>
+									</div>
 								</div>
 							{/if}
 						{:else if !sqlError && !sqlLoading}

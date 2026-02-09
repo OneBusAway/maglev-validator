@@ -5,10 +5,12 @@
 	import KeyLogViewer from '$lib/components/KeyLogViewer.svelte';
 	import GtfsRtLogViewer from '$lib/components/GtfsRtLogViewer.svelte';
 	import GtfsStaticViewer from '$lib/components/GtfsStaticViewer.svelte';
+	import ToolsPanel from '$lib/components/ToolsPanel.svelte';
 
 	let activeTab = $state<'comparator' | 'protobuf' | 'logger' | 'gtfs-static'>('comparator');
 	let loggerSubTab = $state<'api' | 'gtfsrt'>('api');
 	let theme = $state('light');
+	let isToolsOpen = $state(false);
 
 	onMount(() => {
 		if (typeof localStorage !== 'undefined') {
@@ -158,6 +160,20 @@
 
 			<div class="flex items-center gap-3">
 				<button
+					onclick={() => (isToolsOpen = !isToolsOpen)}
+					class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+					title="Developer Tools"
+				>
+					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+						></path>
+					</svg>
+				</button>
+				<button
 					onclick={toggleTheme}
 					class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
 					title="Toggle theme"
@@ -226,4 +242,6 @@
 			</div>
 		</div>
 	</main>
+
+	<ToolsPanel bind:isOpen={isToolsOpen} />
 </div>

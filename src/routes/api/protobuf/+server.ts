@@ -3,13 +3,34 @@ import type { RequestHandler } from './$types';
 import GtfsRealtimeBindings from 'gtfs-realtime-bindings';
 import { insertGtfsRtLog } from '$lib/server/db';
 
+// Maximum entities to return per type to prevent OOM
+const DEFAULT_ENTITY_LIMIT = 500;
+const MAX_ENTITY_LIMIT = 2000;
+
 export const POST: RequestHandler = async ({ request }) => {
 	try {
-		const { url, headers, sessionId } = await request.json();
+		const {
+			url,
+			headers,
+			sessionId,
+			limit: requestedLimit,
+			offset: requestedOffset
+		} = await request.json();
 
 		if (!url) {
 			return json({ error: 'URL is required' }, { status: 400 });
 		}
+
+		const entityLimit = Math.min(
+			Math.max(1, requestedLimit || DEFAULT_ENTITY_LIMIT),
+			MAX_ENTITY_LIMIT
+		);
+
+		const offset = {
+			tripUpdates: Math.max(0, requestedOffset?.tripUpdates || 0),
+			vehiclePositions: Math.max(0, requestedOffset?.vehiclePositions || 0),
+			alerts: Math.max(0, requestedOffset?.alerts || 0)
+		};
 
 		const fetchHeaders: Record<string, string> = {};
 		if (headers && Array.isArray(headers)) {
@@ -44,69 +65,73 @@ export const POST: RequestHandler = async ({ request }) => {
 			oneofs: true
 		});
 
-		const generatePlainText = (obj: unknown, indent = 0): string => {
-			const spaces = '  '.repeat(indent);
-			if (obj === null || obj === undefined) return `${spaces}null`;
-			if (typeof obj !== 'object') return `${spaces}${obj}`;
-			if (Array.isArray(obj)) {
-				if (obj.length === 0) return `${spaces}[]`;
-				return obj
-					.map((item, i) => `${spaces}[${i}]:\n${generatePlainText(item, indent + 1)}`)
-					.join('\n');
-			}
-			const entries = Object.entries(obj as Record<string, unknown>);
-			if (entries.length === 0) return `${spaces}{}`;
-			return entries
-				.map(([key, val]) => {
-					if (typeof val === 'object' && val !== null) {
-						return `${spaces}${key}:\n${generatePlainText(val, indent + 1)}`;
-					}
-					return `${spaces}${key}: ${val}`;
-				})
-				.join('\n');
-		};
-
-		const rawText = generatePlainText(feedObject);
-
 		const tripUpdates: unknown[] = [];
 		const vehiclePositions: unknown[] = [];
 		const alerts: unknown[] = [];
 
+		// Track total counts and current index for pagination
+		let totalTripUpdates = 0;
+		let totalVehiclePositions = 0;
+		let totalAlerts = 0;
+
 		if (feedObject.entity) {
-			feedObject.entity.forEach((entity: Record<string, unknown>) => {
+			for (const entity of feedObject.entity as Record<string, unknown>[]) {
 				if (entity.tripUpdate) {
-					tripUpdates.push({
-						id: entity.id,
-						...entity.tripUpdate
-					});
+					// Only include if we're past the offset and under the limit
+					if (totalTripUpdates >= offset.tripUpdates && tripUpdates.length < entityLimit) {
+						tripUpdates.push({
+							id: entity.id,
+							...entity.tripUpdate
+						});
+					}
+					totalTripUpdates++;
 				}
 				if (entity.vehicle) {
-					vehiclePositions.push({
-						id: entity.id,
-						...entity.vehicle
-					});
+					if (
+						totalVehiclePositions >= offset.vehiclePositions &&
+						vehiclePositions.length < entityLimit
+					) {
+						vehiclePositions.push({
+							id: entity.id,
+							...entity.vehicle
+						});
+					}
+					totalVehiclePositions++;
 				}
 				if (entity.alert) {
-					alerts.push({
-						id: entity.id,
-						...entity.alert
-					});
+					if (totalAlerts >= offset.alerts && alerts.length < entityLimit) {
+						alerts.push({
+							id: entity.id,
+							...entity.alert
+						});
+					}
+					totalAlerts++;
 				}
-			});
+			}
 		}
 
-		try {
-			insertGtfsRtLog({
-				sessionId,
-				timestamp: feedObject.header?.timestamp
-					? new Date(Number(feedObject.header.timestamp) * 1000).toISOString()
-					: new Date().toISOString(),
-				url,
-				header: feedObject.header,
-				entities: feedObject.entity
-			});
-		} catch (dbError) {
-			console.error('Failed to log GTFS-RT to database:', dbError);
+		// Only log to database on initial fetch (no offsets)
+		const isInitialFetch =
+			offset.tripUpdates === 0 && offset.vehiclePositions === 0 && offset.alerts === 0;
+		if (isInitialFetch) {
+			try {
+				insertGtfsRtLog({
+					sessionId,
+					timestamp: feedObject.header?.timestamp
+						? new Date(Number(feedObject.header.timestamp) * 1000).toISOString()
+						: new Date().toISOString(),
+					url,
+					header: feedObject.header,
+					entitySummary: {
+						tripUpdates: totalTripUpdates,
+						vehiclePositions: totalVehiclePositions,
+						alerts: totalAlerts,
+						total: feedObject.entity?.length || 0
+					}
+				});
+			} catch (dbError) {
+				console.error('Failed to log GTFS-RT to database:', dbError);
+			}
 		}
 
 		return json({
@@ -115,8 +140,26 @@ export const POST: RequestHandler = async ({ request }) => {
 			vehiclePositions,
 			alerts,
 			entityCount: feedObject.entity?.length || 0,
-			raw: feedObject,
-			rawText
+			totals: {
+				tripUpdates: totalTripUpdates,
+				vehiclePositions: totalVehiclePositions,
+				alerts: totalAlerts
+			},
+			limited: {
+				tripUpdates: offset.tripUpdates + tripUpdates.length < totalTripUpdates,
+				vehiclePositions: offset.vehiclePositions + vehiclePositions.length < totalVehiclePositions,
+				alerts: offset.alerts + alerts.length < totalAlerts
+			},
+			pagination: {
+				limit: entityLimit,
+				offset,
+				hasMore: {
+					tripUpdates: offset.tripUpdates + tripUpdates.length < totalTripUpdates,
+					vehiclePositions:
+						offset.vehiclePositions + vehiclePositions.length < totalVehiclePositions,
+					alerts: offset.alerts + alerts.length < totalAlerts
+				}
+			}
 		});
 	} catch (error) {
 		console.error('Protobuf decode error:', error);

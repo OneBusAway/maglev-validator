@@ -339,7 +339,7 @@ export function insertGtfsRtLog(params: {
 	timestamp: string;
 	url: string;
 	header: unknown;
-	entities: unknown;
+	entitySummary: { tripUpdates: number; vehiclePositions: number; alerts: number; total: number };
 }): void {
 	const db = getDatabase();
 	const stmt = db.prepare(`
@@ -352,7 +352,7 @@ export function insertGtfsRtLog(params: {
 		params.timestamp,
 		params.url,
 		JSON.stringify(params.header),
-		JSON.stringify(params.entities)
+		JSON.stringify(params.entitySummary)
 	);
 }
 

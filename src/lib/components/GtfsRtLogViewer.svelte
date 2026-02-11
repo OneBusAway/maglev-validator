@@ -414,16 +414,59 @@
 			</div>
 
 			<div class="flex min-h-0 flex-1 flex-col overflow-y-auto p-6">
-				<ProtobufViewer
-					header={selectedData.header}
-					tripUpdates={selectedData.tripUpdates}
-					vehiclePositions={selectedData.vehiclePositions}
-					alerts={selectedData.alerts}
-					entityCount={selectedData.entityCount}
-					rawTextTripUpdates={selectedData.rawTextTripUpdates || ''}
-					rawTextVehiclePositions={selectedData.rawTextVehiclePositions || ''}
-					rawTextAlerts={selectedData.rawTextAlerts || ''}
-				/>
+				{#if selectedData.tripUpdates || selectedData.vehiclePositions || selectedData.alerts}
+					<ProtobufViewer
+						header={selectedData.header}
+						tripUpdates={selectedData.tripUpdates || []}
+						vehiclePositions={selectedData.vehiclePositions || []}
+						alerts={selectedData.alerts || []}
+						entityCount={selectedData.entityCount || 0}
+						totals={selectedData.totals}
+						limited={selectedData.limited}
+					/>
+				{:else if selectedData.summary}
+					<div class="space-y-6">
+						{#if selectedData.header}
+							<div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+								<h4 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+									Feed Header
+								</h4>
+								<pre class="font-mono text-xs text-gray-600 dark:text-gray-400">{JSON.stringify(
+										selectedData.header,
+										null,
+										2
+									)}</pre>
+							</div>
+						{/if}
+						<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+							<div class="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
+								<div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+									{selectedData.summary.tripUpdates}
+								</div>
+								<div class="text-sm text-blue-600/70 dark:text-blue-400/70">Trip Updates</div>
+							</div>
+							<div class="rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
+								<div class="text-2xl font-bold text-green-600 dark:text-green-400">
+									{selectedData.summary.vehiclePositions}
+								</div>
+								<div class="text-sm text-green-600/70 dark:text-green-400/70">
+									Vehicle Positions
+								</div>
+							</div>
+							<div class="rounded-lg bg-amber-50 p-4 dark:bg-amber-900/20">
+								<div class="text-2xl font-bold text-amber-600 dark:text-amber-400">
+									{selectedData.summary.alerts}
+								</div>
+								<div class="text-sm text-amber-600/70 dark:text-amber-400/70">Alerts</div>
+							</div>
+						</div>
+						<p class="text-sm text-gray-500 dark:text-gray-400">
+							Total entities: {selectedData.summary.total}
+						</p>
+					</div>
+				{:else}
+					<p class="text-gray-500 dark:text-gray-400">No data available for this snapshot.</p>
+				{/if}
 			</div>
 
 			<div

@@ -8,9 +8,27 @@
 		alerts: unknown[];
 		header: unknown;
 		entityCount: number;
-		rawTextTripUpdates: string;
-		rawTextVehiclePositions: string;
-		rawTextAlerts: string;
+		totals?: {
+			tripUpdates: number;
+			vehiclePositions: number;
+			alerts: number;
+		};
+		limited?: {
+			tripUpdates: boolean;
+			vehiclePositions: boolean;
+			alerts: boolean;
+		};
+		onLoadMore?: (entityType: 'tripUpdates' | 'vehiclePositions' | 'alerts') => void;
+		paginationLoading?: {
+			tripUpdates: boolean;
+			vehiclePositions: boolean;
+			alerts: boolean;
+		};
+		hasMorePages?: {
+			tripUpdates: boolean;
+			vehiclePositions: boolean;
+			alerts: boolean;
+		};
 	}
 
 	let {
@@ -19,10 +37,82 @@
 		alerts,
 		header,
 		entityCount,
-		rawTextTripUpdates,
-		rawTextVehiclePositions,
-		rawTextAlerts
+		totals,
+		limited,
+		onLoadMore,
+		paginationLoading,
+		hasMorePages
 	}: Props = $props();
+
+	function generatePlainText(obj: unknown, indent = 0): string {
+		const spaces = '  '.repeat(indent);
+		if (obj === null || obj === undefined) return `${spaces}null`;
+		if (typeof obj !== 'object') return `${spaces}${obj}`;
+		if (Array.isArray(obj)) {
+			if (obj.length === 0) return `${spaces}[]`;
+			return obj
+				.map((item, i) => `${spaces}[${i}]:\n${generatePlainText(item, indent + 1)}`)
+				.join('\n');
+		}
+		const entries = Object.entries(obj as Record<string, unknown>);
+		if (entries.length === 0) return `${spaces}{}`;
+		return entries
+			.map(([key, val]) => {
+				if (typeof val === 'object' && val !== null) {
+					return `${spaces}${key}:\n${generatePlainText(val, indent + 1)}`;
+				}
+				return `${spaces}${key}: ${val}`;
+			})
+			.join('\n');
+	}
+
+	let rawTextContent = $state<string>('');
+	let rawTextLoading = $state(false);
+	let lastRawTextTab = $state<string | null>(null);
+	let lastRawTextDataRef = $state<unknown[] | null>(null);
+
+	async function generateRawTextAsync() {
+		const currentTab = activeRawTextTab;
+		let data: unknown[];
+
+		switch (currentTab) {
+			case 'tripUpdates':
+				data = tripUpdates;
+				break;
+			case 'vehiclePositions':
+				data = vehiclePositions;
+				break;
+			case 'alerts':
+				data = alerts;
+				break;
+			default:
+				data = [];
+		}
+
+		if (lastRawTextTab === currentTab && lastRawTextDataRef === data && rawTextContent) {
+			return;
+		}
+
+		rawTextLoading = true;
+		rawTextContent = '';
+
+		await new Promise<void>((resolve) => {
+			setTimeout(() => {
+				rawTextContent = generatePlainText(data);
+				lastRawTextTab = currentTab;
+				lastRawTextDataRef = data;
+				rawTextLoading = false;
+				resolve();
+			}, 10);
+		});
+	}
+
+	$effect(() => {
+		if (activeTab === 'rawText') {
+			void activeRawTextTab;
+			generateRawTextAsync();
+		}
+	});
 
 	let activeTab = $state<'tripUpdates' | 'vehiclePositions' | 'alerts' | 'header' | 'rawText'>(
 		'tripUpdates'
@@ -86,24 +176,46 @@
 			label: 'Trip Updates',
 			icon: 'trip',
 			count: tripUpdates.length,
-			filteredCount: filteredTripUpdates.length
+			filteredCount: filteredTripUpdates.length,
+			total: totals?.tripUpdates,
+			isLimited: limited?.tripUpdates
 		},
 		{
 			id: 'vehiclePositions' as const,
 			label: 'Vehicle Positions',
 			icon: 'vehicle',
 			count: vehiclePositions.length,
-			filteredCount: filteredVehiclePositions.length
+			filteredCount: filteredVehiclePositions.length,
+			total: totals?.vehiclePositions,
+			isLimited: limited?.vehiclePositions
 		},
 		{
 			id: 'alerts' as const,
 			label: 'Alerts',
 			icon: 'alert',
 			count: alerts.length,
-			filteredCount: filteredAlerts.length
+			filteredCount: filteredAlerts.length,
+			total: totals?.alerts,
+			isLimited: limited?.alerts
 		},
-		{ id: 'header' as const, label: 'Header', icon: 'header', count: null, filteredCount: null },
-		{ id: 'rawText' as const, label: 'Raw Text', icon: 'code', count: null, filteredCount: null }
+		{
+			id: 'header' as const,
+			label: 'Header',
+			icon: 'header',
+			count: null,
+			filteredCount: null,
+			total: null,
+			isLimited: false
+		},
+		{
+			id: 'rawText' as const,
+			label: 'Raw Text',
+			icon: 'code',
+			count: null,
+			filteredCount: null,
+			total: null,
+			isLimited: false
+		}
 	]);
 
 	const rawTextTabs = $derived([
@@ -111,29 +223,16 @@
 			id: 'tripUpdates' as const,
 			label: 'Trip Updates',
 			icon: 'trip',
-			hasContent: rawTextTripUpdates.length > 0
+			hasContent: tripUpdates.length > 0
 		},
 		{
 			id: 'vehiclePositions' as const,
 			label: 'Vehicle Positions',
 			icon: 'vehicle',
-			hasContent: rawTextVehiclePositions.length > 0
+			hasContent: vehiclePositions.length > 0
 		},
-		{ id: 'alerts' as const, label: 'Alerts', icon: 'alert', hasContent: rawTextAlerts.length > 0 }
+		{ id: 'alerts' as const, label: 'Alerts', icon: 'alert', hasContent: alerts.length > 0 }
 	]);
-
-	const currentRawText = $derived(() => {
-		switch (activeRawTextTab) {
-			case 'tripUpdates':
-				return rawTextTripUpdates;
-			case 'vehiclePositions':
-				return rawTextVehiclePositions;
-			case 'alerts':
-				return rawTextAlerts;
-			default:
-				return '';
-		}
-	});
 
 	const activeData = $derived(() => {
 		switch (activeTab) {
@@ -166,13 +265,50 @@
 	let copySuccess = $state(false);
 
 	async function copyRawText() {
-		await navigator.clipboard.writeText(currentRawText());
+		await navigator.clipboard.writeText(rawTextContent);
 		copySuccess = true;
 		setTimeout(() => {
 			copySuccess = false;
 		}, 2000);
 	}
+
+	const hasAnyLimits = $derived(
+		limited?.tripUpdates || limited?.vehiclePositions || limited?.alerts
+	);
 </script>
+
+{#if hasAnyLimits}
+	<div
+		class="mb-4 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20"
+	>
+		<svg
+			class="h-5 w-5 shrink-0 text-amber-500"
+			fill="none"
+			stroke="currentColor"
+			viewBox="0 0 24 24"
+		>
+			<path
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				stroke-width="2"
+				d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+			/>
+		</svg>
+		<div class="text-sm text-amber-700 dark:text-amber-300">
+			<span class="font-medium">Large feed detected.</span>
+			{#if totals}
+				Showing: {tripUpdates.length}/{totals.tripUpdates} trip updates,
+				{vehiclePositions.length}/{totals.vehiclePositions} vehicle positions,
+				{alerts.length}/{totals.alerts} alerts.
+			{/if}
+			{#if onLoadMore}
+				<span class="font-medium"
+					>Use "Load More" button below each tab to fetch additional entities.</span
+				>
+			{/if}
+		</div>
+	</div>
+{/if}
 
 <div
 	class="flex h-full min-h-0 flex-col rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
@@ -244,16 +380,23 @@
 					<span>{tab.label}</span>
 					{#if tab.count !== null}
 						<span
-							class="rounded-full px-2 py-0.5 text-xs {tab.id === 'alerts'
-								? activeTab === tab.id
-									? 'bg-red-200 text-red-800 dark:bg-red-800 dark:text-red-200'
-									: 'bg-red-100 text-red-600 dark:bg-red-700 dark:text-red-300'
-								: activeTab === tab.id
-									? 'bg-indigo-200 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-200'
-									: 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-300'}"
+							class="rounded-full px-2 py-0.5 text-xs {tab.isLimited
+								? 'bg-amber-100 text-amber-700 dark:bg-amber-800 dark:text-amber-200'
+								: tab.id === 'alerts'
+									? activeTab === tab.id
+										? 'bg-red-200 text-red-800 dark:bg-red-800 dark:text-red-200'
+										: 'bg-red-100 text-red-600 dark:bg-red-700 dark:text-red-300'
+									: activeTab === tab.id
+										? 'bg-indigo-200 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-200'
+										: 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-300'}"
+							title={tab.isLimited
+								? `Showing ${tab.count} of ${tab.total} (limited to prevent memory issues)`
+								: ''}
 						>
 							{#if debouncedQuery && tab.filteredCount !== tab.count}
 								{tab.filteredCount}/{tab.count}
+							{:else if tab.isLimited && tab.total}
+								{tab.count}/{tab.total}
 							{:else}
 								{tab.count}
 							{/if}
@@ -492,9 +635,32 @@
 							>Copy
 						{/if}
 					</button>
-					{#if currentRawText()}
+					{#if rawTextLoading}
+						<div
+							class="flex flex-col items-center justify-center rounded-lg bg-gray-50 py-12 text-center dark:bg-gray-900"
+						>
+							<div class="mb-4 animate-spin">
+								<svg class="h-8 w-8 text-blue-500" fill="none" viewBox="0 0 24 24">
+									<circle
+										class="opacity-25"
+										cx="12"
+										cy="12"
+										r="10"
+										stroke="currentColor"
+										stroke-width="4"
+									></circle>
+									<path
+										class="opacity-75"
+										fill="currentColor"
+										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+									></path>
+								</svg>
+							</div>
+							<p class="text-gray-500 dark:text-gray-400">Generating raw text...</p>
+						</div>
+					{:else if rawTextContent}
 						<pre
-							class="rounded-lg bg-gray-50 p-4 pr-20 font-mono text-xs leading-relaxed wrap-break-word whitespace-pre-wrap text-gray-700 dark:bg-gray-900 dark:text-gray-300">{currentRawText()}</pre>
+							class="rounded-lg bg-gray-50 p-4 pr-20 font-mono text-xs leading-relaxed wrap-break-word whitespace-pre-wrap text-gray-700 dark:bg-gray-900 dark:text-gray-300">{rawTextContent}</pre>
 					{:else}
 						<div
 							class="flex flex-col items-center justify-center rounded-lg bg-gray-50 py-12 text-center dark:bg-gray-900"
@@ -678,6 +844,59 @@
 							</div>
 						</details>
 					{/each}
+
+					{#if onLoadMore && hasMorePages && hasMorePages[activeTab as 'tripUpdates' | 'vehiclePositions' | 'alerts']}
+						<div class="mt-4 flex justify-center">
+							<button
+								onclick={() =>
+									onLoadMore(activeTab as 'tripUpdates' | 'vehiclePositions' | 'alerts')}
+								disabled={paginationLoading?.[
+									activeTab as 'tripUpdates' | 'vehiclePositions' | 'alerts'
+								]}
+								class="inline-flex items-center gap-2 rounded-lg border border-indigo-300 bg-indigo-50 px-6 py-3 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
+							>
+								{#if paginationLoading?.[activeTab as 'tripUpdates' | 'vehiclePositions' | 'alerts']}
+									<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+										<circle
+											class="opacity-25"
+											cx="12"
+											cy="12"
+											r="10"
+											stroke="currentColor"
+											stroke-width="4"
+										></circle>
+										<path
+											class="opacity-75"
+											fill="currentColor"
+											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+										></path>
+									</svg>
+									Loading more...
+								{:else}
+									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M12 4v16m0 0l-4-4m4 4l4-4"
+										/>
+									</svg>
+									Load More {activeTab === 'tripUpdates'
+										? 'Trip Updates'
+										: activeTab === 'vehiclePositions'
+											? 'Vehicle Positions'
+											: 'Alerts'}
+									{#if totals}
+										<span class="text-xs opacity-70">
+											({items.length} of {totals[
+												activeTab as 'tripUpdates' | 'vehiclePositions' | 'alerts'
+											]})
+										</span>
+									{/if}
+								{/if}
+							</button>
+						</div>
+					{/if}
 				</div>
 			{/if}
 		{/if}

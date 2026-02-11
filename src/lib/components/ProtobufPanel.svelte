@@ -20,15 +20,37 @@
 		vehiclePositions: unknown[];
 		alerts: unknown[];
 		entityCount: number;
-		rawTextTripUpdates: string;
-		rawTextVehiclePositions: string;
-		rawTextAlerts: string;
+		totals?: {
+			tripUpdates: number;
+			vehiclePositions: number;
+			alerts: number;
+		};
+		limited?: {
+			tripUpdates: boolean;
+			vehiclePositions: boolean;
+			alerts: boolean;
+		};
 	} | null>(null);
+
+	let paginationState = $state<{
+		hasMore: { tripUpdates: boolean; vehiclePositions: boolean; alerts: boolean };
+		loading: { tripUpdates: boolean; vehiclePositions: boolean; alerts: boolean };
+	}>({
+		hasMore: { tripUpdates: false, vehiclePositions: false, alerts: false },
+		loading: { tripUpdates: false, vehiclePositions: false, alerts: false }
+	});
+
+	let currentFetchUrls = $state<{ tripUpdates: string; vehiclePositions: string; alerts: string }>({
+		tripUpdates: '',
+		vehiclePositions: '',
+		alerts: ''
+	});
 
 	let autoRefresh = $state(false);
 	let refreshInterval = $state(30);
 	let refreshTimer: number | undefined = undefined;
 	let lastFetchTime = $state<Date | null>(null);
+	let loggingEnabled = $state(true);
 
 	function handleKeyDown(e: KeyboardEvent) {
 		if (e.ctrlKey && e.key === 'Enter' && !loading) {
@@ -50,6 +72,9 @@
 				} catch {
 					headers = [{ key: '', value: '' }];
 				}
+			}
+			if (localStorage.gtfsRtLoggingEnabled !== undefined) {
+				loggingEnabled = localStorage.gtfsRtLoggingEnabled === 'true';
 			}
 		}
 	});
@@ -87,6 +112,7 @@
 			localStorage.vehiclePositionsUrl = vehiclePositionsUrl;
 			localStorage.serviceAlertsUrl = serviceAlertsUrl;
 			localStorage.protobufHeaders = JSON.stringify(headers);
+			localStorage.gtfsRtLoggingEnabled = String(loggingEnabled);
 		}
 	}
 
@@ -113,6 +139,13 @@
 		vehiclePositions: unknown[];
 		alerts: unknown[];
 		header: unknown;
+		totals?: { tripUpdates: number; vehiclePositions: number; alerts: number };
+		limited?: { tripUpdates: boolean; vehiclePositions: boolean; alerts: boolean };
+		pagination?: {
+			limit: number;
+			offset: { tripUpdates: number; vehiclePositions: number; alerts: number };
+			hasMore: { tripUpdates: boolean; vehiclePositions: boolean; alerts: boolean };
+		};
 	} | null> {
 		if (!url) return null;
 
@@ -191,9 +224,67 @@
 
 			const header = tripData?.header || vehicleData?.header || alertData?.header;
 
-			const rawTextTripUpdates = (tripData as { rawText?: string })?.rawText || '';
-			const rawTextVehiclePositions = (vehicleData as { rawText?: string })?.rawText || '';
-			const rawTextAlerts = (alertData as { rawText?: string })?.rawText || '';
+			const totals = {
+				tripUpdates:
+					(tripData?.totals?.tripUpdates || tripData?.tripUpdates?.length || 0) +
+					(vehicleData?.totals?.tripUpdates || vehicleData?.tripUpdates?.length || 0) +
+					(alertData?.totals?.tripUpdates || alertData?.tripUpdates?.length || 0),
+				vehiclePositions:
+					(tripData?.totals?.vehiclePositions || tripData?.vehiclePositions?.length || 0) +
+					(vehicleData?.totals?.vehiclePositions || vehicleData?.vehiclePositions?.length || 0) +
+					(alertData?.totals?.vehiclePositions || alertData?.vehiclePositions?.length || 0),
+				alerts:
+					(tripData?.totals?.alerts || tripData?.alerts?.length || 0) +
+					(vehicleData?.totals?.alerts || vehicleData?.alerts?.length || 0) +
+					(alertData?.totals?.alerts || alertData?.alerts?.length || 0)
+			};
+
+			const limited = {
+				tripUpdates: !!(
+					tripData?.limited?.tripUpdates ||
+					vehicleData?.limited?.tripUpdates ||
+					alertData?.limited?.tripUpdates
+				),
+				vehiclePositions: !!(
+					tripData?.limited?.vehiclePositions ||
+					vehicleData?.limited?.vehiclePositions ||
+					alertData?.limited?.vehiclePositions
+				),
+				alerts: !!(
+					tripData?.limited?.alerts ||
+					vehicleData?.limited?.alerts ||
+					alertData?.limited?.alerts
+				)
+			};
+
+			// Update pagination state
+			paginationState = {
+				hasMore: {
+					tripUpdates: !!(
+						tripData?.pagination?.hasMore?.tripUpdates ||
+						vehicleData?.pagination?.hasMore?.tripUpdates ||
+						alertData?.pagination?.hasMore?.tripUpdates
+					),
+					vehiclePositions: !!(
+						tripData?.pagination?.hasMore?.vehiclePositions ||
+						vehicleData?.pagination?.hasMore?.vehiclePositions ||
+						alertData?.pagination?.hasMore?.vehiclePositions
+					),
+					alerts: !!(
+						tripData?.pagination?.hasMore?.alerts ||
+						vehicleData?.pagination?.hasMore?.alerts ||
+						alertData?.pagination?.hasMore?.alerts
+					)
+				},
+				loading: { tripUpdates: false, vehiclePositions: false, alerts: false }
+			};
+
+			// Store URLs for pagination
+			currentFetchUrls = {
+				tripUpdates: tripUpdatesUrl,
+				vehiclePositions: vehiclePositionsUrl,
+				alerts: serviceAlertsUrl
+			};
 
 			feedData = {
 				header,
@@ -201,22 +292,29 @@
 				vehiclePositions: allVehiclePositions,
 				alerts: allAlerts,
 				entityCount: allTripUpdates.length + allVehiclePositions.length + allAlerts.length,
-				rawTextTripUpdates,
-				rawTextVehiclePositions,
-				rawTextAlerts
+				totals,
+				limited
 			};
 
 			if (errors.length > 0) {
 				error = `Partial success. Errors: ${errors.join('; ')}`;
 			}
 
-			if (feedData) {
+			if (feedData && loggingEnabled) {
 				await fetch('/api/gtfs-rt', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
 						timestamp: new Date().toISOString(),
-						data: feedData
+						data: {
+							header: feedData.header,
+							tripUpdates: feedData.tripUpdates,
+							vehiclePositions: feedData.vehiclePositions,
+							alerts: feedData.alerts,
+							entityCount: feedData.entityCount,
+							totals: feedData.totals,
+							limited: feedData.limited
+						}
 					})
 				});
 				logState.triggerUpdate();
@@ -227,6 +325,65 @@
 			error = e instanceof Error ? e.message : 'Unknown error';
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function loadMoreEntities(entityType: 'tripUpdates' | 'vehiclePositions' | 'alerts') {
+		if (!feedData || paginationState.loading[entityType] || !paginationState.hasMore[entityType]) {
+			return;
+		}
+
+		paginationState.loading[entityType] = true;
+
+		try {
+			const url =
+				entityType === 'tripUpdates'
+					? currentFetchUrls.tripUpdates
+					: entityType === 'vehiclePositions'
+						? currentFetchUrls.vehiclePositions
+						: currentFetchUrls.alerts;
+
+			if (!url) {
+				paginationState.loading[entityType] = false;
+				return;
+			}
+
+			const currentOffset = feedData[entityType].length;
+
+			const response = await fetch('/api/protobuf', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					url,
+					headers: headers.filter((h) => h.key && h.value),
+					offset: {
+						tripUpdates: entityType === 'tripUpdates' ? currentOffset : 0,
+						vehiclePositions: entityType === 'vehiclePositions' ? currentOffset : 0,
+						alerts: entityType === 'alerts' ? currentOffset : 0
+					}
+				})
+			});
+
+			const data = await response.json();
+			if (data.error) throw new Error(data.error);
+
+			if (entityType === 'tripUpdates' && data.tripUpdates) {
+				feedData.tripUpdates = [...feedData.tripUpdates, ...data.tripUpdates];
+			} else if (entityType === 'vehiclePositions' && data.vehiclePositions) {
+				feedData.vehiclePositions = [...feedData.vehiclePositions, ...data.vehiclePositions];
+			} else if (entityType === 'alerts' && data.alerts) {
+				feedData.alerts = [...feedData.alerts, ...data.alerts];
+			}
+
+			if (feedData.limited) {
+				feedData.limited[entityType] = data.pagination?.hasMore?.[entityType] ?? false;
+			}
+
+			paginationState.hasMore[entityType] = data.pagination?.hasMore?.[entityType] ?? false;
+		} catch (e) {
+			console.error(`Failed to load more ${entityType}:`, e);
+		} finally {
+			paginationState.loading[entityType] = false;
 		}
 	}
 </script>
@@ -277,7 +434,6 @@
 			</div>
 		</div>
 
-		<!-- Headers -->
 		<div>
 			<div class="mb-2 flex items-center justify-between">
 				<span class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
@@ -358,6 +514,16 @@
 						<span class="text-xs text-gray-400">sec</span>
 					</div>
 				{/if}
+				<div class="h-4 w-px bg-gray-200 dark:bg-gray-700"></div>
+				<label class="flex cursor-pointer items-center gap-2 select-none">
+					<input
+						type="checkbox"
+						bind:checked={loggingEnabled}
+						onchange={saveToLocalStorage}
+						class="h-4 w-4 rounded border-gray-300 bg-white text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
+					/>
+					<span class="text-sm font-medium text-gray-600 dark:text-gray-400">Enable logging</span>
+				</label>
 				{#if lastFetchTime}
 					<span class="text-xs text-gray-400">
 						Last fetched: {lastFetchTime.toLocaleTimeString()}
@@ -422,9 +588,11 @@
 		alerts={feedData.alerts}
 		header={feedData.header}
 		entityCount={feedData.entityCount}
-		rawTextTripUpdates={feedData.rawTextTripUpdates}
-		rawTextVehiclePositions={feedData.rawTextVehiclePositions}
-		rawTextAlerts={feedData.rawTextAlerts}
+		totals={feedData.totals}
+		limited={feedData.limited}
+		onLoadMore={loadMoreEntities}
+		paginationLoading={paginationState.loading}
+		hasMorePages={paginationState.hasMore}
 	/>
 {:else if !loading}
 	<div

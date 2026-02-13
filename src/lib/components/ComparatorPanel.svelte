@@ -5,43 +5,19 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { browser } from '$app/environment';
 	import { logState } from '$lib/logState.svelte';
+	import { comparatorState as cmpState } from '$lib/panelState.svelte';
 
-	let response1 = $state<unknown>(undefined);
-	let response2 = $state<unknown>(undefined);
-	let loading = $state(false);
-	let error = $state<string | undefined>(undefined);
 	let isLogging = $state(false);
-	let currentUrl1 = $state('');
-	let currentUrl2 = $state('');
-
-	let server1Base = $state('http://localhost:4000/api/where/');
-	let server2Base = $state('https://unitrans-api.server.onebusawaycloud.com/api/where/');
-	let selectedEndpoint = $state('trip-details');
-	let params = $state<Record<string, string>>({});
-	let focusPath = $state('');
-	let ignoredKeysInput = $state('');
-
-	let autoRefresh = $state(false);
-	let refreshInterval = $state(5);
-	let refreshTimer: number | undefined = undefined;
-
-	let showIgnoreModal = $state(false);
-	let ignoreSearch = $state('');
-
-	let showWatchModal = $state(false);
-	let watchSearch = $state('');
-	let watchedKeysInput = $state('');
-	let lastLoggedTime = $state<number | null>(null);
 
 	const watchedKeys = $derived(
-		watchedKeysInput
+		cmpState.watchedKeysInput
 			.split(',')
 			.map((k) => k.trim())
 			.filter((k) => k.length > 0)
 	);
 
 	const ignoredKeys = $derived(
-		ignoredKeysInput
+		cmpState.ignoredKeysInput
 			.split(',')
 			.map((k) => k.trim())
 			.filter((k) => k.length > 0)
@@ -49,8 +25,8 @@
 
 	const availableKeys = $derived.by(() => {
 		const keys = new Set<string>();
-		if (response1) collectKeys(response1, keys);
-		if (response2) collectKeys(response2, keys);
+		if (cmpState.response1) collectKeys(cmpState.response1, keys);
+		if (cmpState.response2) collectKeys(cmpState.response2, keys);
 		return Array.from(keys).sort();
 	});
 
@@ -77,19 +53,19 @@
 		} else {
 			current.add(key);
 		}
-		ignoredKeysInput = Array.from(current).join(', ');
+		cmpState.ignoredKeysInput = Array.from(current).join(', ');
 		handleIgnoreInput();
 	}
 
 	function handleKeyDown(e: KeyboardEvent) {
-		if (e.ctrlKey && e.key === 'Enter' && !loading) {
+		if (e.ctrlKey && e.key === 'Enter' && !cmpState.loading) {
 			e.preventDefault();
 			fetchBoth();
 		}
 
 		if (e.key === 'Escape') {
-			if (showIgnoreModal) showIgnoreModal = false;
-			if (showWatchModal) showWatchModal = false;
+			if (cmpState.showIgnoreModal) cmpState.showIgnoreModal = false;
+			if (cmpState.showWatchModal) cmpState.showWatchModal = false;
 		}
 	}
 
@@ -97,11 +73,34 @@
 		window.addEventListener('keydown', handleKeyDown);
 
 		if (typeof localStorage !== 'undefined') {
-			if (localStorage.server1Base) server1Base = localStorage.server1Base;
-			if (localStorage.server2Base) server2Base = localStorage.server2Base;
-			ignoredKeysInput = localStorage.getItem(`ignore_${selectedEndpoint}`) || '';
-			watchedKeysInput = localStorage.getItem(`watch_${selectedEndpoint}`) || '';
+			// Only load from local storage if state is empty (first load)
+			if (!cmpState.server1Base) {
+				if (localStorage.server1Base) cmpState.server1Base = localStorage.server1Base;
+				if (localStorage.server2Base) cmpState.server2Base = localStorage.server2Base;
+			}
+
+			// Load saved params for all endpoints
+			if (Object.keys(cmpState.endpointParams).length === 0 && localStorage.comparatorParams) {
+				try {
+					const saved = JSON.parse(localStorage.comparatorParams);
+					if (saved && typeof saved === 'object') {
+						cmpState.endpointParams = saved;
+					}
+				} catch (e) {
+					console.error('Failed to parse comparatorParams', e);
+				}
+			}
+
+			if (!cmpState.ignoredKeysInput) {
+				cmpState.ignoredKeysInput =
+					localStorage.getItem(`ignore_${cmpState.selectedEndpoint}`) || '';
+			}
+			if (!cmpState.watchedKeysInput) {
+				cmpState.watchedKeysInput =
+					localStorage.getItem(`watch_${cmpState.selectedEndpoint}`) || '';
+			}
 		}
+
 		updateParams();
 	});
 
@@ -109,27 +108,32 @@
 		if (browser) {
 			window.removeEventListener('keydown', handleKeyDown);
 		}
+		stopAutoRefresh();
 	});
 
 	$effect(() => {
-		void selectedEndpoint;
+		void cmpState.selectedEndpoint;
 		untrack(() => updateParams());
 	});
 
-	let lastEndpoint = '';
 	$effect(() => {
-		if (selectedEndpoint !== lastEndpoint) {
+		if (cmpState.selectedEndpoint !== cmpState.lastEndpoint) {
 			if (typeof localStorage !== 'undefined') {
-				ignoredKeysInput = localStorage.getItem(`ignore_${selectedEndpoint}`) || '';
-				watchedKeysInput = localStorage.getItem(`watch_${selectedEndpoint}`) || '';
+				// Only update if we changed endpoints locally
+				if (cmpState.lastEndpoint !== '') {
+					cmpState.ignoredKeysInput =
+						localStorage.getItem(`ignore_${cmpState.selectedEndpoint}`) || '';
+					cmpState.watchedKeysInput =
+						localStorage.getItem(`watch_${cmpState.selectedEndpoint}`) || '';
+				}
 			}
-			lastEndpoint = selectedEndpoint;
+			cmpState.lastEndpoint = cmpState.selectedEndpoint;
 		}
 	});
 
 	$effect(() => {
-		const isAuto = autoRefresh;
-		const interval = refreshInterval;
+		const isAuto = cmpState.autoRefresh;
+		const interval = cmpState.refreshInterval;
 
 		untrack(() => {
 			if (isAuto) {
@@ -145,13 +149,13 @@
 
 	function handleIgnoreInput() {
 		if (typeof localStorage !== 'undefined') {
-			localStorage.setItem(`ignore_${selectedEndpoint}`, ignoredKeysInput);
+			localStorage.setItem(`ignore_${cmpState.selectedEndpoint}`, cmpState.ignoredKeysInput);
 		}
 	}
 
 	function handleWatchInput() {
 		if (typeof localStorage !== 'undefined') {
-			localStorage.setItem(`watch_${selectedEndpoint}`, watchedKeysInput);
+			localStorage.setItem(`watch_${cmpState.selectedEndpoint}`, cmpState.watchedKeysInput);
 		}
 	}
 
@@ -162,7 +166,7 @@
 		} else {
 			current.add(key);
 		}
-		watchedKeysInput = Array.from(current).join(', ');
+		cmpState.watchedKeysInput = Array.from(current).join(', ');
 		handleWatchInput();
 	}
 
@@ -193,7 +197,7 @@
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					endpoint: selectedEndpoint,
+					endpoint: cmpState.selectedEndpoint,
 					timestamp: new Date().toISOString(),
 					keys,
 					response1: resp1,
@@ -201,9 +205,9 @@
 				})
 			});
 			logState.triggerUpdate();
-			lastLoggedTime = Date.now();
+			cmpState.lastLoggedTime = Date.now();
 			setTimeout(() => {
-				lastLoggedTime = null;
+				cmpState.lastLoggedTime = null;
 			}, 3000);
 		} catch (e) {
 			console.error('Failed to log keys:', e);
@@ -213,64 +217,76 @@
 	}
 
 	function updateParams() {
-		const endpoint = endpoints.find((e) => e.id === selectedEndpoint);
-		if (endpoint) {
-			const newParams: Record<string, string> = {};
-			endpoint.params.forEach((p) => {
-				newParams[p.name] = p.default;
-			});
+		const endpoint = endpoints.find((e) => e.id === cmpState.selectedEndpoint);
+		if (!endpoint) return;
 
-			if (Object.keys(params).length === 0 || lastEndpoint !== selectedEndpoint) {
-				params = newParams;
-			}
+		const defaults: Record<string, string> = {};
+		endpoint.params.forEach((p) => {
+			defaults[p.name] = p.default;
+		});
+
+		const isSameEndpoint = cmpState.selectedEndpoint === cmpState.lastEndpoint;
+		const hasParams = Object.keys(cmpState.params).length > 0;
+
+		if (isSameEndpoint && hasParams) {
+			return;
 		}
+
+		const saved = cmpState.endpointParams[cmpState.selectedEndpoint];
+		if (saved && Object.keys(saved).length > 0) {
+			cmpState.params = { ...defaults, ...saved };
+		} else {
+			cmpState.params = defaults;
+		}
+
+		cmpState.lastEndpoint = cmpState.selectedEndpoint;
 	}
 
 	function startAutoRefresh() {
 		stopAutoRefresh();
-		fetchBoth();
-		refreshTimer = window.setInterval(() => {
+		if (!cmpState.loading) fetchBoth();
+		cmpState.refreshTimer = window.setInterval(() => {
 			fetchBoth();
-		}, refreshInterval * 1000);
+		}, cmpState.refreshInterval * 1000);
 	}
 
 	function stopAutoRefresh() {
-		if (refreshTimer !== undefined) {
-			clearInterval(refreshTimer);
-			refreshTimer = undefined;
+		if (cmpState.refreshTimer !== undefined) {
+			clearInterval(cmpState.refreshTimer);
+			cmpState.refreshTimer = undefined;
 		}
 	}
 
 	async function fetchBoth() {
-		if (loading) return;
-		loading = true;
-		error = undefined;
+		if (cmpState.loading) return;
+		cmpState.loading = true;
+		cmpState.error = undefined;
 
-		if (!server1Base || !server1Base.startsWith('http')) {
-			error = 'Server 1 base URL must be an absolute URL (start with http:// or https://)';
-			loading = false;
+		if (!cmpState.server1Base || !cmpState.server1Base.startsWith('http')) {
+			cmpState.error = 'Server 1 base URL must be an absolute URL (start with http:// or https://)';
+			cmpState.loading = false;
 			return;
 		}
-		if (!server2Base || !server2Base.startsWith('http')) {
-			error = 'Server 2 base URL must be an absolute URL (start with http:// or https://)';
-			loading = false;
+		if (!cmpState.server2Base || !cmpState.server2Base.startsWith('http')) {
+			cmpState.error = 'Server 2 base URL must be an absolute URL (start with http:// or https://)';
+			cmpState.loading = false;
 			return;
 		}
 
-		const endpoint = endpoints.find((e) => e.id === selectedEndpoint);
+		const endpoint = endpoints.find((e) => e.id === cmpState.selectedEndpoint);
 		if (!endpoint) {
-			loading = false;
+			cmpState.loading = false;
 			return;
 		}
 
 		let timeoutId: number | undefined = undefined;
 		let didTimeout = false;
 		try {
-			const url1 = buildUrl(server1Base, endpoint, params);
-			const url2 = buildUrl(server2Base, endpoint, params);
+			const url1 = buildUrl(cmpState.server1Base, endpoint, cmpState.params);
+			const url2 = buildUrl(cmpState.server2Base, endpoint, cmpState.params);
 
-			currentUrl1 = url1;
-			currentUrl2 = url2;
+			cmpState.currentUrl1 = url1;
+			cmpState.currentUrl2 = url2;
 
 			const timeoutPromise = new Promise((_, reject) => {
 				timeoutId = window.setTimeout(() => {
@@ -293,23 +309,23 @@
 			const data = await (response as Response).json();
 
 			if (data.error) {
-				error = data.error;
+				cmpState.error = data.error;
 				return;
 			}
 
-			response1 = data.response1;
-			response2 = data.response2;
+			cmpState.response1 = data.response1;
+			cmpState.response2 = data.response2;
 
 			await logWatchedKeys(data.response1, data.response2);
 		} catch (e) {
 			if (didTimeout) {
-				error = 'Request timed out. Please try again.';
+				cmpState.error = 'Request timed out. Please try again.';
 			} else {
-				error = e instanceof Error ? e.message : 'Unknown error';
+				cmpState.error = e instanceof Error ? e.message : 'Unknown error';
 			}
 		} finally {
 			if (timeoutId !== undefined) clearTimeout(timeoutId);
-			loading = false;
+			cmpState.loading = false;
 		}
 	}
 
@@ -334,7 +350,18 @@
 
 	let paramDebounceTimer: number | undefined = undefined;
 	function handleParamChange(paramName: string, value: string) {
-		params = { ...params, [paramName]: value };
+		cmpState.params = { ...cmpState.params, [paramName]: value };
+
+		const currentSaved = cmpState.endpointParams[cmpState.selectedEndpoint] || {};
+		cmpState.endpointParams[cmpState.selectedEndpoint] = {
+			...currentSaved,
+			[paramName]: value
+		};
+
+		if (typeof localStorage !== 'undefined') {
+			localStorage.setItem('comparatorParams', JSON.stringify(cmpState.endpointParams));
+		}
+
 		if (paramDebounceTimer !== undefined) {
 			clearTimeout(paramDebounceTimer);
 		}
@@ -359,7 +386,7 @@
 				<input
 					id="server1-url"
 					type="text"
-					bind:value={server1Base}
+					bind:value={cmpState.server1Base}
 					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
 				/>
 			</div>
@@ -372,7 +399,7 @@
 				<input
 					id="server2-url"
 					type="text"
-					bind:value={server2Base}
+					bind:value={cmpState.server2Base}
 					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
 				/>
 			</div>
@@ -388,7 +415,7 @@
 				<div class="relative">
 					<select
 						id="api-endpoint"
-						bind:value={selectedEndpoint}
+						bind:value={cmpState.selectedEndpoint}
 						class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:focus:ring-indigo-500/40"
 					>
 						{#each endpoints as endpoint (endpoint.id)}
@@ -398,7 +425,7 @@
 				</div>
 			</div>
 
-			{#each endpoints.find((e) => e.id === selectedEndpoint)?.params || [] as param (param.name)}
+			{#each endpoints.find((e) => e.id === cmpState.selectedEndpoint)?.params || [] as param (param.name)}
 				<div class="col-span-3">
 					<label
 						for={'param-' + param.name}
@@ -410,7 +437,7 @@
 					<input
 						id={'param-' + param.name}
 						type="text"
-						value={params[param.name] || ''}
+						value={cmpState.params[param.name] || ''}
 						oninput={(e) => handleParamChange(param.name, e.currentTarget.value)}
 						placeholder={param.placeholder || ''}
 						class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
@@ -427,7 +454,7 @@
 				<input
 					id="json-path-filter"
 					type="text"
-					bind:value={focusPath}
+					bind:value={cmpState.focusPath}
 					placeholder="e.g. data.entry.status"
 					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-indigo-500/40"
 				/>
@@ -441,7 +468,7 @@
 				>
 				<button
 					id="ignore-keys-trigger"
-					onclick={() => (showIgnoreModal = true)}
+					onclick={() => (cmpState.showIgnoreModal = true)}
 					class="group flex w-full items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-left text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
 				>
 					<span class="truncate">
@@ -474,11 +501,11 @@
 				>
 				<button
 					id="watch-keys-trigger"
-					onclick={() => (showWatchModal = true)}
+					onclick={() => (cmpState.showWatchModal = true)}
 					class="group flex w-full items-center justify-between rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-left text-sm text-indigo-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-indigo-900/30 dark:bg-indigo-900/20 dark:text-indigo-300 dark:focus:ring-indigo-500/40"
 				>
 					<span class="truncate">
-						{#if lastLoggedTime}
+						{#if cmpState.lastLoggedTime}
 							<span class="animate-pulse font-medium text-green-600 dark:text-green-400"
 								>Logged!</span
 							>
@@ -517,16 +544,16 @@
 				<label class="flex cursor-pointer items-center gap-2 select-none">
 					<input
 						type="checkbox"
-						bind:checked={autoRefresh}
+						bind:checked={cmpState.autoRefresh}
 						class="h-4 w-4 rounded border-gray-300 bg-white text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
 					/>
 					<span class="text-sm font-medium text-gray-600 dark:text-gray-400">Auto-refresh</span>
 				</label>
-				{#if autoRefresh}
+				{#if cmpState.autoRefresh}
 					<div class="flex items-center gap-2">
 						<input
 							type="number"
-							bind:value={refreshInterval}
+							bind:value={cmpState.refreshInterval}
 							min="1"
 							max="60"
 							class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-indigo-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
@@ -538,11 +565,11 @@
 
 			<button
 				onclick={fetchBoth}
-				disabled={loading}
+				disabled={cmpState.loading}
 				class="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white transition-all hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
 				title="Run Comparison (Ctrl+Enter)"
 			>
-				{#if loading}
+				{#if cmpState.loading}
 					<svg
 						class="h-4 w-4 animate-spin text-white"
 						xmlns="http://www.w3.org/2000/svg"
@@ -567,7 +594,7 @@
 	</div>
 </div>
 
-{#if error}
+{#if cmpState.error}
 	<div
 		class="mb-6 flex items-start gap-4 rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900/20 dark:bg-red-900/10"
 	>
@@ -578,12 +605,12 @@
 		</div>
 		<div>
 			<h3 class="mb-1 font-semibold text-red-900 dark:text-red-200">Request Failed</h3>
-			<p class="text-sm text-red-700 dark:text-red-300">{error}</p>
+			<p class="text-sm text-red-700 dark:text-red-300">{cmpState.error}</p>
 		</div>
 	</div>
 {/if}
 
-{#if response1 || response2}
+{#if cmpState.response1 || cmpState.response2}
 	<div class="mb-4 flex items-center justify-between">
 		<h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Response Comparison</h2>
 		<div class="flex items-center gap-6 text-sm font-medium">
@@ -599,34 +626,43 @@
 		</div>
 	</div>
 
-	{#if currentUrl1 || currentUrl2}
+	{#if cmpState.currentUrl1 || cmpState.currentUrl2}
 		<div
 			class="mb-4 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50"
 		>
 			<div class="text-xs font-medium text-gray-500 dark:text-gray-400">Fetched URLs:</div>
-			{#if currentUrl1}
+			{#if cmpState.currentUrl1}
 				<div class="flex items-start gap-2">
 					<span
 						class="shrink-0 rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
 						>1</span
 					>
-					<code class="text-xs break-all text-gray-700 dark:text-gray-300">{currentUrl1}</code>
+					<code class="text-xs break-all text-gray-700 dark:text-gray-300"
+						>{cmpState.currentUrl1}</code
+					>
 				</div>
 			{/if}
-			{#if currentUrl2}
+			{#if cmpState.currentUrl2}
 				<div class="flex items-start gap-2">
 					<span
 						class="shrink-0 rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/50 dark:text-purple-300"
 						>2</span
 					>
-					<code class="text-xs break-all text-gray-700 dark:text-gray-300">{currentUrl2}</code>
+					<code class="text-xs break-all text-gray-700 dark:text-gray-300"
+						>{cmpState.currentUrl2}</code
+					>
 				</div>
 			{/if}
 		</div>
 	{/if}
 
-	<DiffViewer {response1} {response2} {focusPath} {ignoredKeys} />
-{:else if !loading}
+	<DiffViewer
+		response1={cmpState.response1}
+		response2={cmpState.response2}
+		focusPath={cmpState.focusPath}
+		{ignoredKeys}
+	/>
+{:else if !cmpState.loading}
 	<div
 		class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-16 text-center transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
 	>
@@ -651,7 +687,7 @@
 	</div>
 {/if}
 
-{#if showIgnoreModal}
+{#if cmpState.showIgnoreModal}
 	<div
 		class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 p-4 backdrop-blur-sm transition-all sm:p-6"
 		role="dialog"
@@ -665,7 +701,7 @@
 			>
 				<h3 class="text-lg font-semibold text-gray-800 dark:text-white">Ignore Keys</h3>
 				<button
-					onclick={() => (showIgnoreModal = false)}
+					onclick={() => (cmpState.showIgnoreModal = false)}
 					class="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
 					aria-label="Close"
 				>
@@ -691,7 +727,7 @@
 			>
 				<input
 					type="text"
-					bind:value={ignoreSearch}
+					bind:value={cmpState.ignoreSearch}
 					placeholder="Search keys..."
 					class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
 				/>
@@ -704,7 +740,7 @@
 					</div>
 				{:else}
 					{@const filteredKeys = availableKeys
-						.filter((k) => k.toLowerCase().includes(ignoreSearch.toLowerCase()))
+						.filter((k) => k.toLowerCase().includes(cmpState.ignoreSearch.toLowerCase()))
 						.sort((a, b) => {
 							const aSel = ignoredKeys.includes(a);
 							const bSel = ignoredKeys.includes(b);
@@ -735,7 +771,7 @@
 						{/each}
 						{#if filteredKeys.length === 0}
 							<div class="p-4 text-center text-sm text-gray-400">
-								No keys match "{ignoreSearch}"
+								No keys match "{cmpState.ignoreSearch}"
 							</div>
 						{/if}
 					</div>
@@ -747,7 +783,7 @@
 			>
 				<button
 					onclick={() => {
-						ignoredKeysInput = '';
+						cmpState.ignoredKeysInput = '';
 						handleIgnoreInput();
 					}}
 					class="px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
@@ -755,7 +791,7 @@
 					Clear Selection
 				</button>
 				<button
-					onclick={() => (showIgnoreModal = false)}
+					onclick={() => (cmpState.showIgnoreModal = false)}
 					class="px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
 				>
 					Close
@@ -765,7 +801,7 @@
 	</div>
 {/if}
 
-{#if showWatchModal}
+{#if cmpState.showWatchModal}
 	<div
 		class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 p-4 backdrop-blur-sm transition-all sm:p-6"
 		role="dialog"
@@ -777,9 +813,9 @@
 			<div
 				class="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700"
 			>
-				<h3 class="text-lg font-semibold text-gray-800 dark:text-white">Watch Keys</h3>
+				<h3 class="text-lg font-semibold text-gray-800 dark:text-white">Watch Keys for Logging</h3>
 				<button
-					onclick={() => (showWatchModal = false)}
+					onclick={() => (cmpState.showWatchModal = false)}
 					class="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
 					aria-label="Close"
 				>
@@ -801,14 +837,11 @@
 			</div>
 
 			<div
-				class="border-b border-gray-100 bg-indigo-50/30 p-4 dark:border-gray-700 dark:bg-indigo-900/20"
+				class="border-b border-gray-100 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50"
 			>
-				<div class="mb-3 text-xs text-indigo-600 dark:text-indigo-400">
-					Select keys to automatically log their values to the database when comparing.
-				</div>
 				<input
 					type="text"
-					bind:value={watchSearch}
+					bind:value={cmpState.watchSearch}
 					placeholder="Search keys..."
 					class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
 				/>
@@ -821,7 +854,7 @@
 					</div>
 				{:else}
 					{@const filteredKeys = availableKeys
-						.filter((k) => k.toLowerCase().includes(watchSearch.toLowerCase()))
+						.filter((k) => k.toLowerCase().includes(cmpState.watchSearch.toLowerCase()))
 						.sort((a, b) => {
 							const aSel = watchedKeys.includes(a);
 							const bSel = watchedKeys.includes(b);
@@ -845,14 +878,14 @@
 								>
 								{#if watchedKeys.includes(key)}
 									<span class="ml-auto text-xs font-medium text-indigo-600 dark:text-indigo-400"
-										>Watched</span
+										>Watching</span
 									>
 								{/if}
 							</label>
 						{/each}
 						{#if filteredKeys.length === 0}
 							<div class="p-4 text-center text-sm text-gray-400">
-								No keys match "{watchSearch}"
+								No keys match "{cmpState.watchSearch}"
 							</div>
 						{/if}
 					</div>
@@ -864,7 +897,7 @@
 			>
 				<button
 					onclick={() => {
-						watchedKeysInput = '';
+						cmpState.watchedKeysInput = '';
 						handleWatchInput();
 					}}
 					class="px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
@@ -872,7 +905,7 @@
 					Clear Selection
 				</button>
 				<button
-					onclick={() => (showWatchModal = false)}
+					onclick={() => (cmpState.showWatchModal = false)}
 					class="px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
 				>
 					Close

@@ -23,6 +23,16 @@ export default tseslint.config(
 		}
 	},
 	{
+		files: ['**/*.ts', '**/*.svelte.ts'],
+		languageOptions: {
+			parser: tseslint.parser,
+			parserOptions: {
+				project: true,
+				tsconfigRootDir: import.meta.dirname
+			}
+		}
+	},
+	{
 		files: ['**/*.svelte'],
 		languageOptions: {
 			parserOptions: {

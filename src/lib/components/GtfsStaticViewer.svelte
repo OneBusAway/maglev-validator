@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import SqlEditor from './SqlEditor.svelte';
+	import { gtfsStaticState as gtfsState, type GtfsFile } from '$lib/panelState.svelte';
 
 	const GTFS_FILES: Record<string, { required: boolean; description: string; columns: string[] }> =
 		{
@@ -229,13 +230,6 @@
 		12: 'Monorail'
 	};
 
-	interface GtfsFile {
-		id: number;
-		name: string;
-		columns: string[];
-		rowCount: number;
-	}
-
 	interface DbFeed {
 		id: number;
 		name: string;
@@ -243,74 +237,17 @@
 		created_at: number;
 	}
 
-	let feedUrl = $state('');
-	let loading = $state(false);
-	let loadingData = $state(false);
-	let uploadProgress = $state('');
-	let uploadProgressPercent = $state(0);
-	let currentProcessingFile = $state('');
-	let error = $state<string | null>(null);
-
-	let gtfsFiles = $state<GtfsFile[]>([]);
-	let selectedFileId = $state<number | null>(null);
-	let selectedFileName = $state<string | null>(null);
-
-	let searchQuery = $state('');
-	let debouncedSearchQuery = $state('');
-	let sortColumn = $state<string | null>(null);
-	let sortDirection = $state<'asc' | 'desc'>('asc');
-	let currentPage = $state(1);
-	let pageSize = $state(50);
-	let totalPages = $state(1);
-	let totalRows = $state(0);
-
-	let displayData = $state<Record<string, string>[]>([]);
-	let currentColumns = $state<string[]>([]);
-
-	let convertTimes = $state(true);
-	let convertDates = $state(true);
-
-	let renderKey = $derived(convertTimes ? 1 : 0 + (convertDates ? 2 : 0));
-
 	let fileInputRef = $state<HTMLInputElement | null>(null);
 	let dragOver = $state(false);
-	let isSearching = $state(false);
-	let showGtfsInput = $state(true);
 
-	let activeTab = $state<'browser' | 'sql'>('browser');
-	let sqlQuery = $state('SELECT * FROM stops LIMIT 100');
-	let sqlResult = $state<{
-		columns: string[];
-		rows: Record<string, unknown>[];
-		rowCount: number;
-		executionTime: number;
-		truncated: boolean;
-	} | null>(null);
-	let sqlError = $state<string | null>(null);
-	let sqlLoading = $state(false);
-	let availableTables = $state<
-		Array<{
-			name: string;
-			displayName: string;
-			columns: string[];
-			rowCount: number;
-		}>
-	>([]);
-	let queryHistory = $state<string[]>([]);
-	let favoriteQueries = $state<Array<{ name: string; query: string }>>([]);
-	let showSaveFavoriteModal = $state(false);
-	let newFavoriteName = $state('');
-	let isDarkMode = $state(false);
-	let sqlResultSearch = $state('');
-	let sqlResultPage = $state(1);
-	let sqlResultPageSize = $state(50);
+	let debouncedSearchQuery = $state('');
 
 	let filteredSqlRows = $derived.by(() => {
-		if (!sqlResult || !sqlResultSearch.trim()) {
-			return sqlResult?.rows ?? [];
+		if (!gtfsState.sqlResult || !gtfsState.sqlResultSearch.trim()) {
+			return gtfsState.sqlResult?.rows ?? [];
 		}
-		const searchLower = sqlResultSearch.toLowerCase();
-		return sqlResult.rows.filter((row) =>
+		const searchLower = gtfsState.sqlResultSearch.toLowerCase();
+		return gtfsState.sqlResult.rows.filter((row) =>
 			Object.values(row).some((val) =>
 				String(val ?? '')
 					.toLowerCase()
@@ -319,23 +256,27 @@
 		);
 	});
 
-	let sqlTotalPages = $derived(Math.ceil(filteredSqlRows.length / sqlResultPageSize) || 1);
+	let sqlTotalPages = $derived(
+		Math.ceil(filteredSqlRows.length / gtfsState.sqlResultPageSize) || 1
+	);
 
 	let paginatedSqlRows = $derived.by(() => {
-		const start = (sqlResultPage - 1) * sqlResultPageSize;
-		const end = start + sqlResultPageSize;
+		const start = (gtfsState.sqlResultPage - 1) * gtfsState.sqlResultPageSize;
+		const end = start + gtfsState.sqlResultPageSize;
 		return filteredSqlRows.slice(start, end);
 	});
 
 	$effect(() => {
-		if (sqlResultSearch) {
-			sqlResultPage = 1;
+		if (gtfsState.sqlResultSearch) {
+			gtfsState.sqlResultPage = 1;
 		}
 	});
 
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 	let savedUrls = $state<string[]>([]);
+
+	let isDarkMode = $state(false);
 
 	onMount(async () => {
 		if (typeof localStorage !== 'undefined') {
@@ -348,23 +289,23 @@
 				}
 			}
 			const savedUrl = localStorage.getItem('gtfsStaticLastUrl');
-			if (savedUrl) feedUrl = savedUrl;
+			if (savedUrl && !gtfsState.feedUrl) gtfsState.feedUrl = savedUrl;
 
 			const savedFavorites = localStorage.getItem('gtfsSqlFavorites');
 			if (savedFavorites) {
 				try {
-					favoriteQueries = JSON.parse(savedFavorites);
+					gtfsState.favoriteQueries = JSON.parse(savedFavorites);
 				} catch {
-					favoriteQueries = [];
+					gtfsState.favoriteQueries = [];
 				}
 			}
 
 			const savedHistory = localStorage.getItem('gtfsSqlHistory');
 			if (savedHistory) {
 				try {
-					queryHistory = JSON.parse(savedHistory);
+					gtfsState.queryHistory = JSON.parse(savedHistory);
 				} catch {
-					queryHistory = [];
+					gtfsState.queryHistory = [];
 				}
 			}
 		}
@@ -382,7 +323,6 @@
 			const data = await response.json();
 			if (data.feeds && data.feeds.length > 0) {
 				const latestFeed = data.feeds[0] as DbFeed;
-
 				await loadFeedFiles(latestFeed.id);
 			}
 		} catch (e) {
@@ -395,7 +335,7 @@
 			const response = await fetch(`/api/gtfs-static-db?action=files&feedId=${feedId}`);
 			const data = await response.json();
 			if (data.files) {
-				gtfsFiles = data.files.map(
+				gtfsState.gtfsFiles = data.files.map(
 					(f: { id: number; filename: string; columns: string[]; row_count: number }) => ({
 						id: f.id,
 						name: f.filename,
@@ -404,15 +344,15 @@
 					})
 				);
 
-				gtfsFiles.sort((a, b) => {
+				gtfsState.gtfsFiles.sort((a, b) => {
 					const aRequired = GTFS_FILES[a.name]?.required ?? false;
 					const bRequired = GTFS_FILES[b.name]?.required ?? false;
 					if (aRequired !== bRequired) return bRequired ? 1 : -1;
 					return a.name.localeCompare(b.name);
 				});
 
-				if (gtfsFiles.length > 0) {
-					await selectFile(gtfsFiles[0]);
+				if (gtfsState.gtfsFiles.length > 0 && !gtfsState.selectedFileId) {
+					await selectFile(gtfsState.gtfsFiles[0]);
 				}
 			}
 		} catch (e) {
@@ -421,23 +361,23 @@
 	}
 
 	async function queryData() {
-		if (!selectedFileId) return;
+		if (!gtfsState.selectedFileId) return;
 
-		loadingData = true;
+		gtfsState.loadingData = true;
 		try {
 			const queryParams: Record<string, string> = {
 				action: 'query',
-				fileId: String(selectedFileId),
-				page: String(currentPage),
-				pageSize: String(pageSize)
+				fileId: String(gtfsState.selectedFileId),
+				page: String(gtfsState.currentPage),
+				pageSize: String(gtfsState.pageSize)
 			};
 
 			if (debouncedSearchQuery) {
 				queryParams.search = debouncedSearchQuery;
 			}
-			if (sortColumn) {
-				queryParams.sortColumn = sortColumn;
-				queryParams.sortDirection = sortDirection;
+			if (gtfsState.sortColumn) {
+				queryParams.sortColumn = gtfsState.sortColumn;
+				queryParams.sortDirection = gtfsState.sortDirection;
 			}
 
 			const params = new URLSearchParams(queryParams);
@@ -445,26 +385,20 @@
 			const response = await fetch(`/api/gtfs-static-db?${params}`);
 			const data = await response.json();
 
-			displayData = data.rows || [];
-			totalRows = data.totalCount || 0;
-			totalPages = data.totalPages || 1;
-
-			if (displayData.length > 0) {
-				console.log('Columns:', currentColumns);
-				console.log('First row keys:', Object.keys(displayData[0]));
-				console.log('First row:', displayData[0]);
-			}
+			gtfsState.rows = data.rows || [];
+			gtfsState.totalRows = data.totalCount || 0;
+			gtfsState.totalPages = data.totalPages || 1;
 		} catch (e) {
 			console.error('Failed to query data:', e);
-			error = 'Failed to load data';
+			gtfsState.error = 'Failed to load data';
 		} finally {
-			loadingData = false;
-			isSearching = false;
+			gtfsState.loadingData = false;
+			gtfsState.isSearching = false;
 		}
 	}
 
 	$effect(() => {
-		if (selectedFileId) {
+		if (gtfsState.selectedFileId) {
 			queryData();
 		}
 	});
@@ -494,30 +428,29 @@
 	}
 
 	async function processZipFile(file: File | Blob, sourceUrl?: string) {
-		loading = true;
-		error = null;
-		gtfsFiles = [];
-		selectedFileId = null;
-		selectedFileName = null;
-		displayData = [];
-		uploadProgressPercent = 5;
-		currentProcessingFile = 'Starting...';
-		uploadProgress = 'Initializing...';
+		gtfsState.loading = true;
+		gtfsState.error = null;
+		gtfsState.gtfsFiles = [];
+		gtfsState.selectedFileId = null;
+		gtfsState.selectedFileName = null;
+		gtfsState.rows = [];
+		gtfsState.uploadProgressPercent = 5;
+		gtfsState.currentProcessingFile = 'Starting...';
+		gtfsState.uploadProgress = 'Initializing...';
 
 		await yieldToUI();
 
 		try {
 			console.log('Processing zip file, size:', file.size);
-			uploadProgress = 'Extracting ZIP file...';
-			currentProcessingFile = 'Reading ZIP file...';
-			uploadProgressPercent = 10;
+			gtfsState.uploadProgress = 'Extracting ZIP file...';
+			gtfsState.currentProcessingFile = 'Reading ZIP file...';
+			gtfsState.uploadProgressPercent = 10;
 			await yieldToUI();
 
 			const JSZip = (await import('jszip')).default;
 			const zip = await JSZip.loadAsync(file);
 
 			const zipFileNames = Object.keys(zip.files);
-			console.log('Files in zip:', zipFileNames);
 
 			if (zipFileNames.length === 0) {
 				throw new Error('The ZIP file appears to be empty');
@@ -536,9 +469,9 @@
 				const [filename, zipEntry] = txtFiles[i];
 				const baseName = filename.split('/').pop() || filename;
 
-				currentProcessingFile = baseName;
-				uploadProgressPercent = Math.round(((i + 1) / totalFiles) * 40);
-				uploadProgress = `Reading ${baseName} (${i + 1}/${totalFiles})...`;
+				gtfsState.currentProcessingFile = baseName;
+				gtfsState.uploadProgressPercent = Math.round(((i + 1) / totalFiles) * 40);
+				gtfsState.uploadProgress = `Reading ${baseName} (${i + 1}/${totalFiles})...`;
 
 				await yieldToUI();
 
@@ -549,7 +482,6 @@
 							filename: baseName,
 							content
 						});
-						console.log(`Read ${baseName}: ${content.length} bytes`);
 					}
 				} catch (readError) {
 					console.warn(`Failed to read ${baseName}:`, readError);
@@ -560,12 +492,10 @@
 				throw new Error('No valid GTFS files found in the ZIP');
 			}
 
-			uploadProgress = 'Uploading to server for processing...';
-			uploadProgressPercent = 50;
-			currentProcessingFile = 'Sending to server...';
+			gtfsState.uploadProgress = 'Uploading to server for processing...';
+			gtfsState.uploadProgressPercent = 50;
+			gtfsState.currentProcessingFile = 'Sending to server...';
 			await yieldToUI();
-
-			console.log('Uploading', rawFiles.length, 'files to database');
 
 			const response = await fetch('/api/gtfs-static-db', {
 				method: 'POST',
@@ -578,7 +508,7 @@
 				})
 			});
 
-			uploadProgressPercent = 90;
+			gtfsState.uploadProgressPercent = 90;
 			await yieldToUI();
 
 			const result = await response.json();
@@ -587,7 +517,7 @@
 				throw new Error(result.error || 'Failed to upload to database');
 			}
 
-			gtfsFiles = result.files.map(
+			gtfsState.gtfsFiles = result.files.map(
 				(f: { id: number; filename: string; columns: string[]; rowCount: number }) => ({
 					id: f.id,
 					name: f.filename,
@@ -596,34 +526,33 @@
 				})
 			);
 
-			gtfsFiles.sort((a, b) => {
+			gtfsState.gtfsFiles.sort((a, b) => {
 				const aRequired = GTFS_FILES[a.name]?.required ?? false;
 				const bRequired = GTFS_FILES[b.name]?.required ?? false;
 				if (aRequired !== bRequired) return bRequired ? 1 : -1;
 				return a.name.localeCompare(b.name);
 			});
 
-			uploadProgressPercent = 100;
-			uploadProgress = 'Complete!';
+			gtfsState.uploadProgressPercent = 100;
+			gtfsState.uploadProgress = 'Complete!';
 			await yieldToUI();
 
-			if (gtfsFiles.length > 0) {
-				await selectFile(gtfsFiles[0]);
+			if (gtfsState.gtfsFiles.length > 0) {
+				await selectFile(gtfsState.gtfsFiles[0]);
 			}
 
-			uploadProgress = '';
-			uploadProgressPercent = 0;
-			currentProcessingFile = '';
-			showGtfsInput = false; // Auto-collapse input section after successful load
-			console.log('Successfully loaded', gtfsFiles.length, 'GTFS files to database');
+			gtfsState.uploadProgress = '';
+			gtfsState.uploadProgressPercent = 0;
+			gtfsState.currentProcessingFile = '';
+			gtfsState.showGtfsInput = false;
 		} catch (e) {
 			console.error('Error processing zip:', e);
-			error = e instanceof Error ? e.message : 'Failed to process GTFS file';
-			uploadProgress = '';
-			uploadProgressPercent = 0;
-			currentProcessingFile = '';
+			gtfsState.error = e instanceof Error ? e.message : 'Failed to process GTFS file';
+			gtfsState.uploadProgress = '';
+			gtfsState.uploadProgressPercent = 0;
+			gtfsState.currentProcessingFile = '';
 		} finally {
-			loading = false;
+			gtfsState.loading = false;
 		}
 	}
 
@@ -656,39 +585,39 @@
 	}
 
 	async function fetchFromUrl() {
-		if (!feedUrl.trim()) {
-			error = 'Please enter a valid URL';
+		if (!gtfsState.feedUrl.trim()) {
+			gtfsState.error = 'Please enter a valid URL';
 			return;
 		}
 
-		loading = true;
-		error = null;
-		gtfsFiles = [];
-		selectedFileId = null;
-		selectedFileName = null;
-		displayData = [];
-		uploadProgressPercent = 5;
-		currentProcessingFile = 'Starting...';
-		uploadProgress = 'Fetching GTFS file...';
+		gtfsState.loading = true;
+		gtfsState.error = null;
+		gtfsState.gtfsFiles = [];
+		gtfsState.selectedFileId = null;
+		gtfsState.selectedFileName = null;
+		gtfsState.rows = [];
+		gtfsState.uploadProgressPercent = 5;
+		gtfsState.currentProcessingFile = 'Starting...';
+		gtfsState.uploadProgress = 'Fetching GTFS file...';
 
 		await yieldToUI();
 
 		try {
-			uploadProgress = 'Fetching GTFS file...';
-			uploadProgressPercent = 10;
-			currentProcessingFile = 'Downloading from URL...';
+			gtfsState.uploadProgress = 'Fetching GTFS file...';
+			gtfsState.uploadProgressPercent = 10;
+			gtfsState.currentProcessingFile = 'Downloading from URL...';
 			await yieldToUI();
 
-			console.log('Fetching from URL:', feedUrl);
+			console.log('Fetching from URL:', gtfsState.feedUrl);
 
 			const response = await fetch('/api/gtfs-static', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ url: feedUrl })
+				body: JSON.stringify({ url: gtfsState.feedUrl })
 			});
 
 			console.log('Response received');
-			uploadProgressPercent = 30;
+			gtfsState.uploadProgressPercent = 30;
 			await yieldToUI();
 
 			const contentType = response.headers.get('content-type') || '';
@@ -702,8 +631,8 @@
 				throw new Error(`Failed to fetch GTFS file: ${response.status} ${response.statusText}`);
 			}
 
-			uploadProgress = 'Downloading file...';
-			uploadProgressPercent = 40;
+			gtfsState.uploadProgress = 'Downloading file...';
+			gtfsState.uploadProgressPercent = 40;
 			await yieldToUI();
 
 			const blob = await response.blob();
@@ -713,15 +642,15 @@
 				throw new Error('Received empty file from server');
 			}
 
-			await processZipFile(blob, feedUrl);
-			saveUrl(feedUrl);
+			await processZipFile(blob, gtfsState.feedUrl);
+			saveUrl(gtfsState.feedUrl);
 		} catch (e) {
 			console.error('fetchFromUrl error:', e);
-			error = e instanceof Error ? e.message : 'Failed to fetch GTFS file';
-			loading = false;
-			uploadProgress = '';
-			uploadProgressPercent = 0;
-			currentProcessingFile = '';
+			gtfsState.error = e instanceof Error ? e.message : 'Failed to fetch GTFS file';
+			gtfsState.loading = false;
+			gtfsState.uploadProgress = '';
+			gtfsState.uploadProgressPercent = 0;
+			gtfsState.currentProcessingFile = '';
 		}
 	}
 
@@ -862,41 +791,43 @@
 	}
 
 	function getSelectedFileInfo(): GtfsFile | null {
-		return gtfsFiles.find((f) => f.id === selectedFileId) || null;
+		return gtfsState.gtfsFiles.find((f: GtfsFile) => f.id === gtfsState.selectedFileId) || null;
 	}
 
 	function toggleSort(column: string) {
-		if (sortColumn === column) {
-			sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+		if (gtfsState.sortColumn === column) {
+			gtfsState.sortDirection = gtfsState.sortDirection === 'asc' ? 'desc' : 'asc';
 		} else {
-			sortColumn = column;
-			sortDirection = 'asc';
+			gtfsState.sortColumn = column;
+			gtfsState.sortDirection = 'asc';
 		}
-		currentPage = 1;
+		gtfsState.currentPage = 1;
+		queryData();
 	}
 
 	function handleSearch() {
 		if (debounceTimer) {
 			clearTimeout(debounceTimer);
 		}
-		isSearching = true;
+		gtfsState.isSearching = true;
 
 		debounceTimer = setTimeout(() => {
-			debouncedSearchQuery = searchQuery;
-			currentPage = 1;
+			debouncedSearchQuery = gtfsState.searchQuery;
+			gtfsState.currentPage = 1;
+			queryData();
 		}, 300);
 	}
 
 	async function selectFile(file: GtfsFile) {
-		selectedFileId = file.id;
-		selectedFileName = file.name;
-		currentColumns = file.columns;
-		searchQuery = '';
+		gtfsState.selectedFileId = file.id;
+		gtfsState.selectedFileName = file.name;
+		gtfsState.headers = file.columns;
+		gtfsState.searchQuery = '';
 		debouncedSearchQuery = '';
-		sortColumn = null;
-		sortDirection = 'asc';
-		currentPage = 1;
-		displayData = [];
+		gtfsState.sortColumn = null;
+		gtfsState.sortDirection = 'asc';
+		gtfsState.currentPage = 1;
+		gtfsState.rows = [];
 	}
 
 	onDestroy(() => {
@@ -912,7 +843,7 @@
 		try {
 			const queryParams: Record<string, string> = {
 				action: 'query',
-				fileId: String(selectedFileId),
+				fileId: String(gtfsState.selectedFileId),
 				page: '1',
 				pageSize: '100000'
 			};
@@ -950,7 +881,7 @@
 			URL.revokeObjectURL(url);
 		} catch (e) {
 			console.error('Export failed:', e);
-			error = 'Failed to export data';
+			gtfsState.error = 'Failed to export data';
 		}
 	}
 
@@ -969,7 +900,7 @@
 			});
 			const data = await response.json();
 			if (data.tables) {
-				availableTables = data.tables;
+				gtfsState.availableTables = data.tables;
 			}
 		} catch (e) {
 			console.error('Failed to load tables:', e);
@@ -977,16 +908,16 @@
 	}
 
 	async function executeSQL() {
-		if (!sqlQuery.trim()) {
-			sqlError = 'Please enter a SQL query';
+		if (!gtfsState.sqlQuery.trim()) {
+			gtfsState.sqlError = 'Please enter a SQL query';
 			return;
 		}
 
-		sqlLoading = true;
-		sqlError = null;
-		sqlResult = null;
-		sqlResultSearch = '';
-		sqlResultPage = 1;
+		gtfsState.sqlLoading = true;
+		gtfsState.sqlError = null;
+		gtfsState.sqlResult = null;
+		gtfsState.sqlResultSearch = '';
+		gtfsState.sqlResultPage = 1;
 
 		try {
 			const response = await fetch('/api/gtfs-static-db', {
@@ -994,7 +925,7 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					action: 'sql',
-					query: sqlQuery,
+					query: gtfsState.sqlQuery,
 					limit: 10000
 				})
 			});
@@ -1002,82 +933,87 @@
 			const data = await response.json();
 
 			if (!response.ok || data.error) {
-				sqlError = data.error || 'Query execution failed';
+				gtfsState.sqlError = data.error || 'Query execution failed';
 				return;
 			}
 
-			sqlResult = data;
+			gtfsState.sqlResult = data;
 
-			if (!queryHistory.includes(sqlQuery)) {
-				queryHistory = [sqlQuery, ...queryHistory.slice(0, 19)];
+			if (!gtfsState.queryHistory.includes(gtfsState.sqlQuery)) {
+				gtfsState.queryHistory = [gtfsState.sqlQuery, ...gtfsState.queryHistory.slice(0, 19)];
 				if (typeof localStorage !== 'undefined') {
-					localStorage.setItem('gtfsSqlHistory', JSON.stringify(queryHistory));
+					localStorage.setItem('gtfsSqlHistory', JSON.stringify(gtfsState.queryHistory));
 				}
 			}
 		} catch (e) {
-			sqlError = e instanceof Error ? e.message : 'Failed to execute query';
+			gtfsState.sqlError = e instanceof Error ? e.message : 'Failed to execute query';
 		} finally {
-			sqlLoading = false;
+			gtfsState.sqlLoading = false;
 		}
 	}
 
 	function loadQueryFromHistory(query: string) {
-		sqlQuery = query;
+		gtfsState.sqlQuery = query;
 	}
 
 	function clearQueryHistory() {
-		queryHistory = [];
+		gtfsState.queryHistory = [];
 		if (typeof localStorage !== 'undefined') {
 			localStorage.removeItem('gtfsSqlHistory');
 		}
 	}
 
 	function insertTableName(tableName: string) {
-		sqlQuery = `SELECT * FROM ${tableName} LIMIT 100`;
+		gtfsState.sqlQuery = `SELECT * FROM ${tableName} LIMIT 100`;
 	}
 
 	function addToFavorites() {
-		if (!sqlQuery.trim()) return;
-		showSaveFavoriteModal = true;
-		newFavoriteName = '';
+		if (!gtfsState.sqlQuery.trim()) return;
+		gtfsState.showSaveFavoriteModal = true;
+		gtfsState.newFavoriteName = '';
 	}
 
 	function saveFavorite() {
-		if (!newFavoriteName.trim() || !sqlQuery.trim()) return;
+		if (!gtfsState.newFavoriteName.trim() || !gtfsState.sqlQuery.trim()) return;
 
-		const existingIndex = favoriteQueries.findIndex((f) => f.name === newFavoriteName.trim());
+		const existingIndex = gtfsState.favoriteQueries.findIndex(
+			(f) => f.name === gtfsState.newFavoriteName.trim()
+		);
 		if (existingIndex >= 0) {
-			favoriteQueries[existingIndex].query = sqlQuery;
+			gtfsState.favoriteQueries[existingIndex].query = gtfsState.sqlQuery;
 		} else {
-			favoriteQueries = [...favoriteQueries, { name: newFavoriteName.trim(), query: sqlQuery }];
+			gtfsState.favoriteQueries = [
+				...gtfsState.favoriteQueries,
+				{ name: gtfsState.newFavoriteName.trim(), query: gtfsState.sqlQuery }
+			];
 		}
 
 		if (typeof localStorage !== 'undefined') {
-			localStorage.setItem('gtfsSqlFavorites', JSON.stringify(favoriteQueries));
+			localStorage.setItem('gtfsSqlFavorites', JSON.stringify(gtfsState.favoriteQueries));
 		}
 
-		showSaveFavoriteModal = false;
-		newFavoriteName = '';
+		gtfsState.showSaveFavoriteModal = false;
+		gtfsState.newFavoriteName = '';
 	}
 
 	function removeFavorite(name: string) {
-		favoriteQueries = favoriteQueries.filter((f) => f.name !== name);
+		gtfsState.favoriteQueries = gtfsState.favoriteQueries.filter((f) => f.name !== name);
 		if (typeof localStorage !== 'undefined') {
-			localStorage.setItem('gtfsSqlFavorites', JSON.stringify(favoriteQueries));
+			localStorage.setItem('gtfsSqlFavorites', JSON.stringify(gtfsState.favoriteQueries));
 		}
 	}
 
 	function loadFavorite(query: string) {
-		sqlQuery = query;
+		gtfsState.sqlQuery = query;
 	}
 
 	function exportSqlResultToCSV() {
-		if (!sqlResult || sqlResult.rows.length === 0) return;
+		if (!gtfsState.sqlResult || gtfsState.sqlResult.rows.length === 0) return;
 
-		const headers = sqlResult.columns.join(',');
-		const csvRows = sqlResult.rows.map((row) =>
-			sqlResult!.columns
-				.map((col) => {
+		const headers = gtfsState.sqlResult.columns.join(',');
+		const csvRows = gtfsState.sqlResult.rows.map((row) =>
+			gtfsState
+				.sqlResult!.columns.map((col) => {
 					const val = String(row[col] ?? '');
 					if (val.includes(',') || val.includes('"') || val.includes('\n')) {
 						return `"${val.replace(/"/g, '""')}"`;
@@ -1098,19 +1034,24 @@
 	}
 
 	$effect(() => {
-		if (activeTab === 'sql' && gtfsFiles.length > 0 && availableTables.length === 0) {
+		if (
+			gtfsState.activeTab === 'sql' &&
+			gtfsState.gtfsFiles.length > 0 &&
+			gtfsState.availableTables.length === 0
+		) {
 			loadAvailableTables();
 		}
 	});
 </script>
 
-<div class="space-y-6">
-	{#if gtfsFiles.length > 0 && !showGtfsInput && !loading}
-		<!-- Collapsed state: show small button to expand -->
+<div
+	class="flex min-h-screen flex-col bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100"
+>
+	{#if !gtfsState.showGtfsInput}
 		<div class="flex items-center gap-3">
 			<button
 				onclick={() => {
-					showGtfsInput = true;
+					gtfsState.showGtfsInput = true;
 				}}
 				class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
 			>
@@ -1125,7 +1066,7 @@
 				Load New GTFS Feed
 			</button>
 			<span class="text-sm text-gray-500 dark:text-gray-400">
-				{gtfsFiles.length} files loaded
+				{gtfsState.gtfsFiles.length} files loaded
 			</span>
 		</div>
 	{:else}
@@ -1134,10 +1075,10 @@
 		>
 			<div class="mb-4 flex items-center justify-between">
 				<h2 class="text-lg font-semibold text-gray-900 dark:text-white">Load GTFS Static Feed</h2>
-				{#if gtfsFiles.length > 0 && !loading}
+				{#if gtfsState.gtfsFiles.length > 0 && !gtfsState.loading}
 					<button
 						onclick={() => {
-							showGtfsInput = false;
+							gtfsState.showGtfsInput = false;
 						}}
 						class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
 						title="Collapse this section"
@@ -1167,11 +1108,11 @@
 						<input
 							id="gtfs-url-input"
 							type="url"
-							bind:value={feedUrl}
+							bind:value={gtfsState.feedUrl}
 							placeholder="https://example.com/gtfs.zip"
-							disabled={loading}
+							disabled={gtfsState.loading}
 							class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
-							onkeydown={(e) => e.key === 'Enter' && !loading && fetchFromUrl()}
+							onkeydown={(e) => e.key === 'Enter' && !gtfsState.loading && fetchFromUrl()}
 						/>
 						{#if savedUrls.length > 0}
 							<div class="absolute top-1/2 right-2 -translate-y-1/2">
@@ -1198,7 +1139,7 @@
 											>
 												<button
 													onclick={() => {
-														feedUrl = url;
+														gtfsState.feedUrl = url;
 														fetchFromUrl();
 													}}
 													class="flex-1 truncate text-left text-sm text-gray-700 dark:text-gray-300"
@@ -1234,10 +1175,10 @@
 					</div>
 					<button
 						onclick={fetchFromUrl}
-						disabled={loading}
+						disabled={gtfsState.loading}
 						class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
 					>
-						{#if loading}
+						{#if gtfsState.loading}
 							<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
 								<circle
 									class="opacity-25"
@@ -1246,6 +1187,7 @@
 									r="10"
 									stroke="currentColor"
 									stroke-width="4"
+									stroke-linecap="round"
 								></circle>
 								<path
 									class="opacity-75"
@@ -1276,16 +1218,16 @@
 					Or upload a file
 				</label>
 				<div
-					class="relative rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition-colors dark:border-gray-700 {loading
+					class="relative rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition-colors dark:border-gray-700 {gtfsState.loading
 						? 'cursor-not-allowed opacity-50'
-						: ''} {dragOver && !loading
+						: ''} {dragOver && !gtfsState.loading
 						? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
 						: 'hover:border-gray-400 dark:hover:border-gray-600'}"
-					ondrop={loading ? undefined : handleDrop}
-					ondragover={loading ? undefined : handleDragOver}
-					ondragleave={loading ? undefined : handleDragLeave}
+					ondrop={gtfsState.loading ? undefined : handleDrop}
+					ondragover={gtfsState.loading ? undefined : handleDragOver}
+					ondragleave={gtfsState.loading ? undefined : handleDragLeave}
 					role="button"
-					tabindex={loading ? -1 : 0}
+					tabindex={gtfsState.loading ? -1 : 0}
 				>
 					<input
 						id="gtfs-file-input"
@@ -1293,8 +1235,10 @@
 						accept=".zip"
 						bind:this={fileInputRef}
 						onchange={handleFileUpload}
-						disabled={loading}
-						class="absolute inset-0 cursor-pointer opacity-0 {loading ? 'pointer-events-none' : ''}"
+						disabled={gtfsState.loading}
+						class="absolute inset-0 cursor-pointer opacity-0 {gtfsState.loading
+							? 'pointer-events-none'
+							: ''}"
 					/>
 					<svg
 						class="mx-auto h-10 w-10 text-gray-400"
@@ -1317,7 +1261,7 @@
 				</div>
 			</div>
 
-			{#if error}
+			{#if gtfsState.error}
 				<div
 					class="rounded-lg bg-red-50 p-4 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400"
 				>
@@ -1330,12 +1274,12 @@
 								d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
 							/>
 						</svg>
-						{error}
+						{gtfsState.error}
 					</div>
 				</div>
 			{/if}
 
-			{#if loading}
+			{#if gtfsState.loading}
 				<div
 					class="flex flex-col items-center justify-center gap-4 rounded-lg bg-blue-50 p-6 dark:bg-blue-900/20"
 				>
@@ -1360,20 +1304,20 @@
 							></path>
 						</svg>
 						<span class="text-sm font-medium text-blue-700 dark:text-blue-300">
-							{uploadProgress || 'Loading GTFS feed...'}
+							{gtfsState.uploadProgress || 'Loading GTFS feed...'}
 						</span>
 					</div>
 
-					{#if uploadProgressPercent > 0}
+					{#if gtfsState.uploadProgressPercent > 0}
 						<div class="w-full max-w-md">
 							<div class="mb-1 flex justify-between text-xs text-gray-600 dark:text-gray-400">
-								<span>{currentProcessingFile || 'Processing...'}</span>
-								<span>{uploadProgressPercent}%</span>
+								<span>{gtfsState.currentProcessingFile || 'Processing...'}</span>
+								<span>{gtfsState.uploadProgressPercent}%</span>
 							</div>
 							<div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
 								<div
 									class="h-full rounded-full bg-blue-600 transition-all duration-300 ease-out dark:bg-blue-500"
-									style="width: {uploadProgressPercent}%"
+									style="width: {gtfsState.uploadProgressPercent}%"
 								></div>
 							</div>
 						</div>
@@ -1383,13 +1327,14 @@
 		</div>
 	{/if}
 
-	{#if gtfsFiles.length > 0}
+	{#if gtfsState.gtfsFiles.length > 0}
 		<div class="mb-4 flex border-b border-gray-200 dark:border-gray-700">
 			<button
 				onclick={() => {
-					activeTab = 'browser';
+					gtfsState.activeTab = 'browser';
 				}}
-				class="relative px-6 py-3 text-sm font-medium transition-colors {activeTab === 'browser'
+				class="relative px-6 py-3 text-sm font-medium transition-colors {gtfsState.activeTab ===
+				'browser'
 					? 'text-blue-600 dark:text-blue-400'
 					: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}"
 			>
@@ -1404,15 +1349,16 @@
 					</svg>
 					File Browser
 				</span>
-				{#if activeTab === 'browser'}
+				{#if gtfsState.activeTab === 'browser'}
 					<span class="absolute right-0 bottom-0 left-0 h-0.5 bg-blue-600 dark:bg-blue-400"></span>
 				{/if}
 			</button>
 			<button
 				onclick={() => {
-					activeTab = 'sql';
+					gtfsState.activeTab = 'sql';
 				}}
-				class="relative px-6 py-3 text-sm font-medium transition-colors {activeTab === 'sql'
+				class="relative px-6 py-3 text-sm font-medium transition-colors {gtfsState.activeTab ===
+				'sql'
 					? 'text-blue-600 dark:text-blue-400'
 					: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}"
 			>
@@ -1427,13 +1373,13 @@
 					</svg>
 					SQL Query
 				</span>
-				{#if activeTab === 'sql'}
+				{#if gtfsState.activeTab === 'sql'}
 					<span class="absolute right-0 bottom-0 left-0 h-0.5 bg-blue-600 dark:bg-blue-400"></span>
 				{/if}
 			</button>
 		</div>
 
-		{#if activeTab === 'browser'}
+		{#if gtfsState.activeTab === 'browser'}
 			<div class="grid grid-cols-12 gap-6">
 				<div class="col-span-3">
 					<div
@@ -1441,15 +1387,15 @@
 					>
 						<div class="border-b border-gray-200 p-4 dark:border-gray-700">
 							<h3 class="text-sm font-semibold text-gray-900 dark:text-white">
-								Files ({gtfsFiles.length})
+								Files ({gtfsState.gtfsFiles.length})
 							</h3>
 						</div>
-						<div class="max-h-[600px] overflow-auto p-2">
-							{#each gtfsFiles as file (file.id)}
+						<div class="max-h-150 overflow-auto p-2">
+							{#each gtfsState.gtfsFiles as file (file.id)}
 								{@const info = GTFS_FILES[file.name]}
 								<button
 									onclick={() => selectFile(file)}
-									class="mb-1 w-full rounded-lg px-3 py-2 text-left transition-colors {selectedFileId ===
+									class="mb-1 w-full rounded-lg px-3 py-2 text-left transition-colors {gtfsState.selectedFileId ===
 									file.id
 										? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
 										: 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}"
@@ -1484,35 +1430,43 @@
 						<div class="space-y-2 text-sm">
 							<div class="flex justify-between text-gray-600 dark:text-gray-400">
 								<span>Total Files</span>
-								<span class="font-medium text-gray-900 dark:text-white">{gtfsFiles.length}</span>
+								<span class="font-medium text-gray-900 dark:text-white"
+									>{gtfsState.gtfsFiles.length}</span
+								>
 							</div>
 							<div class="flex justify-between text-gray-600 dark:text-gray-400">
 								<span>Total Rows</span>
 								<span class="font-medium text-gray-900 dark:text-white">
-									{gtfsFiles.reduce((sum, f) => sum + f.rowCount, 0).toLocaleString()}
+									{gtfsState.gtfsFiles.reduce((sum, f) => sum + f.rowCount, 0).toLocaleString()}
 								</span>
 							</div>
-							{#if gtfsFiles.find((f) => f.name === 'routes.txt')}
+							{#if gtfsState.gtfsFiles.find((f) => f.name === 'routes.txt')}
 								<div class="flex justify-between text-gray-600 dark:text-gray-400">
 									<span>Routes</span>
 									<span class="font-medium text-gray-900 dark:text-white">
-										{gtfsFiles.find((f) => f.name === 'routes.txt')?.rowCount.toLocaleString()}
+										{gtfsState.gtfsFiles
+											.find((f) => f.name === 'routes.txt')
+											?.rowCount.toLocaleString()}
 									</span>
 								</div>
 							{/if}
-							{#if gtfsFiles.find((f) => f.name === 'stops.txt')}
+							{#if gtfsState.gtfsFiles.find((f) => f.name === 'stops.txt')}
 								<div class="flex justify-between text-gray-600 dark:text-gray-400">
 									<span>Stops</span>
 									<span class="font-medium text-gray-900 dark:text-white">
-										{gtfsFiles.find((f) => f.name === 'stops.txt')?.rowCount.toLocaleString()}
+										{gtfsState.gtfsFiles
+											.find((f) => f.name === 'stops.txt')
+											?.rowCount.toLocaleString()}
 									</span>
 								</div>
 							{/if}
-							{#if gtfsFiles.find((f) => f.name === 'trips.txt')}
+							{#if gtfsState.gtfsFiles.find((f) => f.name === 'trips.txt')}
 								<div class="flex justify-between text-gray-600 dark:text-gray-400">
 									<span>Trips</span>
 									<span class="font-medium text-gray-900 dark:text-white">
-										{gtfsFiles.find((f) => f.name === 'trips.txt')?.rowCount.toLocaleString()}
+										{gtfsState.gtfsFiles
+											.find((f) => f.name === 'trips.txt')
+											?.rowCount.toLocaleString()}
 									</span>
 								</div>
 							{/if}
@@ -1521,7 +1475,7 @@
 				</div>
 
 				<div class="col-span-9">
-					{#if selectedFileName}
+					{#if gtfsState.selectedFileName}
 						<div
 							class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
 						>
@@ -1530,11 +1484,12 @@
 							>
 								<div class="flex items-center gap-4">
 									<h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-										{selectedFileName}
+										{gtfsState.selectedFileName}
 									</h3>
 									<span class="text-sm text-gray-500 dark:text-gray-400">
-										{displayData.length.toLocaleString()} of {totalRows.toLocaleString()} rows
-										{#if isSearching || loadingData}
+										{gtfsState.rows.length.toLocaleString()} of {gtfsState.totalRows.toLocaleString()}
+										rows
+										{#if gtfsState.isSearching || gtfsState.loadingData}
 											<span class="ml-2 text-blue-500">(loading...)</span>
 										{/if}
 									</span>
@@ -1544,12 +1499,12 @@
 									<div class="relative">
 										<input
 											type="text"
-											bind:value={searchQuery}
+											bind:value={gtfsState.searchQuery}
 											oninput={handleSearch}
 											placeholder="Search..."
 											class="w-64 rounded-lg border border-gray-300 bg-white py-2 pr-8 pl-9 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
 										/>
-										{#if isSearching || loadingData}
+										{#if gtfsState.isSearching || gtfsState.loadingData}
 											<svg
 												class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 animate-spin text-blue-500"
 												fill="none"
@@ -1584,12 +1539,12 @@
 												/>
 											</svg>
 										{/if}
-										{#if searchQuery}
+										{#if gtfsState.searchQuery}
 											<button
 												onclick={() => {
-													searchQuery = '';
+													gtfsState.searchQuery = '';
 													debouncedSearchQuery = '';
-													currentPage = 1;
+													gtfsState.currentPage = 1;
 												}}
 												class="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600"
 												title="Clear search"
@@ -1612,7 +1567,7 @@
 									>
 										<input
 											type="checkbox"
-											bind:checked={convertTimes}
+											bind:checked={gtfsState.convertTimes}
 											class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 										/>
 										12h Time
@@ -1623,7 +1578,7 @@
 									>
 										<input
 											type="checkbox"
-											bind:checked={convertDates}
+											bind:checked={gtfsState.convertDates}
 											class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 										/>
 										Format Dates
@@ -1653,21 +1608,21 @@
 										class="sticky top-0 bg-gray-50 text-xs text-gray-700 uppercase dark:bg-gray-800 dark:text-gray-400"
 									>
 										<tr>
-											{#each currentColumns as column (column)}
+											{#each gtfsState.headers as column (column)}
 												<th class="px-4 py-3 whitespace-nowrap">
 													<button
 														onclick={() => toggleSort(column)}
 														class="flex items-center gap-1 font-semibold hover:text-gray-900 dark:hover:text-white"
 													>
 														{column}
-														{#if sortColumn === column}
+														{#if gtfsState.sortColumn === column}
 															<svg
 																class="h-4 w-4"
 																fill="none"
 																stroke="currentColor"
 																viewBox="0 0 24 24"
 															>
-																{#if sortDirection === 'asc'}
+																{#if gtfsState.sortDirection === 'asc'}
 																	<path
 																		stroke-linecap="round"
 																		stroke-linejoin="round"
@@ -1704,34 +1659,35 @@
 										</tr>
 									</thead>
 									<tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-										{#key renderKey}
-											{#each displayData as row, idx (idx)}
-												<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-													{#each currentColumns as column (column)}
-														<td
-															class="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100"
-														>
-															{formatCellValue(column, row[column], convertTimes, convertDates)}
-														</td>
-													{/each}
-												</tr>
-											{/each}
-										{/key}
+										{#each gtfsState.rows as row, idx (idx)}
+											<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+												{#each gtfsState.headers as column (column)}
+													<td class="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+														{formatCellValue(
+															column,
+															String(row[column] ?? ''),
+															gtfsState.convertTimes,
+															gtfsState.convertDates
+														)}
+													</td>
+												{/each}
+											</tr>
+										{/each}
 									</tbody>
 								</table>
 							</div>
 
-							{#if displayData.length === 0 && !loadingData}
+							{#if gtfsState.rows.length === 0 && !gtfsState.loadingData}
 								<div class="p-8 text-center text-gray-500 dark:text-gray-400">
-									{#if searchQuery}
-										No results found for "{searchQuery}"
+									{#if gtfsState.searchQuery}
+										No results found for "{gtfsState.searchQuery}"
 									{:else}
 										No data available
 									{/if}
 								</div>
 							{/if}
 
-							{#if loadingData}
+							{#if gtfsState.loadingData}
 								<div class="p-8 text-center text-gray-500 dark:text-gray-400">
 									<svg
 										class="mx-auto h-8 w-8 animate-spin text-blue-500"
@@ -1756,16 +1712,16 @@
 								</div>
 							{/if}
 
-							{#if totalPages > 1}
+							{#if gtfsState.totalPages > 1}
 								<div
 									class="flex items-center justify-between border-t border-gray-200 px-4 py-3 dark:border-gray-700"
 								>
 									<div class="flex items-center gap-2">
 										<span class="text-sm text-gray-600 dark:text-gray-400">Rows per page:</span>
 										<select
-											bind:value={pageSize}
+											bind:value={gtfsState.pageSize}
 											onchange={() => {
-												currentPage = 1;
+												gtfsState.currentPage = 1;
 											}}
 											class="rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
 										>
@@ -1778,14 +1734,14 @@
 
 									<div class="flex items-center gap-2">
 										<span class="text-sm text-gray-600 dark:text-gray-400">
-											Page {currentPage} of {totalPages}
+											Page {gtfsState.currentPage} of {gtfsState.totalPages}
 										</span>
 										<div class="flex gap-1">
 											<button
 												onclick={() => {
-													currentPage = 1;
+													gtfsState.currentPage = 1;
 												}}
-												disabled={currentPage === 1}
+												disabled={gtfsState.currentPage === 1}
 												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
 												title="First page"
 												aria-label="Go to first page"
@@ -1801,9 +1757,9 @@
 											</button>
 											<button
 												onclick={() => {
-													currentPage = Math.max(1, currentPage - 1);
+													gtfsState.currentPage = Math.max(1, gtfsState.currentPage - 1);
 												}}
-												disabled={currentPage === 1}
+												disabled={gtfsState.currentPage === 1}
 												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
 												title="Previous page"
 												aria-label="Go to previous page"
@@ -1819,9 +1775,12 @@
 											</button>
 											<button
 												onclick={() => {
-													currentPage = Math.min(totalPages, currentPage + 1);
+													gtfsState.currentPage = Math.min(
+														gtfsState.totalPages,
+														gtfsState.currentPage + 1
+													);
 												}}
-												disabled={currentPage === totalPages}
+												disabled={gtfsState.currentPage === gtfsState.totalPages}
 												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
 												title="Next page"
 												aria-label="Go to next page"
@@ -1837,9 +1796,9 @@
 											</button>
 											<button
 												onclick={() => {
-													currentPage = totalPages;
+													gtfsState.currentPage = gtfsState.totalPages;
 												}}
-												disabled={currentPage === totalPages}
+												disabled={gtfsState.currentPage === gtfsState.totalPages}
 												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
 												title="Last page"
 												aria-label="Go to last page"
@@ -1863,7 +1822,7 @@
 			</div>
 		{/if}
 
-		{#if activeTab === 'sql'}
+		{#if gtfsState.activeTab === 'sql'}
 			<div class="grid grid-cols-12 gap-6">
 				<div class="col-span-3">
 					<div
@@ -1872,11 +1831,11 @@
 						<div class="border-b border-gray-200 p-4 dark:border-gray-700">
 							<h3 class="text-sm font-semibold text-gray-900 dark:text-white">Available Tables</h3>
 						</div>
-						<div class="max-h-[400px] overflow-auto p-2">
-							{#if availableTables.length === 0}
+						<div class="max-h-100 overflow-auto p-2">
+							{#if gtfsState.availableTables.length === 0}
 								<p class="p-3 text-sm text-gray-500 dark:text-gray-400">Loading tables...</p>
 							{:else}
-								{#each availableTables as table (table.name)}
+								{#each gtfsState.availableTables as table (table.name)}
 									<button
 										onclick={() => insertTableName(table.name)}
 										class="mb-1 w-full rounded-lg px-3 py-2 text-left text-gray-700 transition-colors hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
@@ -1901,7 +1860,7 @@
 							class="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700"
 						>
 							<h3 class="text-sm font-semibold text-gray-900 dark:text-white">Query History</h3>
-							{#if queryHistory.length > 0}
+							{#if gtfsState.queryHistory.length > 0}
 								<button
 									onclick={clearQueryHistory}
 									class="text-xs text-gray-400 hover:text-red-500"
@@ -1911,11 +1870,11 @@
 								</button>
 							{/if}
 						</div>
-						<div class="max-h-[200px] overflow-auto p-2">
-							{#if queryHistory.length === 0}
+						<div class="max-h-50 overflow-auto p-2">
+							{#if gtfsState.queryHistory.length === 0}
 								<p class="p-3 text-sm text-gray-500 dark:text-gray-400">No queries yet</p>
 							{:else}
-								{#each queryHistory as query (query)}
+								{#each gtfsState.queryHistory as query (query)}
 									<button
 										onclick={() => loadQueryFromHistory(query)}
 										class="mb-1 w-full truncate rounded-lg px-3 py-2 text-left font-mono text-xs text-gray-600 transition-colors hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
@@ -1942,13 +1901,13 @@
 								</span>
 							</h3>
 						</div>
-						<div class="max-h-[300px] space-y-1 overflow-auto">
-							{#if favoriteQueries.length === 0}
+						<div class="max-h-75 space-y-1 overflow-auto">
+							{#if gtfsState.favoriteQueries.length === 0}
 								<p class="py-2 text-xs text-gray-400 dark:text-gray-500">
 									No favorites yet. Click the star icon to save a query.
 								</p>
 							{:else}
-								{#each favoriteQueries as fav (fav.name)}
+								{#each gtfsState.favoriteQueries as fav (fav.name)}
 									<div
 										class="group flex items-center gap-1 rounded px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800"
 									>
@@ -1998,12 +1957,15 @@
 							</div>
 							<div class="relative">
 								<SqlEditor
-									bind:value={sqlQuery}
+									bind:value={gtfsState.sqlQuery}
 									onchange={(v) => {
-										sqlQuery = v;
+										gtfsState.sqlQuery = v;
 									}}
 									onrun={executeSQL}
-									tables={availableTables.map((t) => ({ name: t.name, columns: t.columns }))}
+									tables={gtfsState.availableTables.map((t) => ({
+										name: t.name,
+										columns: t.columns
+									}))}
 									isDark={isDarkMode}
 								/>
 								<div class="mt-3 flex items-center justify-between">
@@ -2013,7 +1975,7 @@
 									<div class="flex items-center gap-2">
 										<button
 											onclick={addToFavorites}
-											disabled={!sqlQuery.trim()}
+											disabled={!gtfsState.sqlQuery.trim()}
 											class="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
 											title="Save to favorites"
 										>
@@ -2034,10 +1996,10 @@
 										</button>
 										<button
 											onclick={executeSQL}
-											disabled={sqlLoading || !sqlQuery.trim()}
+											disabled={gtfsState.sqlLoading || !gtfsState.sqlQuery.trim()}
 											class="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
 										>
-											{#if sqlLoading}
+											{#if gtfsState.sqlLoading}
 												<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
 													<circle
 														class="opacity-25"
@@ -2076,31 +2038,31 @@
 							</div>
 						</div>
 
-						{#if showSaveFavoriteModal}
+						{#if gtfsState.showSaveFavoriteModal}
 							<div
 								class="border-b border-gray-200 bg-yellow-50 p-4 dark:border-gray-700 dark:bg-yellow-900/20"
 							>
 								<div class="flex items-center gap-3">
 									<input
 										type="text"
-										bind:value={newFavoriteName}
+										bind:value={gtfsState.newFavoriteName}
 										placeholder="Enter a name for this query..."
 										class="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
 										onkeydown={(e) => {
 											if (e.key === 'Enter') saveFavorite();
-											if (e.key === 'Escape') showSaveFavoriteModal = false;
+											if (e.key === 'Escape') gtfsState.showSaveFavoriteModal = false;
 										}}
 									/>
 									<button
 										onclick={saveFavorite}
-										disabled={!newFavoriteName.trim()}
+										disabled={!gtfsState.newFavoriteName.trim()}
 										class="rounded-lg bg-yellow-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-yellow-600 disabled:opacity-50"
 									>
 										Save
 									</button>
 									<button
 										onclick={() => {
-											showSaveFavoriteModal = false;
+											gtfsState.showSaveFavoriteModal = false;
 										}}
 										class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
 									>
@@ -2110,13 +2072,13 @@
 							</div>
 						{/if}
 
-						{#if sqlError}
+						{#if gtfsState.sqlError}
 							<div
 								class="border-b border-gray-200 bg-red-50 p-4 dark:border-gray-700 dark:bg-red-900/20"
 							>
 								<div class="flex items-start gap-2 text-red-700 dark:text-red-400">
 									<svg
-										class="mt-0.5 h-5 w-5 flex-shrink-0"
+										class="mt-0.5 h-5 w-5 shrink-0"
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
@@ -2130,24 +2092,25 @@
 									</svg>
 									<div>
 										<p class="font-medium">Query Error</p>
-										<p class="mt-1 text-sm">{sqlError}</p>
+										<p class="mt-1 text-sm">{gtfsState.sqlError}</p>
 									</div>
 								</div>
 							</div>
 						{/if}
 
-						{#if sqlResult}
+						{#if gtfsState.sqlResult}
 							<div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
 								<div class="flex flex-wrap items-center justify-between gap-3">
 									<div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
 										<span
-											><strong>{filteredSqlRows.length.toLocaleString()}</strong>{sqlResultSearch
-												? ` of ${sqlResult.rowCount.toLocaleString()}`
+											><strong>{filteredSqlRows.length.toLocaleString()}</strong
+											>{gtfsState.sqlResultSearch
+												? ` of ${(gtfsState.sqlResult.rowCount ?? 0).toLocaleString()}`
 												: ''} rows</span
 										>
 										<span class="text-gray-400">|</span>
-										<span>{sqlResult.executionTime} ms</span>
-										{#if sqlResult.truncated}
+										<span>{gtfsState.sqlResult.executionTime} ms</span>
+										{#if gtfsState.sqlResult.truncated}
 											<span
 												class="rounded bg-yellow-100 px-2 py-0.5 text-xs text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
 											>
@@ -2159,7 +2122,7 @@
 										<div class="relative">
 											<input
 												type="text"
-												bind:value={sqlResultSearch}
+												bind:value={gtfsState.sqlResultSearch}
 												placeholder="Search results..."
 												class="w-48 rounded-lg border border-gray-300 bg-white py-1.5 pr-8 pl-8 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
 											/>
@@ -2176,10 +2139,10 @@
 													d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
 												/>
 											</svg>
-											{#if sqlResultSearch}
+											{#if gtfsState.sqlResultSearch}
 												<button
 													onclick={() => {
-														sqlResultSearch = '';
+														gtfsState.sqlResultSearch = '';
 													}}
 													class="absolute top-1/2 right-2.5 -translate-y-1/2 text-gray-400 hover:text-gray-600"
 													title="Clear search"
@@ -2202,7 +2165,7 @@
 										</div>
 										<button
 											onclick={exportSqlResultToCSV}
-											disabled={sqlResult.rows.length === 0}
+											disabled={gtfsState.sqlResult.rows.length === 0}
 											class="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
 										>
 											<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2219,13 +2182,13 @@
 								</div>
 							</div>
 
-							<div class="max-h-[500px] overflow-auto">
+							<div class="max-h-125 overflow-auto">
 								<table class="w-full text-left text-sm">
 									<thead
 										class="sticky top-0 bg-gray-50 text-xs text-gray-700 uppercase dark:bg-gray-800 dark:text-gray-400"
 									>
 										<tr>
-											{#each sqlResult.columns as column (column)}
+											{#each gtfsState.sqlResult.columns as column (column)}
 												<th class="px-4 py-3 font-semibold whitespace-nowrap">{column}</th>
 											{/each}
 										</tr>
@@ -2233,7 +2196,7 @@
 									<tbody class="divide-y divide-gray-200 dark:divide-gray-700">
 										{#each paginatedSqlRows as row, i (i)}
 											<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-												{#each sqlResult.columns as column (column)}
+												{#each gtfsState.sqlResult.columns as column (column)}
 													<td class="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
 														{row[column] ?? ''}
 													</td>
@@ -2246,8 +2209,8 @@
 
 							{#if filteredSqlRows.length === 0}
 								<div class="p-8 text-center text-gray-500 dark:text-gray-400">
-									{#if sqlResultSearch}
-										No results match "{sqlResultSearch}"
+									{#if gtfsState.sqlResultSearch}
+										No results match "{gtfsState.sqlResultSearch}"
 									{:else}
 										Query returned no results
 									{/if}
@@ -2259,9 +2222,9 @@
 									<div class="flex items-center gap-2">
 										<span class="text-sm text-gray-600 dark:text-gray-400">Rows per page:</span>
 										<select
-											bind:value={sqlResultPageSize}
+											bind:value={gtfsState.sqlResultPageSize}
 											onchange={() => {
-												sqlResultPage = 1;
+												gtfsState.sqlResultPage = 1;
 											}}
 											class="rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
 										>
@@ -2274,7 +2237,7 @@
 
 									<div class="flex items-center gap-2">
 										<span class="text-sm text-gray-600 dark:text-gray-400">
-											Page {sqlResultPage} of {sqlTotalPages}
+											Page {gtfsState.sqlResultPage} of {sqlTotalPages}
 											<span class="text-gray-400"
 												>({filteredSqlRows.length.toLocaleString()} rows)</span
 											>
@@ -2282,9 +2245,9 @@
 										<div class="flex gap-1">
 											<button
 												onclick={() => {
-													sqlResultPage = 1;
+													gtfsState.sqlResultPage = 1;
 												}}
-												disabled={sqlResultPage === 1}
+												disabled={gtfsState.sqlResultPage === 1}
 												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
 												title="First page"
 											>
@@ -2299,9 +2262,9 @@
 											</button>
 											<button
 												onclick={() => {
-													sqlResultPage = Math.max(1, sqlResultPage - 1);
+													gtfsState.sqlResultPage = Math.max(1, gtfsState.sqlResultPage - 1);
 												}}
-												disabled={sqlResultPage === 1}
+												disabled={gtfsState.sqlResultPage === 1}
 												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
 												title="Previous page"
 											>
@@ -2316,9 +2279,12 @@
 											</button>
 											<button
 												onclick={() => {
-													sqlResultPage = Math.min(sqlTotalPages, sqlResultPage + 1);
+													gtfsState.sqlResultPage = Math.min(
+														sqlTotalPages,
+														gtfsState.sqlResultPage + 1
+													);
 												}}
-												disabled={sqlResultPage === sqlTotalPages}
+												disabled={gtfsState.sqlResultPage === sqlTotalPages}
 												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
 												title="Next page"
 											>
@@ -2333,9 +2299,9 @@
 											</button>
 											<button
 												onclick={() => {
-													sqlResultPage = sqlTotalPages;
+													gtfsState.sqlResultPage = sqlTotalPages;
 												}}
-												disabled={sqlResultPage === sqlTotalPages}
+												disabled={gtfsState.sqlResultPage === sqlTotalPages}
 												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
 												title="Last page"
 											>
@@ -2352,7 +2318,7 @@
 									</div>
 								</div>
 							{/if}
-						{:else if !sqlError && !sqlLoading}
+						{:else if !gtfsState.sqlError && !gtfsState.sqlLoading}
 							<div class="p-12 text-center text-gray-400 dark:text-gray-500">
 								<svg
 									class="mx-auto mb-3 h-12 w-12"

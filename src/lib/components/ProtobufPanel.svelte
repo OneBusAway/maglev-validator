@@ -3,57 +3,10 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
 	import { logState } from '$lib/logState.svelte';
-
-	let tripUpdatesUrl = $state('https://webservices.umoiq.com/api/gtfs-rt/v1/trip-updates/unitrans');
-	let vehiclePositionsUrl = $state(
-		'https://webservices.umoiq.com/api/gtfs-rt/v1/vehicle-positions/unitrans'
-	);
-	let serviceAlertsUrl = $state(
-		'https://webservices.umoiq.com/api/gtfs-rt/v1/service-alerts/unitrans'
-	);
-	let headers = $state<{ key: string; value: string }[]>([{ key: '', value: '' }]);
-	let loading = $state(false);
-	let error = $state<string | undefined>(undefined);
-	let feedData = $state<{
-		header: unknown;
-		tripUpdates: unknown[];
-		vehiclePositions: unknown[];
-		alerts: unknown[];
-		entityCount: number;
-		totals?: {
-			tripUpdates: number;
-			vehiclePositions: number;
-			alerts: number;
-		};
-		limited?: {
-			tripUpdates: boolean;
-			vehiclePositions: boolean;
-			alerts: boolean;
-		};
-	} | null>(null);
-
-	let paginationState = $state<{
-		hasMore: { tripUpdates: boolean; vehiclePositions: boolean; alerts: boolean };
-		loading: { tripUpdates: boolean; vehiclePositions: boolean; alerts: boolean };
-	}>({
-		hasMore: { tripUpdates: false, vehiclePositions: false, alerts: false },
-		loading: { tripUpdates: false, vehiclePositions: false, alerts: false }
-	});
-
-	let currentFetchUrls = $state<{ tripUpdates: string; vehiclePositions: string; alerts: string }>({
-		tripUpdates: '',
-		vehiclePositions: '',
-		alerts: ''
-	});
-
-	let autoRefresh = $state(false);
-	let refreshInterval = $state(30);
-	let refreshTimer: number | undefined = undefined;
-	let lastFetchTime = $state<Date | null>(null);
-	let loggingEnabled = $state(true);
+	import { protobufState as pbState } from '$lib/panelState.svelte';
 
 	function handleKeyDown(e: KeyboardEvent) {
-		if (e.ctrlKey && e.key === 'Enter' && !loading) {
+		if (e.ctrlKey && e.key === 'Enter' && !pbState.loading) {
 			e.preventDefault();
 			fetchAllFeeds();
 		}
@@ -63,18 +16,25 @@
 		window.addEventListener('keydown', handleKeyDown);
 
 		if (typeof localStorage !== 'undefined') {
-			if (localStorage.tripUpdatesUrl) tripUpdatesUrl = localStorage.tripUpdatesUrl;
-			if (localStorage.vehiclePositionsUrl) vehiclePositionsUrl = localStorage.vehiclePositionsUrl;
-			if (localStorage.serviceAlertsUrl) serviceAlertsUrl = localStorage.serviceAlertsUrl;
-			if (localStorage.protobufHeaders) {
-				try {
-					headers = JSON.parse(localStorage.protobufHeaders);
-				} catch {
-					headers = [{ key: '', value: '' }];
+			const hasState =
+				pbState.tripUpdatesUrl || pbState.vehiclePositionsUrl || pbState.serviceAlertsUrl;
+
+			if (!hasState) {
+				if (localStorage.tripUpdatesUrl) pbState.tripUpdatesUrl = localStorage.tripUpdatesUrl;
+				if (localStorage.vehiclePositionsUrl)
+					pbState.vehiclePositionsUrl = localStorage.vehiclePositionsUrl;
+				if (localStorage.serviceAlertsUrl) pbState.serviceAlertsUrl = localStorage.serviceAlertsUrl;
+
+				if (localStorage.protobufHeaders) {
+					try {
+						pbState.headers = JSON.parse(localStorage.protobufHeaders);
+					} catch {
+						pbState.headers = [{ key: '', value: '' }];
+					}
 				}
-			}
-			if (localStorage.gtfsRtLoggingEnabled !== undefined) {
-				loggingEnabled = localStorage.gtfsRtLoggingEnabled === 'true';
+				if (localStorage.gtfsRtLoggingEnabled !== undefined) {
+					pbState.loggingEnabled = localStorage.gtfsRtLoggingEnabled === 'true';
+				}
 			}
 		}
 	});
@@ -83,10 +43,11 @@
 		if (browser) {
 			window.removeEventListener('keydown', handleKeyDown);
 		}
+		stopAutoRefresh();
 	});
 
 	$effect(() => {
-		if (autoRefresh) {
+		if (pbState.autoRefresh) {
 			startAutoRefresh();
 		} else {
 			stopAutoRefresh();
@@ -95,39 +56,40 @@
 	});
 
 	function addHeader() {
-		headers = [...headers, { key: '', value: '' }];
+		pbState.headers = [...pbState.headers, { key: '', value: '' }];
 	}
 
 	function removeHeader(index: number) {
-		headers = headers.filter((_, i) => i !== index);
+		pbState.headers = pbState.headers.filter((_, i) => i !== index);
 	}
 
 	function updateHeader(index: number, field: 'key' | 'value', value: string) {
-		headers = headers.map((h, i) => (i === index ? { ...h, [field]: value } : h));
+		pbState.headers = pbState.headers.map((h, i) => (i === index ? { ...h, [field]: value } : h));
 	}
 
 	function saveToLocalStorage() {
 		if (typeof localStorage !== 'undefined') {
-			localStorage.tripUpdatesUrl = tripUpdatesUrl;
-			localStorage.vehiclePositionsUrl = vehiclePositionsUrl;
-			localStorage.serviceAlertsUrl = serviceAlertsUrl;
-			localStorage.protobufHeaders = JSON.stringify(headers);
-			localStorage.gtfsRtLoggingEnabled = String(loggingEnabled);
+			localStorage.tripUpdatesUrl = pbState.tripUpdatesUrl;
+			localStorage.vehiclePositionsUrl = pbState.vehiclePositionsUrl;
+			localStorage.serviceAlertsUrl = pbState.serviceAlertsUrl;
+			localStorage.protobufHeaders = JSON.stringify(pbState.headers);
+			localStorage.gtfsRtLoggingEnabled = String(pbState.loggingEnabled);
 		}
 	}
 
 	function startAutoRefresh() {
 		stopAutoRefresh();
-		fetchAllFeeds();
-		refreshTimer = window.setInterval(() => {
+		if (!pbState.feedData) fetchAllFeeds();
+
+		pbState.refreshTimer = window.setInterval(() => {
 			fetchAllFeeds();
-		}, refreshInterval * 1000);
+		}, pbState.refreshInterval * 1000);
 	}
 
 	function stopAutoRefresh() {
-		if (refreshTimer !== undefined) {
-			clearInterval(refreshTimer);
-			refreshTimer = undefined;
+		if (pbState.refreshTimer !== undefined) {
+			clearInterval(pbState.refreshTimer);
+			pbState.refreshTimer = undefined;
 		}
 	}
 
@@ -154,7 +116,7 @@
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				url,
-				headers: headers.filter((h) => h.key && h.value),
+				headers: pbState.headers.filter((h) => h.key && h.value),
 				sessionId
 			})
 		});
@@ -165,23 +127,24 @@
 	}
 
 	async function fetchAllFeeds() {
-		const hasAnyUrl = tripUpdatesUrl || vehiclePositionsUrl || serviceAlertsUrl;
+		const hasAnyUrl =
+			pbState.tripUpdatesUrl || pbState.vehiclePositionsUrl || pbState.serviceAlertsUrl;
 		if (!hasAnyUrl) {
-			error = 'Please enter at least one feed URL';
+			pbState.error = 'Please enter at least one feed URL';
 			return;
 		}
 
-		loading = true;
-		error = undefined;
+		pbState.loading = true;
+		pbState.error = undefined;
 		saveToLocalStorage();
 
 		const sessionId = crypto.randomUUID();
 
 		try {
 			const results = await Promise.allSettled([
-				fetchSingleFeed(tripUpdatesUrl, sessionId),
-				fetchSingleFeed(vehiclePositionsUrl, sessionId),
-				fetchSingleFeed(serviceAlertsUrl, sessionId)
+				fetchSingleFeed(pbState.tripUpdatesUrl, sessionId),
+				fetchSingleFeed(pbState.vehiclePositionsUrl, sessionId),
+				fetchSingleFeed(pbState.serviceAlertsUrl, sessionId)
 			]);
 
 			const tripData = results[0].status === 'fulfilled' ? results[0].value : null;
@@ -189,18 +152,18 @@
 			const alertData = results[2].status === 'fulfilled' ? results[2].value : null;
 
 			const errors: string[] = [];
-			if (tripUpdatesUrl && results[0].status === 'rejected') {
+			if (pbState.tripUpdatesUrl && results[0].status === 'rejected') {
 				errors.push(`Trip Updates: ${results[0].reason?.message || 'Failed'}`);
 			}
-			if (vehiclePositionsUrl && results[1].status === 'rejected') {
+			if (pbState.vehiclePositionsUrl && results[1].status === 'rejected') {
 				errors.push(`Vehicle Positions: ${results[1].reason?.message || 'Failed'}`);
 			}
-			if (serviceAlertsUrl && results[2].status === 'rejected') {
+			if (pbState.serviceAlertsUrl && results[2].status === 'rejected') {
 				errors.push(`Service Alerts: ${results[2].reason?.message || 'Failed'}`);
 			}
 
 			if (errors.length > 0 && !tripData && !vehicleData && !alertData) {
-				error = errors.join('; ');
+				pbState.error = errors.join('; ');
 				return;
 			}
 
@@ -257,8 +220,7 @@
 				)
 			};
 
-			// Update pagination state
-			paginationState = {
+			pbState.paginationState = {
 				hasMore: {
 					tripUpdates: !!(
 						tripData?.pagination?.hasMore?.tripUpdates ||
@@ -279,14 +241,13 @@
 				loading: { tripUpdates: false, vehiclePositions: false, alerts: false }
 			};
 
-			// Store URLs for pagination
-			currentFetchUrls = {
-				tripUpdates: tripUpdatesUrl,
-				vehiclePositions: vehiclePositionsUrl,
-				alerts: serviceAlertsUrl
+			pbState.currentFetchUrls = {
+				tripUpdates: pbState.tripUpdatesUrl,
+				vehiclePositions: pbState.vehiclePositionsUrl,
+				alerts: pbState.serviceAlertsUrl
 			};
 
-			feedData = {
+			pbState.feedData = {
 				header,
 				tripUpdates: allTripUpdates,
 				vehiclePositions: allVehiclePositions,
@@ -297,65 +258,69 @@
 			};
 
 			if (errors.length > 0) {
-				error = `Partial success. Errors: ${errors.join('; ')}`;
+				pbState.error = `Partial success. Errors: ${errors.join('; ')}`;
 			}
 
-			if (feedData && loggingEnabled) {
+			if (pbState.feedData && pbState.loggingEnabled) {
 				await fetch('/api/gtfs-rt', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
 						timestamp: new Date().toISOString(),
 						data: {
-							header: feedData.header,
-							tripUpdates: feedData.tripUpdates,
-							vehiclePositions: feedData.vehiclePositions,
-							alerts: feedData.alerts,
-							entityCount: feedData.entityCount,
-							totals: feedData.totals,
-							limited: feedData.limited
+							header: pbState.feedData.header,
+							tripUpdates: pbState.feedData.tripUpdates,
+							vehiclePositions: pbState.feedData.vehiclePositions,
+							alerts: pbState.feedData.alerts,
+							entityCount: pbState.feedData.entityCount,
+							totals: pbState.feedData.totals,
+							limited: pbState.feedData.limited
 						}
 					})
 				});
 				logState.triggerUpdate();
 			}
 
-			lastFetchTime = new Date();
+			pbState.lastFetchTime = new Date();
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Unknown error';
+			pbState.error = e instanceof Error ? e.message : 'Unknown error';
 		} finally {
-			loading = false;
+			pbState.loading = false;
 		}
 	}
 
 	async function loadMoreEntities(entityType: 'tripUpdates' | 'vehiclePositions' | 'alerts') {
-		if (!feedData || paginationState.loading[entityType] || !paginationState.hasMore[entityType]) {
+		if (
+			!pbState.feedData ||
+			pbState.paginationState.loading[entityType] ||
+			!pbState.paginationState.hasMore[entityType]
+		) {
 			return;
 		}
 
-		paginationState.loading[entityType] = true;
+		pbState.paginationState.loading[entityType] = true;
 
 		try {
 			const url =
 				entityType === 'tripUpdates'
-					? currentFetchUrls.tripUpdates
+					? pbState.currentFetchUrls.tripUpdates
 					: entityType === 'vehiclePositions'
-						? currentFetchUrls.vehiclePositions
-						: currentFetchUrls.alerts;
+						? pbState.currentFetchUrls.vehiclePositions
+						: pbState.currentFetchUrls.alerts;
 
 			if (!url) {
-				paginationState.loading[entityType] = false;
+				pbState.paginationState.loading[entityType] = false;
 				return;
 			}
 
-			const currentOffset = feedData[entityType].length;
+			const currentOffset = (pbState.feedData[entityType] as unknown[])?.length || 0;
 
 			const response = await fetch('/api/protobuf', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					url,
-					headers: headers.filter((h) => h.key && h.value),
+					headers: pbState.headers.filter((h) => h.key && h.value),
 					offset: {
 						tripUpdates: entityType === 'tripUpdates' ? currentOffset : 0,
 						vehiclePositions: entityType === 'vehiclePositions' ? currentOffset : 0,
@@ -368,22 +333,28 @@
 			if (data.error) throw new Error(data.error);
 
 			if (entityType === 'tripUpdates' && data.tripUpdates) {
-				feedData.tripUpdates = [...feedData.tripUpdates, ...data.tripUpdates];
+				pbState.feedData.tripUpdates = [
+					...(pbState.feedData.tripUpdates || []),
+					...data.tripUpdates
+				];
 			} else if (entityType === 'vehiclePositions' && data.vehiclePositions) {
-				feedData.vehiclePositions = [...feedData.vehiclePositions, ...data.vehiclePositions];
+				pbState.feedData.vehiclePositions = [
+					...(pbState.feedData.vehiclePositions || []),
+					...data.vehiclePositions
+				];
 			} else if (entityType === 'alerts' && data.alerts) {
-				feedData.alerts = [...feedData.alerts, ...data.alerts];
+				pbState.feedData.alerts = [...(pbState.feedData.alerts || []), ...data.alerts];
 			}
 
-			if (feedData.limited) {
-				feedData.limited[entityType] = data.pagination?.hasMore?.[entityType] ?? false;
+			if (pbState.feedData.limited) {
+				pbState.feedData.limited[entityType] = data.pagination?.hasMore?.[entityType] ?? false;
 			}
 
-			paginationState.hasMore[entityType] = data.pagination?.hasMore?.[entityType] ?? false;
+			pbState.paginationState.hasMore[entityType] = data.pagination?.hasMore?.[entityType] ?? false;
 		} catch (e) {
 			console.error(`Failed to load more ${entityType}:`, e);
 		} finally {
-			paginationState.loading[entityType] = false;
+			pbState.paginationState.loading[entityType] = false;
 		}
 	}
 </script>
@@ -400,7 +371,7 @@
 					Trip Updates URL
 					<input
 						type="text"
-						bind:value={tripUpdatesUrl}
+						bind:value={pbState.tripUpdatesUrl}
 						placeholder="https://example.com/gtfs-rt/trip-updates"
 						class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-indigo-500/40"
 					/>
@@ -413,7 +384,7 @@
 					Vehicle Positions URL
 					<input
 						type="text"
-						bind:value={vehiclePositionsUrl}
+						bind:value={pbState.vehiclePositionsUrl}
 						placeholder="https://example.com/gtfs-rt/vehicle-positions"
 						class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-indigo-500/40"
 					/>
@@ -426,7 +397,7 @@
 					Service Alerts URL
 					<input
 						type="text"
-						bind:value={serviceAlertsUrl}
+						bind:value={pbState.serviceAlertsUrl}
 						placeholder="https://example.com/gtfs-rt/service-alerts"
 						class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-indigo-500/40"
 					/>
@@ -447,7 +418,7 @@
 				</button>
 			</div>
 			<div class="space-y-2">
-				{#each headers as header, index (index)}
+				{#each pbState.headers as header, index (index)}
 					<div class="flex items-center gap-2">
 						<input
 							type="text"
@@ -463,7 +434,7 @@
 							placeholder="Header Value"
 							class="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600"
 						/>
-						{#if headers.length > 1}
+						{#if pbState.headers.length > 1}
 							<button
 								onclick={() => removeHeader(index)}
 								class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
@@ -497,16 +468,16 @@
 				<label class="flex cursor-pointer items-center gap-2 select-none">
 					<input
 						type="checkbox"
-						bind:checked={autoRefresh}
+						bind:checked={pbState.autoRefresh}
 						class="h-4 w-4 rounded border-gray-300 bg-white text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
 					/>
 					<span class="text-sm font-medium text-gray-600 dark:text-gray-400">Auto-refresh</span>
 				</label>
-				{#if autoRefresh}
+				{#if pbState.autoRefresh}
 					<div class="flex items-center gap-2">
 						<input
 							type="number"
-							bind:value={refreshInterval}
+							bind:value={pbState.refreshInterval}
 							min="5"
 							max="300"
 							class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-indigo-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
@@ -518,26 +489,26 @@
 				<label class="flex cursor-pointer items-center gap-2 select-none">
 					<input
 						type="checkbox"
-						bind:checked={loggingEnabled}
+						bind:checked={pbState.loggingEnabled}
 						onchange={saveToLocalStorage}
 						class="h-4 w-4 rounded border-gray-300 bg-white text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
 					/>
 					<span class="text-sm font-medium text-gray-600 dark:text-gray-400">Enable logging</span>
 				</label>
-				{#if lastFetchTime}
+				{#if pbState.lastFetchTime}
 					<span class="text-xs text-gray-400">
-						Last fetched: {lastFetchTime.toLocaleTimeString()}
+						Last fetched: {pbState.lastFetchTime?.toLocaleTimeString()}
 					</span>
 				{/if}
 			</div>
 
 			<button
 				onclick={fetchAllFeeds}
-				disabled={loading}
+				disabled={pbState.loading}
 				class="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 font-medium text-white transition-all hover:bg-indigo-700 hover:shadow-lg active:scale-[0.98] disabled:bg-indigo-400 disabled:shadow-none"
 				title="Fetch All Feeds (Ctrl+Enter)"
 			>
-				{#if loading}
+				{#if pbState.loading}
 					<svg
 						class="h-4 w-4 animate-spin text-white"
 						xmlns="http://www.w3.org/2000/svg"
@@ -562,7 +533,7 @@
 	</div>
 </div>
 
-{#if error}
+{#if pbState.error}
 	<div
 		class="mb-6 flex items-start gap-4 rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900/20 dark:bg-red-900/10"
 	>
@@ -573,42 +544,42 @@
 		</div>
 		<div>
 			<h3 class="mb-1 font-semibold text-red-900 dark:text-red-200">Request Failed</h3>
-			<p class="text-sm text-red-700 dark:text-red-300">{error}</p>
+			<p class="text-sm text-red-700 dark:text-red-300">{pbState.error}</p>
 		</div>
 	</div>
 {/if}
 
-{#if feedData}
+{#if pbState.feedData}
 	<div class="mb-4">
 		<h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">GTFS Realtime Feed Data</h2>
 	</div>
 	<ProtobufViewer
-		tripUpdates={feedData.tripUpdates}
-		vehiclePositions={feedData.vehiclePositions}
-		alerts={feedData.alerts}
-		header={feedData.header}
-		entityCount={feedData.entityCount}
-		totals={feedData.totals}
-		limited={feedData.limited}
+		tripUpdates={pbState.feedData.tripUpdates}
+		vehiclePositions={pbState.feedData.vehiclePositions}
+		alerts={pbState.feedData.alerts}
+		header={pbState.feedData.header}
+		entityCount={pbState.feedData.entityCount}
+		totals={pbState.feedData.totals}
+		limited={pbState.feedData.limited}
 		onLoadMore={loadMoreEntities}
-		paginationLoading={paginationState.loading}
-		hasMorePages={paginationState.hasMore}
+		paginationLoading={pbState.paginationState.loading}
+		hasMorePages={pbState.paginationState.hasMore}
 	/>
-{:else if !loading}
+{:else if !pbState.loading}
 	<div
 		class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-16 text-center transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
 	>
 		<div
 			class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-900"
 		>
-			<svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-				><path
+			<svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path
 					stroke-linecap="round"
 					stroke-linejoin="round"
 					stroke-width="2"
 					d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
-				></path></svg
-			>
+				></path>
+			</svg>
 		</div>
 		<h3 class="mb-2 text-xl font-semibold text-gray-800 dark:text-white">
 			GTFS Realtime Protobuf Reader

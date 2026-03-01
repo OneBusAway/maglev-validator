@@ -42,7 +42,9 @@ export function formatTimestamp(
 		hour12: false
 	};
 
-	const local = date.toLocaleString(undefined, localParams);
+	const timeZone: string | undefined =
+		typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : undefined;
+	const local = date.toLocaleString('en-US', { ...localParams, timeZone });
 	const utc = date
 		.toISOString()
 		.replace('T', ' ')
@@ -53,10 +55,11 @@ export function formatTimestamp(
 	const hour = date.getHours();
 	if (hour < 4) {
 		const prevDate = new Date(num - 24 * 60 * 60 * 1000);
-		const prevDateStr = prevDate.toLocaleDateString(undefined, {
+		const prevDateStr = prevDate.toLocaleDateString('en-US', {
 			year: 'numeric',
 			month: 'short',
-			day: 'numeric'
+			day: 'numeric',
+			timeZone
 		});
 		const serviceHour = hour + 24;
 		const minutes = date.getMinutes().toString().padStart(2, '0');

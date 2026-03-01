@@ -95,7 +95,8 @@
 	}
 
 	function formatTimestamp(ts: string) {
-		return new Date(ts).toLocaleString();
+		const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+		return new Date(ts).toLocaleString('en-US', { timeZone });
 	}
 
 	const selectedData = $derived.by(() => {

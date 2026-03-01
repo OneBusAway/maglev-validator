@@ -237,7 +237,8 @@
 	function formatTimestamp(ts: string): string {
 		try {
 			const date = new Date(ts);
-			return date.toLocaleString();
+			const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+			return date.toLocaleString('en-US', { timeZone });
 		} catch {
 			return ts;
 		}

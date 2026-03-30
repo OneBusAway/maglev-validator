@@ -1,5 +1,28 @@
 export const endpoints = [
 	{
+		id: 'trip',
+		name: 'Trip',
+		path: 'trip/{id}.json',
+		params: [
+			{
+				name: 'id',
+				label: 'Trip ID',
+				required: true,
+				inPath: true,
+				default: '',
+				placeholder: 'e.g., 1_605425455'
+			},
+			{
+				name: 'key',
+				label: 'API Key',
+				required: true,
+				inPath: false,
+				default: 'test',
+				placeholder: 'API Key'
+			}
+		]
+	},
+	{
 		id: 'trip-details',
 		name: 'Trip Details',
 		path: 'trip-details/{id}.json',

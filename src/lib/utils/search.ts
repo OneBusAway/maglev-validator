@@ -227,6 +227,7 @@ export function filterGTFSEntities<T extends unknown[]>(
 				tripUpdate.id?.toLowerCase().includes(lowerQuery) ||
 				tripUpdate.trip?.tripId?.toLowerCase().includes(lowerQuery) ||
 				tripUpdate.trip?.routeId?.toLowerCase().includes(lowerQuery) ||
+				tripUpdate.trip?.scheduleRelationship?.toLowerCase().includes(lowerQuery) ||
 				tripUpdate.vehicle?.id?.toLowerCase().includes(lowerQuery) ||
 				tripUpdate.vehicle?.label?.toLowerCase().includes(lowerQuery)
 			);

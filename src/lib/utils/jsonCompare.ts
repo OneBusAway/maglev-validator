@@ -1,16 +1,29 @@
 export type DiffStatus = 'same' | 'different' | 'missing' | 'added';
 
-const stringifyCache = new WeakMap<object, Map<string, string>>();
+const ID_FIELDS = [
+	'id',
+	'tripId',
+	'activeTripId',
+	'tripId',
+	'routeId',
+	'stopId',
+	'vehicleId',
+	'blockId',
+	'serviceId',
+	'calendarId'
+];
 
-const equalityCache = new WeakMap<object, WeakMap<object, boolean>>();
-
-let cacheCleanupScheduled = false;
-function scheduleCacheCleanup() {
-	if (cacheCleanupScheduled) return;
-	cacheCleanupScheduled = true;
-	setTimeout(() => {
-		cacheCleanupScheduled = false;
-	}, 60000);
+export function findIdValue(item: unknown): string | number | null {
+	if (!isObject(item)) return null;
+	for (const field of ID_FIELDS) {
+		const value = (item as Record<string, unknown>)[field];
+		if (value !== null && value !== undefined) {
+			if (typeof value === 'string' || typeof value === 'number') {
+				return value;
+			}
+		}
+	}
+	return null;
 }
 
 export function isArray(value: unknown): value is unknown[] {
@@ -24,6 +37,8 @@ export function isObject(value: unknown): value is Record<string, unknown> {
 export function isPrimitive(value: unknown): boolean {
 	return !isArray(value) && !isObject(value);
 }
+
+const stringifyCache = new WeakMap<object, Map<string, string>>();
 
 function stableStringifyImpl(value: unknown, ignoredKeys: string[] = []): string {
 	if (value === null) return 'null';
@@ -60,10 +75,104 @@ function stableStringify(value: unknown, ignoredKeys: string[] = []): string {
 			stringifyCache.set(value, objCache);
 		}
 		objCache.set(cacheKey, result);
-		scheduleCacheCleanup();
 		return result;
 	}
 	return stableStringifyImpl(value, ignoredKeys);
+}
+
+export function sortById(a: unknown, b: unknown): number {
+	const aId = findIdValue(a);
+	const bId = findIdValue(b);
+	if (aId !== null && bId !== null) {
+		if (typeof aId === 'number' && typeof bId === 'number') {
+			return aId - bId;
+		}
+		return String(aId).localeCompare(String(bId));
+	}
+	return stableStringify(a).localeCompare(stableStringify(b));
+}
+
+export function sortTopLevelArrays(obj: unknown): unknown {
+	if (!isObject(obj)) return obj;
+
+	const result: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(obj)) {
+		if (isArray(value)) {
+			const hasObjectsWithIds =
+				value.length > 0 && value.some((item) => isObject(item) && findIdValue(item) !== null);
+			if (hasObjectsWithIds) {
+				result[key] = [...value].sort(sortById);
+			} else {
+				result[key] = value;
+			}
+		} else {
+			result[key] = value;
+		}
+	}
+	return result;
+}
+
+export async function sortArrayAsync(arr: unknown[]): Promise<unknown[]> {
+	if (!Array.isArray(arr) || arr.length === 0) return arr;
+
+	const hasObjectsWithIds = arr.some((item) => isObject(item) && findIdValue(item) !== null);
+	if (!hasObjectsWithIds) return arr;
+
+	return [...arr].sort(sortById);
+}
+
+export function matchArraysById(
+	left: unknown[],
+	right: unknown[]
+): { left: unknown; right: unknown; id: string | number | null }[] {
+	const leftMap = new Map<string | number | null, unknown[]>();
+	const rightMap = new Map<string | number | null, unknown[]>();
+
+	for (const item of left) {
+		const id = findIdValue(item);
+		if (!leftMap.has(id)) {
+			leftMap.set(id, []);
+		}
+		leftMap.get(id)!.push(item);
+	}
+
+	for (const item of right) {
+		const id = findIdValue(item);
+		if (!rightMap.has(id)) {
+			rightMap.set(id, []);
+		}
+		rightMap.get(id)!.push(item);
+	}
+
+	const allIds = new Set([...leftMap.keys(), ...rightMap.keys()]);
+	const results: { left: unknown; right: unknown; id: string | number | null }[] = [];
+
+	for (const id of allIds) {
+		const leftItems = leftMap.get(id) || [];
+		const rightItems = rightMap.get(id) || [];
+		const maxLen = Math.max(leftItems.length, rightItems.length);
+
+		for (let i = 0; i < maxLen; i++) {
+			results.push({
+				left: leftItems[i] ?? null,
+				right: rightItems[i] ?? null,
+				id
+			});
+		}
+	}
+
+	return results;
+}
+
+const equalityCache = new WeakMap<object, WeakMap<object, boolean>>();
+
+let cacheCleanupScheduled = false;
+function scheduleCacheCleanup() {
+	if (cacheCleanupScheduled) return;
+	cacheCleanupScheduled = true;
+	setTimeout(() => {
+		cacheCleanupScheduled = false;
+	}, 60000);
 }
 
 export function deepEqualIgnoreOrder(a: unknown, b: unknown, ignoredKeys: string[] = []): boolean {
@@ -87,8 +196,8 @@ export function deepEqualIgnoreOrder(a: unknown, b: unknown, ignoredKeys: string
 		} else if (a.length === 0) {
 			result = true;
 		} else {
-			const aSorted = a.map((item) => stableStringify(item, ignoredKeys)).sort();
-			const bSorted = b.map((item) => stableStringify(item, ignoredKeys)).sort();
+			const aSorted = a.map((item) => stableStringify(item, ignoredKeys)).sort(sortById);
+			const bSorted = b.map((item) => stableStringify(item, ignoredKeys)).sort(sortById);
 			result = aSorted.every((value, index) => value === bSorted[index]);
 		}
 	} else if (isObject(a) && isObject(b)) {
@@ -168,8 +277,8 @@ export function countDifferences(
 			}
 		}
 
-		const aSorted = a.map((item) => stableStringify(item, ignoredKeys)).sort();
-		const bSorted = b.map((item) => stableStringify(item, ignoredKeys)).sort();
+		const aSorted = a.map((item) => stableStringify(item, ignoredKeys)).sort(sortById);
+		const bSorted = b.map((item) => stableStringify(item, ignoredKeys)).sort(sortById);
 		let i = 0;
 		let j = 0;
 		let diff = 0;
@@ -218,7 +327,7 @@ export function sortArrayValues(values: unknown[]): unknown[] {
 	if (values.length > 500) {
 		return values;
 	}
-	return [...values].sort((a, b) => stableStringify(a).localeCompare(stableStringify(b)));
+	return [...values].sort(sortById);
 }
 
 export function parsePath(path: string): (string | number)[] {

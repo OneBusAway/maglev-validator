@@ -2,7 +2,7 @@
 	import JsonViewer from './JsonViewer.svelte';
 	import { getByPath } from '$lib/utils/jsonCompare';
 	import { deepSearchJSON } from '$lib/utils/search';
-	import { SvelteSet } from 'svelte/reactivity';
+	import { SvelteSet, SvelteMap } from 'svelte/reactivity';
 
 	interface Props {
 		response1: unknown;
@@ -16,6 +16,116 @@
 	const trimmedPath = $derived(focusPath.trim());
 	const focused1 = $derived(trimmedPath ? getByPath(response1, trimmedPath) : response1);
 	const focused2 = $derived(trimmedPath ? getByPath(response2, trimmedPath) : response2);
+
+	let sorted1 = $state<unknown>(null);
+	let sorted2 = $state<unknown>(null);
+	let sortLoading = $state(false);
+	let sortEnabled = $state(false);
+
+	async function doSort() {
+		if (sortEnabled) {
+			// Revert to original
+			sorted1 = null;
+			sorted2 = null;
+			sortEnabled = false;
+			return;
+		}
+
+		sortLoading = true;
+		sortEnabled = true;
+		await new Promise((r) => setTimeout(r, 0));
+
+		const ID_FIELDS = ['tripId', 'id', 'activeTripId', 'routeId', 'stopId', 'vehicleId', 'blockId'];
+
+		function getId(item: Record<string, unknown>): string {
+			for (const field of ID_FIELDS) {
+				if (item && typeof item[field] === 'string' && item[field]) {
+					return item[field];
+				}
+				if (item && typeof item[field] === 'number') {
+					return String(item[field]);
+				}
+			}
+			return JSON.stringify(item);
+		}
+
+		function findArray(data: unknown): unknown[] {
+			if (!data) return [];
+			if (Array.isArray(data)) return data;
+
+			// Search for array in common locations
+			const keys = ['list', 'data', 'items', 'results', 'elements', 'entities'];
+			for (const key of keys) {
+				if (data[key] && Array.isArray(data[key]) && data[key].length > 0) {
+					// Check if first item has an ID field
+					const firstItem = data[key][0];
+					if (firstItem && typeof firstItem === 'object') {
+						for (const idField of ID_FIELDS) {
+							if (firstItem[idField]) return data[key];
+						}
+					}
+				}
+			}
+
+			// Search recursively for first array with objects having IDs
+			function search(obj: unknown): unknown[] | null {
+				if (!obj || typeof obj !== 'object') return null;
+				if (Array.isArray(obj)) return obj.length > 0 ? obj : null;
+
+				for (const value of Object.values(obj as Record<string, unknown>)) {
+					const result = search(value);
+					if (result) return result;
+				}
+				return null;
+			}
+
+			return search(data) || [];
+		}
+
+		const arr1 = findArray(focused1);
+		const arr2 = findArray(focused2);
+
+		if (arr1.length > 0 && arr2.length > 0) {
+			// Create matched pairs by ID
+			const leftMap = new SvelteMap<string, unknown[]>();
+			const rightMap = new SvelteMap<string, unknown[]>();
+
+			for (const item of arr1) {
+				const id = getId(item as Record<string, unknown>);
+				if (!leftMap.has(id)) leftMap.set(id, []);
+				leftMap.get(id)!.push(item);
+			}
+
+			for (const item of arr2) {
+				const id = getId(item as Record<string, unknown>);
+				if (!rightMap.has(id)) rightMap.set(id, []);
+				rightMap.get(id)!.push(item);
+			}
+
+			// Get all unique IDs
+			const allIds = new Set([...leftMap.keys(), ...rightMap.keys()]);
+
+			const matched1 = [];
+			const matched2 = [];
+
+			// First add matching IDs (items that exist on both sides)
+			for (const id of allIds) {
+				const items1 = leftMap.get(id) || [];
+				const items2 = rightMap.get(id) || [];
+				const maxLen = Math.max(items1.length, items2.length);
+
+				for (let i = 0; i < maxLen; i++) {
+					matched1.push(items1[i] || null);
+					matched2.push(items2[i] || null);
+				}
+			}
+
+			sorted1 = matched1;
+			sorted2 = matched2;
+		}
+
+		sortLoading = false;
+	}
 
 	let localSearchQuery = $state('');
 	let debouncedSearchQuery = $state('');
@@ -204,6 +314,34 @@
 		Sync Select
 	</button>
 
+	<button
+		onclick={doSort}
+		disabled={sortLoading}
+		class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {sortEnabled
+			? 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400'
+			: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'}"
+		title="Sort arrays by ID to align matching items"
+	>
+		{#if sortLoading}
+			<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+				<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+				></circle>
+				<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+				></path>
+			</svg>
+		{:else}
+			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+				></path>
+			</svg>
+		{/if}
+		{sortEnabled ? 'Reset' : 'Sort by ID'}
+	</button>
+
 	{#if debouncedSearchQuery}
 		<div class="flex items-center gap-3 text-sm">
 			{#if totalMatches > 0}
@@ -258,8 +396,8 @@
 		class="max-h-[800px] overflow-auto bg-white dark:bg-gray-900"
 	>
 		<JsonViewer
-			data={focused1}
-			otherData={focused2}
+			data={sorted1 ?? focused1}
+			otherData={sorted2 ?? focused2}
 			{focusPath}
 			{ignoredKeys}
 			mode="server1"
@@ -275,7 +413,7 @@
 		class="max-h-[800px] overflow-auto border-l border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
 	>
 		<JsonViewer
-			data={focused2}
+			data={sorted2 ?? focused2}
 			otherData={focused1}
 			{focusPath}
 			{ignoredKeys}

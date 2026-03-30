@@ -795,6 +795,13 @@
 												{vehicleInfo?.id || vehicleInfo?.label}
 											</span>
 										{/if}
+										{#if trip?.scheduleRelationship}
+											<span
+												class="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700 dark:bg-blue-900/50 dark:text-blue-400"
+											>
+												{trip.scheduleRelationship}
+											</span>
+										{/if}
 									{:else if protobufState.activeTab === 'vehiclePositions'}
 										{@const vehicle = item as Record<string, unknown>}
 										{@const vehicleInfo = vehicle.vehicle as Record<string, string> | undefined}

@@ -8,6 +8,11 @@
 	import { comparatorState as cmpState } from '$lib/panelState.svelte';
 
 	let isLogging = $state(false);
+	let server1UrlHistory = $state<string[]>([]);
+	let server2UrlHistory = $state<string[]>([]);
+	let isProcessingData = $state(false);
+	let processingMessage = $state('');
+	let inputHistory = $state<Record<string, string[]>>({});
 
 	const watchedKeys = $derived(
 		cmpState.watchedKeysInput
@@ -78,6 +83,18 @@
 				if (localStorage.server1Base) cmpState.server1Base = localStorage.server1Base;
 				if (localStorage.server2Base) cmpState.server2Base = localStorage.server2Base;
 			}
+
+			// Load URL history
+			try {
+				const s1History = localStorage.getItem('server1UrlHistory');
+				if (s1History) server1UrlHistory = JSON.parse(s1History);
+				const s2History = localStorage.getItem('server2UrlHistory');
+				if (s2History) server2UrlHistory = JSON.parse(s2History);
+			} catch (e) {
+				console.error('Failed to parse URL history', e);
+			}
+
+			loadInputHistory();
 
 			// Load saved params for all endpoints
 			if (Object.keys(cmpState.endpointParams).length === 0 && localStorage.comparatorParams) {
@@ -257,6 +274,45 @@
 		}
 	}
 
+	function saveUrlToHistory(url: string, history: string[]): string[] {
+		if (!url || history.includes(url)) return history;
+		return [url, ...history.filter((u) => u !== url)].slice(0, 5);
+	}
+
+	function getInputHistoryKey(endpointId: string, paramName: string): string {
+		return `${endpointId}:${paramName}`;
+	}
+
+	function getInputHistory(endpointId: string, paramName: string): string[] {
+		const key = getInputHistoryKey(endpointId, paramName);
+		return inputHistory[key] || [];
+	}
+
+	function saveInputToHistory(endpointId: string, paramName: string, value: string) {
+		if (!value.trim()) return;
+		const key = getInputHistoryKey(endpointId, paramName);
+		const history = getInputHistory(endpointId, paramName);
+		if (!history.includes(value)) {
+			inputHistory[key] = [value, ...history].slice(0, 5);
+			if (typeof localStorage !== 'undefined') {
+				localStorage.setItem('inputHistory', JSON.stringify(inputHistory));
+			}
+		}
+	}
+
+	function loadInputHistory() {
+		if (typeof localStorage !== 'undefined') {
+			const saved = localStorage.getItem('inputHistory');
+			if (saved) {
+				try {
+					inputHistory = JSON.parse(saved);
+				} catch {
+					inputHistory = {};
+				}
+			}
+		}
+	}
+
 	async function fetchBoth() {
 		if (cmpState.loading) return;
 		cmpState.loading = true;
@@ -315,6 +371,36 @@
 
 			cmpState.response1 = data.response1;
 			cmpState.response2 = data.response2;
+
+			const dataSize =
+				JSON.stringify(data.response1).length + JSON.stringify(data.response2).length;
+			if (dataSize > 500000) {
+				isProcessingData = true;
+				processingMessage = 'Processing large response...';
+				await new Promise((r) => setTimeout(r, 50));
+			}
+
+			server1UrlHistory = saveUrlToHistory(cmpState.server1Base, server1UrlHistory);
+			server2UrlHistory = saveUrlToHistory(cmpState.server2Base, server2UrlHistory);
+
+			Object.entries(cmpState.params).forEach(([paramName, value]) => {
+				if (value.trim()) {
+					saveInputToHistory(cmpState.selectedEndpoint, paramName, value);
+				}
+			});
+
+			if (typeof localStorage !== 'undefined') {
+				localStorage.setItem('server1UrlHistory', JSON.stringify(server1UrlHistory));
+				localStorage.setItem('server2UrlHistory', JSON.stringify(server2UrlHistory));
+				localStorage.server1Base = cmpState.server1Base;
+				localStorage.server2Base = cmpState.server2Base;
+			}
+
+			if (dataSize > 500000) {
+				processingMessage = 'Rendering comparison...';
+				await new Promise((r) => setTimeout(r, 50));
+				isProcessingData = false;
+			}
 
 			await logWatchedKeys(data.response1, data.response2);
 		} catch (e) {
@@ -387,8 +473,14 @@
 					id="server1-url"
 					type="text"
 					bind:value={cmpState.server1Base}
+					list="server1-url-history"
 					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
 				/>
+				<datalist id="server1-url-history">
+					{#each server1UrlHistory as url}
+						<option value={url}></option>
+					{/each}
+				</datalist>
 			</div>
 			<div>
 				<label
@@ -400,8 +492,14 @@
 					id="server2-url"
 					type="text"
 					bind:value={cmpState.server2Base}
+					list="server2-url-history"
 					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
 				/>
+				<datalist id="server2-url-history">
+					{#each server2UrlHistory as url}
+						<option value={url}></option>
+					{/each}
+				</datalist>
 			</div>
 		</div>
 
@@ -426,6 +524,7 @@
 			</div>
 
 			{#each endpoints.find((e) => e.id === cmpState.selectedEndpoint)?.params || [] as param (param.name)}
+				{@const history = getInputHistory(cmpState.selectedEndpoint, param.name)}
 				<div class="col-span-3">
 					<label
 						for={'param-' + param.name}
@@ -440,8 +539,16 @@
 						value={cmpState.params[param.name] || ''}
 						oninput={(e) => handleParamChange(param.name, e.currentTarget.value)}
 						placeholder={param.placeholder || ''}
+						list={'param-history-' + param.name}
 						class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
 					/>
+					{#if history.length > 0}
+						<datalist id={'param-history-' + param.name}>
+							{#each history as value}
+								<option {value}></option>
+							{/each}
+						</datalist>
+					{/if}
 				</div>
 			{/each}
 
@@ -656,12 +763,34 @@
 		</div>
 	{/if}
 
-	<DiffViewer
-		response1={cmpState.response1}
-		response2={cmpState.response2}
-		focusPath={cmpState.focusPath}
-		{ignoredKeys}
-	/>
+	<div class="relative">
+		{#if isProcessingData}
+			<div
+				class="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm dark:bg-gray-900/80"
+			>
+				<div class="flex flex-col items-center gap-3">
+					<svg class="h-8 w-8 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24">
+						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+						></circle>
+						<path
+							class="opacity-75"
+							fill="currentColor"
+							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+						></path>
+					</svg>
+					<span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+						>{processingMessage}</span
+					>
+				</div>
+			</div>
+		{/if}
+		<DiffViewer
+			response1={cmpState.response1}
+			response2={cmpState.response2}
+			focusPath={cmpState.focusPath}
+			{ignoredKeys}
+		/>
+	</div>
 {:else if !cmpState.loading}
 	<div
 		class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-16 text-center transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"

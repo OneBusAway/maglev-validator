@@ -30,6 +30,7 @@
 
 	const CHUNK_SIZE = 50;
 	const LARGE_THRESHOLD = 100;
+	const ROOT_CHUNK_SIZE = 20;
 
 	let {
 		value,
@@ -102,7 +103,8 @@
 	});
 
 	let manualExpanded = $state<boolean | null>(null);
-	let visibleCount = $state(CHUNK_SIZE);
+	let initialChunkSize = $state(level === 0 ? ROOT_CHUNK_SIZE : CHUNK_SIZE);
+	let visibleCount = $state(initialChunkSize);
 	let isLoadingMore = $state(false);
 
 	let lastSearchQuery = $state('');

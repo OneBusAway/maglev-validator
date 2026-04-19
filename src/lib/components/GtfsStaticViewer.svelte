@@ -434,94 +434,38 @@
 		gtfsState.selectedFileId = null;
 		gtfsState.selectedFileName = null;
 		gtfsState.rows = [];
-		gtfsState.uploadProgressPercent = 5;
-		gtfsState.currentProcessingFile = 'Starting...';
-		gtfsState.uploadProgress = 'Initializing...';
+		gtfsState.uploadProgressPercent = 10;
+		gtfsState.uploadProgress = 'Processing on server...';
 
 		await yieldToUI();
 
 		try {
-			console.log('Processing zip file, size:', file.size);
-			gtfsState.uploadProgress = 'Extracting ZIP file...';
-			gtfsState.currentProcessingFile = 'Reading ZIP file...';
-			gtfsState.uploadProgressPercent = 10;
+			gtfsState.uploadProgressPercent = 30;
+			gtfsState.uploadProgress = 'Sending file to server...';
 			await yieldToUI();
 
-			const JSZip = (await import('jszip')).default;
-			const zip = await JSZip.loadAsync(file);
+			const formData = new FormData();
+			formData.append('file', file);
 
-			const zipFileNames = Object.keys(zip.files);
-
-			if (zipFileNames.length === 0) {
-				throw new Error('The ZIP file appears to be empty');
-			}
-
-			const txtFiles = Object.entries(zip.files).filter(([filename, entry]) => {
-				if (entry.dir) return false;
-				const baseName = filename.split('/').pop() || filename;
-				return baseName.endsWith('.txt');
-			});
-
-			const totalFiles = txtFiles.length;
-			const rawFiles: Array<{ filename: string; content: string }> = [];
-
-			for (let i = 0; i < txtFiles.length; i++) {
-				const [filename, zipEntry] = txtFiles[i];
-				const baseName = filename.split('/').pop() || filename;
-
-				gtfsState.currentProcessingFile = baseName;
-				gtfsState.uploadProgressPercent = Math.round(((i + 1) / totalFiles) * 40);
-				gtfsState.uploadProgress = `Reading ${baseName} (${i + 1}/${totalFiles})...`;
-
-				await yieldToUI();
-
-				try {
-					const content = await zipEntry.async('string');
-					if (content.trim()) {
-						rawFiles.push({
-							filename: baseName,
-							content
-						});
-					}
-				} catch (readError) {
-					console.warn(`Failed to read ${baseName}:`, readError);
-				}
-			}
-
-			if (rawFiles.length === 0) {
-				throw new Error('No valid GTFS files found in the ZIP');
-			}
-
-			gtfsState.uploadProgress = 'Uploading to server for processing...';
-			gtfsState.uploadProgressPercent = 50;
-			gtfsState.currentProcessingFile = 'Sending to server...';
-			await yieldToUI();
-
-			const response = await fetch('/api/gtfs-static-db', {
+			const response = await fetch('/api/gtfs-static', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					action: 'uploadRaw',
-					name: sourceUrl || 'Uploaded GTFS',
-					sourceUrl,
-					files: rawFiles
-				})
+				body: formData
 			});
 
-			gtfsState.uploadProgressPercent = 90;
+			gtfsState.uploadProgressPercent = 80;
 			await yieldToUI();
 
 			const result = await response.json();
 
 			if (!response.ok || result.error) {
-				throw new Error(result.error || 'Failed to upload to database');
+				throw new Error(result.error || 'Failed to process GTFS file');
 			}
 
 			gtfsState.gtfsFiles = result.files.map(
-				(f: { id: number; filename: string; columns: string[]; rowCount: number }) => ({
+				(f: { id: number; filename: string; rowCount: number }) => ({
 					id: f.id,
 					name: f.filename,
-					columns: f.columns,
+					columns: [],
 					rowCount: f.rowCount
 				})
 			);
@@ -543,14 +487,12 @@
 
 			gtfsState.uploadProgress = '';
 			gtfsState.uploadProgressPercent = 0;
-			gtfsState.currentProcessingFile = '';
 			gtfsState.showGtfsInput = false;
 		} catch (e) {
 			console.error('Error processing zip:', e);
 			gtfsState.error = e instanceof Error ? e.message : 'Failed to process GTFS file';
 			gtfsState.uploadProgress = '';
 			gtfsState.uploadProgressPercent = 0;
-			gtfsState.currentProcessingFile = '';
 		} finally {
 			gtfsState.loading = false;
 		}
@@ -596,19 +538,15 @@
 		gtfsState.selectedFileId = null;
 		gtfsState.selectedFileName = null;
 		gtfsState.rows = [];
-		gtfsState.uploadProgressPercent = 5;
-		gtfsState.currentProcessingFile = 'Starting...';
-		gtfsState.uploadProgress = 'Fetching GTFS file...';
+		gtfsState.uploadProgressPercent = 10;
+		gtfsState.uploadProgress = 'Processing on server...';
 
 		await yieldToUI();
 
 		try {
-			gtfsState.uploadProgress = 'Fetching GTFS file...';
-			gtfsState.uploadProgressPercent = 10;
-			gtfsState.currentProcessingFile = 'Downloading from URL...';
+			gtfsState.uploadProgressPercent = 30;
+			gtfsState.uploadProgress = 'Fetching and processing...';
 			await yieldToUI();
-
-			console.log('Fetching from URL:', gtfsState.feedUrl);
 
 			const response = await fetch('/api/gtfs-static', {
 				method: 'POST',
@@ -616,41 +554,46 @@
 				body: JSON.stringify({ url: gtfsState.feedUrl })
 			});
 
-			console.log('Response received');
-			gtfsState.uploadProgressPercent = 30;
-			await yieldToUI();
+			const result = await response.json();
 
-			const contentType = response.headers.get('content-type') || '';
-
-			if (contentType.includes('application/json')) {
-				const data = await response.json();
-				throw new Error(data.error || 'Failed to fetch GTFS file');
+			if (!response.ok || result.error) {
+				throw new Error(result.error || 'Failed to fetch GTFS file');
 			}
 
-			if (!response.ok) {
-				throw new Error(`Failed to fetch GTFS file: ${response.status} ${response.statusText}`);
-			}
+			gtfsState.gtfsFiles = result.files.map(
+				(f: { id: number; filename: string; rowCount: number }) => ({
+					id: f.id,
+					name: f.filename,
+					columns: [],
+					rowCount: f.rowCount
+				})
+			);
 
-			gtfsState.uploadProgress = 'Downloading file...';
-			gtfsState.uploadProgressPercent = 40;
-			await yieldToUI();
+			gtfsState.gtfsFiles.sort((a, b) => {
+				const aRequired = GTFS_FILES[a.name]?.required ?? false;
+				const bRequired = GTFS_FILES[b.name]?.required ?? false;
+				if (aRequired !== bRequired) return bRequired ? 1 : -1;
+				return a.name.localeCompare(b.name);
+			});
 
-			const blob = await response.blob();
-			console.log('Blob received, size:', blob.size);
-
-			if (blob.size === 0) {
-				throw new Error('Received empty file from server');
-			}
-
-			await processZipFile(blob, gtfsState.feedUrl);
+			gtfsState.uploadProgressPercent = 100;
+			gtfsState.uploadProgress = 'Complete!';
 			saveUrl(gtfsState.feedUrl);
+
+			if (gtfsState.gtfsFiles.length > 0) {
+				await selectFile(gtfsState.gtfsFiles[0]);
+			}
+
+			gtfsState.uploadProgress = '';
+			gtfsState.uploadProgressPercent = 0;
+			gtfsState.showGtfsInput = false;
 		} catch (e) {
 			console.error('fetchFromUrl error:', e);
 			gtfsState.error = e instanceof Error ? e.message : 'Failed to fetch GTFS file';
+		} finally {
 			gtfsState.loading = false;
 			gtfsState.uploadProgress = '';
 			gtfsState.uploadProgressPercent = 0;
-			gtfsState.currentProcessingFile = '';
 		}
 	}
 

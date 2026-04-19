@@ -63,23 +63,25 @@
 			if (!obj || typeof obj !== 'object') return;
 
 			if (Array.isArray(obj) && obj.length > 0) {
-				const firstItem = obj[0];
-				if (firstItem && typeof firstItem === 'object') {
-					let detectedId: string | null = null;
+				const isPrimitiveArray = typeof obj[0] === 'string' || typeof obj[0] === 'number';
+				let detectedId: string | null = null;
+
+				if (!isPrimitiveArray && obj[0] && typeof obj[0] === 'object') {
 					for (const field of idFields) {
-						if ((firstItem as Record<string, unknown>)[field] !== undefined) {
+						if ((obj[0] as Record<string, unknown>)[field] !== undefined) {
 							detectedId = field;
 							break;
 						}
 					}
-					const pathLabel = path || 'Root Array';
-					arrays.push({
-						path,
-						pathLabel,
-						count: obj.length,
-						detectedIdField: detectedId
-					});
 				}
+
+				const pathLabel = path || 'Root Array';
+				arrays.push({
+					path,
+					pathLabel,
+					count: obj.length,
+					detectedIdField: detectedId
+				});
 			}
 
 			if (!Array.isArray(obj)) {

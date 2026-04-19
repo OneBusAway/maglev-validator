@@ -426,7 +426,7 @@
 		Object.entries(params).forEach(([key, value]) => {
 			if (endpoint.params.find((p) => p.name === key && p.inPath)) {
 				path = path.replace(`{${key}}`, value);
-			} else {
+			} else if (value !== '' && value !== undefined && value !== null) {
 				queryParams.push(`${key}=${encodeURIComponent(value)}`);
 			}
 		});

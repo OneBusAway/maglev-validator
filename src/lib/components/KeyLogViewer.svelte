@@ -5,6 +5,7 @@
 	import { logState } from '$lib/logState.svelte';
 	import { loggerState, type KeyLogEntry } from '$lib/panelState.svelte';
 	import { fly } from 'svelte/transition';
+	import { deepEqualIgnoreOrder } from '$lib/utils/jsonCompare';
 
 	import JsonViewer from '$lib/components/JsonViewer.svelte';
 
@@ -222,14 +223,28 @@
 		}
 	}
 
+	function sortForDisplay<T>(arr: readonly T[]): T[] {
+		if (arr.length === 0) return [];
+		const allNumbers = arr.every((x) => typeof x === 'number' && !Number.isNaN(x));
+		if (allNumbers) {
+			return [...arr].sort((a, b) => (a as number) - (b as number));
+		}
+		return [...arr].sort((a, b) => {
+			const sa = typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a);
+			const sb = typeof b === 'object' && b !== null ? JSON.stringify(b) : String(b);
+			return sa.localeCompare(sb);
+		});
+	}
+
 	function formatValue(value: unknown): string {
 		if (value === null || value === undefined) return '—';
+		if (Array.isArray(value)) return JSON.stringify(sortForDisplay(value));
 		if (typeof value === 'object') return JSON.stringify(value);
 		return String(value);
 	}
 
 	function valuesMatch(v1: unknown, v2: unknown): boolean {
-		return JSON.stringify(v1) === JSON.stringify(v2);
+		return deepEqualIgnoreOrder(v1, v2);
 	}
 
 	function formatTimestamp(ts: string): string {
@@ -633,10 +648,10 @@
 											title="View array elements"
 										>
 											<span class="font-semibold"
-												>[{Array.isArray(log.server1_value)
+											>[{Array.isArray(log.server1_value)
 													? (log.server1_value as unknown[]).length
 													: 0} items]</span
-											>
+										>
 											<span class="truncate text-indigo-500/70 dark:text-indigo-400/70">
 												{formatValue(log.server1_value)}
 											</span>
@@ -659,10 +674,10 @@
 											title="View array elements"
 										>
 											<span class="font-semibold"
-												>[{Array.isArray(log.server2_value)
+											>[{Array.isArray(log.server2_value)
 													? (log.server2_value as unknown[]).length
 													: 0} items]</span
-											>
+										>
 											<span class="truncate text-indigo-500/70 dark:text-indigo-400/70">
 												{formatValue(log.server2_value)}
 											</span>
@@ -831,12 +846,14 @@
 {/if}
 
 {#if arrayDetailLog}
-	{@const s1 = Array.isArray(arrayDetailLog.server1_value)
+	{@const s1Raw = Array.isArray(arrayDetailLog.server1_value)
 		? (arrayDetailLog.server1_value as unknown[])
 		: []}
-	{@const s2 = Array.isArray(arrayDetailLog.server2_value)
+	{@const s2Raw = Array.isArray(arrayDetailLog.server2_value)
 		? (arrayDetailLog.server2_value as unknown[])
 		: []}
+	{@const s1 = sortForDisplay(s1Raw)}
+	{@const s2 = sortForDisplay(s2Raw)}
 	{@const maxLen = Math.max(s1.length, s2.length)}
 	{@const rows = Array.from({ length: maxLen }, (_, i) => ({
 		index: i,

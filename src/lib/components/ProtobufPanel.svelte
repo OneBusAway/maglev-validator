@@ -412,7 +412,7 @@
 				>
 				<button
 					onclick={addHeader}
-					class="text-sm font-medium text-green-600 transition-colors hover:text-green-700 dark:text-green-400 dark:hover:text-blue-300"
+					class="text-sm font-medium text-green-600 transition-colors hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
 				>
 					+ Add Header
 				</button>

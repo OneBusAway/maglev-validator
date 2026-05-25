@@ -148,16 +148,21 @@
 								: false
 	);
 
+	function normalizeKeyPath(path: string): string {
+		return path.replace(/\[\d+\]/g, '.*');
+	}
+
 	const watchedKeySet = $derived(
 		new Set(
 			comparatorState.watchedKeysInput
 				.split(',')
 				.map((k) => k.trim())
 				.filter((k) => k.length > 0)
+				.map((k) => normalizeKeyPath(k))
 		)
 	);
 
-	const isWatched = $derived(!!currentPath && watchedKeySet.has(currentPath));
+	const isWatched = $derived(!!currentPath && watchedKeySet.has(normalizeKeyPath(currentPath)));
 
 	const isPrimitiveValue = $derived(isPrimitive(value));
 	const status = $derived(
@@ -311,7 +316,7 @@
 				<button
 					onclick={(e) => {
 						e.stopPropagation();
-						comparatorState.toggleWatchKey(currentPath);
+						comparatorState.toggleWatchKey(normalizeKeyPath(currentPath));
 					}}
 					class="mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-700 {isWatched
 						? 'text-green-600 opacity-100 dark:text-green-400'

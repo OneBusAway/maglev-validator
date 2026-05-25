@@ -101,14 +101,22 @@
 		}
 
 		const entries = raw;
-		const allRawVals = entries.flatMap((e) => {
+		const allRawVals: number[] = entries.flatMap((e) => {
 			const s1 = e.server1_value;
 			const s2 = e.server2_value;
-			const a1 = Array.isArray(s1) ? (s1 as unknown[]) : [s1];
-			const a2 = Array.isArray(s2) ? (s2 as unknown[]) : [s2];
-			return [...a1, ...a2].map((v) => Number(v));
+			const a1 = Array.isArray(s1)
+				? (s1 as unknown[]).filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
+				: typeof s1 === 'number' && Number.isFinite(s1)
+					? [s1]
+					: [];
+			const a2 = Array.isArray(s2)
+				? (s2 as unknown[]).filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
+				: typeof s2 === 'number' && Number.isFinite(s2)
+					? [s2]
+					: [];
+			return [...a1, ...a2];
 		});
-		const hasNumeric = allRawVals.some((v) => !isNaN(v));
+		const hasNumeric = allRawVals.some((v: number) => !isNaN(v));
 
 		function buildSeries(getVal: (e: KeyLogEntry) => unknown): {
 			series: { label: string; points: { x: number; y: number }[] }[];
@@ -393,9 +401,12 @@
 
 	async function fetchChartLogs() {
 		if (!loggerState.selectedEndpoint || !traceKeyPath) return;
+		const capturedEndpoint = loggerState.selectedEndpoint;
+		const capturedKey = traceKeyPath;
 		try {
-			let url = `/api/keylog?endpoint=${encodeURIComponent(loggerState.selectedEndpoint)}&keyPath=${encodeURIComponent(traceKeyPath)}&limit=10000`;
+			let url = `/api/keylog?endpoint=${encodeURIComponent(capturedEndpoint)}&keyPath=${encodeURIComponent(capturedKey)}&limit=10000`;
 			const res = await fetch(url);
+			if (capturedEndpoint !== loggerState.selectedEndpoint || capturedKey !== traceKeyPath) return;
 			const data = await res.json();
 			chartLogs = data.logs || [];
 		} catch (e) {
@@ -725,7 +736,7 @@
 							class="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
 						>
 							<option value="">Select key...</option>
-							{#each [...new Set(filteredLogs.map((l) => l.key_path))] as kp (kp)}
+							{#each [...new Set(loggerState.logs.map((l) => l.key_path))] as kp (kp)}
 								<option value={kp}>{lastPathSegment(kp)}</option>
 							{/each}
 						</select>

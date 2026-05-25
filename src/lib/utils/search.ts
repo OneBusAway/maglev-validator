@@ -49,6 +49,7 @@ export interface GTFSVehiclePosition {
 		directionId?: number;
 		startTime?: string;
 		startDate?: string;
+		stopId?: string;
 	};
 	position?: {
 		latitude?: number;
@@ -132,6 +133,7 @@ export function buildSearchIndex(
 			addToIndex(index.tripIds, vehicle.trip?.tripId, idx);
 			addToIndex(index.routeIds, vehicle.trip?.routeId, idx);
 			addToIndex(index.stopIds, (e as Record<string, string>).stopId, idx);
+			addToIndex(index.stopIds, vehicle.trip?.stopId, idx);
 		} else if (type === 'alerts') {
 			const alert = e as GTFSAlert;
 			addToIndex(index.tripIds, alert.id, idx);

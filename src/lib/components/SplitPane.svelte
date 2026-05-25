@@ -59,7 +59,7 @@
 
 	<div
 		class="flex w-4 shrink-0 cursor-col-resize items-center justify-center bg-gray-200 transition-colors hover:bg-green-400 dark:bg-gray-800 dark:hover:bg-green-600"
-		class:!bg-green-500={isDragging}
+		class:bg-green-500!={isDragging}
 		onmousedown={handleMouseDown}
 		role="separator"
 		aria-label="Resize panels"

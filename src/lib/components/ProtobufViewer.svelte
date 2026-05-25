@@ -561,7 +561,7 @@
 								class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium shadow-sm transition-colors {activeRawTextTab ===
 								tab.id
 									? 'bg-green-500 text-white dark:bg-green-600'
-									: 'bg-white text-gray-700 hover:bg-blue-50 hover:text-green-700 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-green-900/30 dark:hover:text-green-400'}"
+									: 'bg-white text-gray-700 hover:bg-green-50 hover:text-green-700 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-green-900/30 dark:hover:text-green-400'}"
 							>
 								{#if tab.icon === 'trip'}
 									<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -773,7 +773,7 @@
 										{@const stopTimeUpdates = tripUpdate.stopTimeUpdate as
 											| Array<Record<string, string>>
 											| undefined}
-										{@const tripStopId = stopTimeUpdates?.[0]?.stopId}
+										{@const tripStopId = stopTimeUpdates?.find((s) => s?.stopId)?.stopId}
 										<span class="font-mono text-sm">
 											{trip?.tripId || tripUpdate.id || 'Unknown Trip'}
 										</span>
@@ -817,7 +817,8 @@
 										{@const vehicle = item as Record<string, unknown>}
 										{@const vehicleInfo = vehicle.vehicle as Record<string, string> | undefined}
 										{@const trip = vehicle.trip as Record<string, string> | undefined}
-										{@const vehicleStopId = (vehicle as Record<string, string>).stopId}
+										{@const vehicleStopId =
+											(vehicle as Record<string, string>).stopId || trip?.stopId}
 										<span class="font-mono text-sm">
 											{vehicleInfo?.id || vehicleInfo?.label || vehicle.id || 'Unknown Vehicle'}
 										</span>

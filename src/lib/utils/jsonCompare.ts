@@ -164,7 +164,7 @@ export function matchArraysById(
 	return results;
 }
 
-const equalityCache = new WeakMap<object, WeakMap<object, boolean>>();
+const equalityCache = new Map<number, WeakMap<object, WeakMap<object, boolean>>>();
 
 let cacheCleanupScheduled = false;
 function scheduleCacheCleanup() {
@@ -194,7 +194,8 @@ export function deepEqualIgnoreOrder(
 	}
 
 	if (typeof a === 'object' && typeof b === 'object' && ignoredKeys.length === 0) {
-		const aCache = equalityCache.get(a as object);
+		const tolCache = equalityCache.get(numericTolerancePercent);
+		const aCache = tolCache?.get(a as object);
 		if (aCache?.has(b as object)) {
 			return aCache.get(b as object)!;
 		}
@@ -241,10 +242,15 @@ export function deepEqualIgnoreOrder(
 	}
 
 	if (typeof a === 'object' && typeof b === 'object' && ignoredKeys.length === 0) {
-		let aCache = equalityCache.get(a as object);
+		let tolCache = equalityCache.get(numericTolerancePercent);
+		if (!tolCache) {
+			tolCache = new WeakMap();
+			equalityCache.set(numericTolerancePercent, tolCache);
+		}
+		let aCache = tolCache.get(a as object);
 		if (!aCache) {
 			aCache = new WeakMap();
-			equalityCache.set(a as object, aCache);
+			tolCache.set(a as object, aCache);
 		}
 		aCache.set(b as object, result);
 		scheduleCacheCleanup();
@@ -301,26 +307,34 @@ export function countDifferences(
 			}
 		}
 
-		const aSorted = a.map((item) => stableStringify(item, ignoredKeys)).sort(sortById);
-		const bSorted = b.map((item) => stableStringify(item, ignoredKeys)).sort(sortById);
+		const aItems = a.map((item) => ({ key: stableStringify(item, ignoredKeys), item }));
+		const bItems = b.map((item) => ({ key: stableStringify(item, ignoredKeys), item }));
+		aItems.sort((x, y) => sortById(x.item, y.item));
+		bItems.sort((x, y) => sortById(x.item, y.item));
 		let i = 0;
 		let j = 0;
 		let diff = 0;
-		while ((i < aSorted.length || j < bSorted.length) && diff < maxCount) {
-			if (i >= aSorted.length) {
+		while ((i < aItems.length || j < bItems.length) && diff < maxCount) {
+			if (i >= aItems.length) {
 				diff += 1;
 				j += 1;
 				continue;
 			}
-			if (j >= bSorted.length) {
+			if (j >= bItems.length) {
 				diff += 1;
 				i += 1;
 				continue;
 			}
-			if (aSorted[i] === bSorted[j]) {
+			if (aItems[i].key === bItems[j].key) {
 				i += 1;
 				j += 1;
-			} else if (aSorted[i] < bSorted[j]) {
+			} else if (
+				numericTolerancePercent > 0 &&
+				deepEqualIgnoreOrder(aItems[i].item, bItems[j].item, ignoredKeys, numericTolerancePercent)
+			) {
+				i += 1;
+				j += 1;
+			} else if (aItems[i].key < bItems[j].key) {
 				diff += 1;
 				i += 1;
 			} else {

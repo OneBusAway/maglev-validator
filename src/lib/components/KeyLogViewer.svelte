@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { endpoints as configuredEndpoints } from '$lib/endpoints';
 	import { onMount, untrack } from 'svelte';
-	import { SvelteSet } from 'svelte/reactivity';
+	import { SvelteSet, SvelteMap } from 'svelte/reactivity';
 	import { logState } from '$lib/logState.svelte';
 	import { comparatorState, loggerState, type KeyLogEntry } from '$lib/panelState.svelte';
 	import { fly } from 'svelte/transition';
@@ -37,11 +37,11 @@
 	let chartLogs = $state<KeyLogEntry[]>([]);
 
 	const trendByLogId = $derived.by(() => {
-		const map = new Map<
+		const map = new SvelteMap<
 			number,
 			{ server1: 'up' | 'down' | 'same' | null; server2: 'up' | 'down' | 'same' | null }
 		>();
-		const last = new Map<string, { s1: number; s2: number }>();
+		const last = new SvelteMap<string, { s1: number; s2: number }>();
 		for (const log of filteredLogs) {
 			const s1 = typeof log.server1_value === 'number' ? log.server1_value : NaN;
 			const s2 = typeof log.server2_value === 'number' ? log.server2_value : NaN;
@@ -110,10 +110,10 @@
 		});
 		const hasNumeric = allRawVals.some((v) => !isNaN(v));
 
-		function buildSeries(
-			getVal: (e: KeyLogEntry) => unknown,
-			colors: string[]
-		): { series: { label: string; points: { x: number; y: number }[] }[]; maxLen: number } {
+		function buildSeries(getVal: (e: KeyLogEntry) => unknown): {
+			series: { label: string; points: { x: number; y: number }[] }[];
+			maxLen: number;
+		} {
 			const maxLen = entries.reduce((m, e) => {
 				const v = getVal(e);
 				return Array.isArray(v) ? Math.max(m, v.length) : Math.max(m, 1);
@@ -140,8 +140,8 @@
 			return { series, maxLen };
 		}
 
-		const s1 = buildSeries((e) => e.server1_value, S1_COLORS);
-		const s2 = buildSeries((e) => e.server2_value, S2_COLORS);
+		const s1 = buildSeries((e) => e.server1_value);
+		const s2 = buildSeries((e) => e.server2_value);
 
 		const allNumericVals = entries
 			.flatMap((e) => {
@@ -163,7 +163,6 @@
 	});
 
 	let columnWidths = $state<Record<string, number>>({});
-	const COLUMN_KEYS = ['timestamp', 'keypath', 'server1', 'server2', 'match'];
 	let resizingColumn = $state<string | null>(null);
 	let resizeStartX = $state(0);
 	let resizeStartWidth = $state(0);
@@ -843,7 +842,7 @@
 							Server 1
 						</h4>
 						<svg viewBox="0 0 {cw} {ch}" class="w-full">
-							{#each yTicks as tick}
+							{#each yTicks as tick (tick.value)}
 								<line
 									x1={pad.left}
 									x2={cw - pad.right}
@@ -854,7 +853,7 @@
 									stroke-width="1"
 								/>
 							{/each}
-							{#each yTicks as tick}
+							{#each yTicks as tick (tick.value)}
 								<text
 									x={pad.left - 4}
 									y={tick.y + 3}
@@ -868,7 +867,7 @@
 								<rect x={pad.left} y={pad.top} width={iw} height={ih} />
 							</clipPath>
 							<g clip-path="url(#clip-s1)">
-								{#each chartData.s1.series as s, si}
+								{#each chartData.s1.series as s, si (si)}
 									<polyline
 										points={s.points.map((p) => `${scaleX(p.x)},${scaleY(p.y)}`).join(' ')}
 										fill="none"
@@ -888,10 +887,9 @@
 									{chartData.s1.series.length} lines
 								</text>
 							{/if}
-							<!-- legend for multi-line -->
 							{#if chartData.s1.series.length > 1}
 								<g transform="translate({pad.left}, {ch - 16})">
-									{#each chartData.s1.series.slice(0, 6) as s, si}
+									{#each chartData.s1.series.slice(0, 6) as s, si (si)}
 										<line
 											x1={si * 50}
 											y1={0}
@@ -919,7 +917,7 @@
 							Server 2
 						</h4>
 						<svg viewBox="0 0 {cw} {ch}" class="w-full">
-							{#each yTicks as tick}
+							{#each yTicks as tick (tick.value)}
 								<line
 									x1={pad.left}
 									x2={cw - pad.right}
@@ -930,7 +928,7 @@
 									stroke-width="1"
 								/>
 							{/each}
-							{#each yTicks as tick}
+							{#each yTicks as tick (tick.value)}
 								<text
 									x={pad.left - 4}
 									y={tick.y + 3}
@@ -944,7 +942,7 @@
 								<rect x={pad.left} y={pad.top} width={iw} height={ih} />
 							</clipPath>
 							<g clip-path="url(#clip-s2)">
-								{#each chartData.s2.series as s, si}
+								{#each chartData.s2.series as s, si (si)}
 									<polyline
 										points={s.points.map((p) => `${scaleX(p.x)},${scaleY(p.y)}`).join(' ')}
 										fill="none"
@@ -966,7 +964,7 @@
 							{/if}
 							{#if chartData.s2.series.length > 1}
 								<g transform="translate({pad.left}, {ch - 16})">
-									{#each chartData.s2.series.slice(0, 6) as s, si}
+									{#each chartData.s2.series.slice(0, 6) as s, si (si)}
 										<line
 											x1={si * 50}
 											y1={0}

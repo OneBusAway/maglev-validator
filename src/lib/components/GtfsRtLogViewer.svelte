@@ -131,7 +131,7 @@
 				</p>
 			</div>
 			<span
-				class="rounded-full bg-indigo-100 px-3 py-1 text-sm font-medium text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300"
+				class="rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-600 dark:bg-green-900/40 dark:text-green-300"
 			>
 				{#if totalSnapshotsLoading}
 					Loading...
@@ -161,7 +161,7 @@
 								onclick={() => (gtfsRtLogState.timeRange = range as 'live' | '1h' | '24h' | 'all')}
 								class="flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all sm:flex-none
                                        {gtfsRtLogState.timeRange === range
-									? 'bg-indigo-600 text-white shadow'
+									? 'bg-green-600 text-white shadow'
 									: 'text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700'}"
 							>
 								{range === '1h'
@@ -203,7 +203,7 @@
 					bind:value={gtfsRtLogState.limit}
 					min="10"
 					max="1000"
-					class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+					class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500/30 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
 				/>
 			</div>
 
@@ -255,7 +255,7 @@
 				<div class="group relative pb-4 last:pb-0">
 					<button
 						onclick={() => openDetail(snapshot.id)}
-						class="group w-full rounded-lg border border-gray-200 bg-gray-50 p-4 text-left transition-all hover:border-indigo-400 hover:bg-gray-100 hover:shadow-md dark:border-gray-800 dark:bg-gray-800/60 dark:hover:border-indigo-600/60 dark:hover:bg-gray-800"
+						class="group w-full rounded-lg border border-gray-200 bg-gray-50 p-4 text-left transition-all hover:border-green-400 hover:bg-gray-100 hover:shadow-md dark:border-gray-800 dark:bg-gray-800/60 dark:hover:border-green-600/60 dark:hover:bg-gray-800"
 					>
 						<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 							<div class="flex flex-col gap-6 sm:flex-row sm:items-center">
@@ -321,13 +321,13 @@
 							</div>
 
 							<div
-								class="flex items-center gap-2 text-indigo-500 opacity-70 transition-opacity group-hover:opacity-100 dark:text-indigo-400"
+								class="flex items-center gap-2 text-green-500 opacity-70 transition-opacity group-hover:opacity-100 dark:text-green-400"
 							>
 								<span class="hidden text-xs font-black tracking-wider uppercase sm:inline"
 									>Inspect</span
 								>
 								<div
-									class="rounded-lg bg-indigo-100 p-2 transition-colors group-hover:bg-indigo-600 group-hover:text-white dark:bg-indigo-900/30"
+									class="rounded-lg bg-green-100 p-2 transition-colors group-hover:bg-green-600 group-hover:text-white dark:bg-green-900/30"
 								>
 									<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 										<path
@@ -368,7 +368,7 @@
 				class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-800 dark:bg-gray-950/50"
 			>
 				<div class="flex items-center gap-4">
-					<div class="rounded-xl bg-indigo-600 p-2.5 text-white">
+					<div class="rounded-xl bg-green-600 p-2.5 text-white">
 						<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path
 								stroke-linecap="round"
@@ -380,7 +380,7 @@
 					</div>
 					<div>
 						<h3 class="text-lg font-bold text-gray-900 dark:text-white">Snapshot Detail</h3>
-						<p class="text-xs text-indigo-500 dark:text-indigo-400">
+						<p class="text-xs text-green-500 dark:text-green-400">
 							{formatTimestamp(
 								gtfsRtLogState.snapshots.find((s) => s.id === selectedSnapshotId)?.timestamp || ''
 							)}
@@ -464,7 +464,7 @@
 			>
 				<button
 					onclick={() => (showDetail = false)}
-					class="rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700"
+					class="rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-green-700"
 				>
 					Close
 				</button>

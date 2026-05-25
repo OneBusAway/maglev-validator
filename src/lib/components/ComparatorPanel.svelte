@@ -176,19 +176,9 @@
 		}
 	}
 
-	function toggleWatchKey(key: string) {
-		const current = new SvelteSet(watchedKeys);
-		if (current.has(key)) {
-			current.delete(key);
-		} else {
-			current.add(key);
-		}
-		cmpState.watchedKeysInput = Array.from(current).join(', ');
-		handleWatchInput();
-	}
-
 	function getValueByPath(obj: unknown, path: string): unknown {
-		const parts = path.split('.');
+		const normalized = path.replace(/\[(\d+)\]/g, '.$1');
+		const parts = normalized.split('.');
 		function walk(current: unknown, idx: number): unknown {
 			if (idx >= parts.length) return current;
 			if (current === null || current === undefined) return undefined;
@@ -488,7 +478,7 @@
 					type="text"
 					bind:value={cmpState.server1Base}
 					list="server1-url-history"
-					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
+					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-green-500/40"
 				/>
 				<datalist id="server1-url-history">
 					{#each server1UrlHistory as url (url)}
@@ -507,7 +497,7 @@
 					type="text"
 					bind:value={cmpState.server2Base}
 					list="server2-url-history"
-					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
+					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-green-500/40"
 				/>
 				<datalist id="server2-url-history">
 					{#each server2UrlHistory as url (url)}
@@ -528,7 +518,7 @@
 					<select
 						id="api-endpoint"
 						bind:value={cmpState.selectedEndpoint}
-						class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:focus:ring-indigo-500/40"
+						class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:focus:ring-green-500/40"
 					>
 						{#each endpoints as endpoint (endpoint.id)}
 							<option value={endpoint.id}>{endpoint.name}</option>
@@ -554,7 +544,7 @@
 						oninput={(e) => handleParamChange(param.name, e.currentTarget.value)}
 						placeholder={param.placeholder || ''}
 						list={'param-history-' + param.name}
-						class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
+						class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-green-500/40"
 					/>
 					{#if history.length > 0}
 						<datalist id={'param-history-' + param.name}>
@@ -577,7 +567,7 @@
 					type="text"
 					bind:value={cmpState.focusPath}
 					placeholder="e.g. data.entry.status"
-					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-indigo-500/40"
+					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-green-500/40"
 				/>
 			</div>
 
@@ -590,12 +580,12 @@
 				<button
 					id="ignore-keys-trigger"
 					onclick={() => (cmpState.showIgnoreModal = true)}
-					class="group flex w-full items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-left text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-indigo-500/40"
+					class="group flex w-full items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-left text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-green-500/40"
 				>
 					<span class="truncate">
 						{ignoredKeys.length ? `${ignoredKeys.length} keys ignored` : 'Select keys...'}
 					</span>
-					<span class="text-gray-400 transition-colors group-hover:text-indigo-500">
+					<span class="text-gray-400 transition-colors group-hover:text-green-500">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							class="h-4 w-4"
@@ -618,12 +608,12 @@
 				<label
 					for="watch-keys-trigger"
 					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
-					>Watch Keys <span class="text-indigo-500">(Log)</span></label
+					>Watch Keys <span class="text-green-500">(Log)</span></label
 				>
 				<button
 					id="watch-keys-trigger"
 					onclick={() => (cmpState.showWatchModal = true)}
-					class="group flex w-full items-center justify-between rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-left text-sm text-indigo-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-indigo-900/30 dark:bg-indigo-900/20 dark:text-indigo-300 dark:focus:ring-indigo-500/40"
+					class="group flex w-full items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-left text-sm text-green-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-green-900/30 dark:bg-green-900/20 dark:text-green-300 dark:focus:ring-green-500/40"
 				>
 					<span class="truncate">
 						{#if cmpState.lastLoggedTime}
@@ -631,13 +621,13 @@
 								>Logged!</span
 							>
 						{:else if isLogging}
-							<span class="font-medium text-indigo-600 dark:text-indigo-400">Logging...</span>
+							<span class="font-medium text-green-600 dark:text-green-400">Logging...</span>
 						{:else}
 							{watchedKeys.length ? `${watchedKeys.length} keys watched` : 'Select keys...'}
 						{/if}
 					</span>
 					<span
-						class="text-indigo-400 transition-colors group-hover:text-indigo-600 dark:group-hover:text-indigo-200"
+						class="text-green-400 transition-colors group-hover:text-green-600 dark:group-hover:text-green-200"
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -666,7 +656,7 @@
 					<input
 						type="checkbox"
 						bind:checked={cmpState.autoRefresh}
-						class="h-4 w-4 rounded border-gray-300 bg-white text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
+						class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
 					/>
 					<span class="text-sm font-medium text-gray-600 dark:text-gray-400">Auto-refresh</span>
 				</label>
@@ -677,17 +667,31 @@
 							bind:value={cmpState.refreshInterval}
 							min="1"
 							max="60"
-							class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-indigo-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+							class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
 						/>
 						<span class="text-xs text-gray-400">sec</span>
 					</div>
 				{/if}
+
+				<div class="ml-4 flex items-center gap-2">
+					<label class="text-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+						>Tolerance ±%</label
+					>
+					<input
+						type="number"
+						bind:value={cmpState.numericTolerancePercent}
+						min="0"
+						max="100"
+						step="0.5"
+						class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+					/>
+				</div>
 			</div>
 
 			<button
 				onclick={fetchBoth}
 				disabled={cmpState.loading}
-				class="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white transition-all hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+				class="flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2 text-sm font-medium text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
 				title="Run Comparison (Ctrl+Enter)"
 			>
 				{#if cmpState.loading}
@@ -708,7 +712,7 @@
 					Running...
 				{:else}
 					<span>Run Comparison</span>
-					<kbd class="ml-1 rounded bg-indigo-500 px-1.5 py-0.5 text-xs font-normal">Ctrl+↵</kbd>
+					<kbd class="ml-1 rounded bg-green-500 px-1.5 py-0.5 text-xs font-normal">Ctrl+↵</kbd>
 				{/if}
 			</button>
 		</div>
@@ -783,7 +787,7 @@
 				class="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm dark:bg-gray-900/80"
 			>
 				<div class="flex flex-col items-center gap-3">
-					<svg class="h-8 w-8 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24">
+					<svg class="h-8 w-8 animate-spin text-green-600" fill="none" viewBox="0 0 24 24">
 						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
 						></circle>
 						<path
@@ -803,6 +807,7 @@
 			response2={cmpState.response2}
 			focusPath={cmpState.focusPath}
 			{ignoredKeys}
+			numericTolerancePercent={cmpState.numericTolerancePercent}
 		/>
 	</div>
 {:else if !cmpState.loading}
@@ -823,7 +828,7 @@
 		</div>
 		<h3 class="mb-2 text-xl font-semibold text-gray-800 dark:text-white">Ready to Compare</h3>
 		<p class="max-w-md text-gray-500">
-			Configure your endpoints above, then click <strong class="text-indigo-600"
+			Configure your endpoints above, then click <strong class="text-green-600"
 				>Run Comparison</strong
 			> to analyze the API response differences.
 		</p>
@@ -872,7 +877,7 @@
 					type="text"
 					bind:value={cmpState.ignoreSearch}
 					placeholder="Search keys..."
-					class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+					class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
 				/>
 			</div>
 
@@ -900,13 +905,13 @@
 									type="checkbox"
 									checked={ignoredKeys.includes(key)}
 									onchange={() => toggleIgnoreKey(key)}
-									class="h-4 w-4 rounded border-gray-300 bg-white text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
+									class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
 								/>
 								<span class="font-mono text-sm font-medium text-gray-700 dark:text-gray-300"
 									>{key}</span
 								>
 								{#if ignoredKeys.includes(key)}
-									<span class="ml-auto text-xs font-medium text-indigo-600 dark:text-indigo-400"
+									<span class="ml-auto text-xs font-medium text-green-600 dark:text-green-400"
 										>Ignored</span
 									>
 								{/if}
@@ -986,7 +991,7 @@
 					type="text"
 					bind:value={cmpState.watchSearch}
 					placeholder="Search keys..."
-					class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+					class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
 				/>
 			</div>
 
@@ -1013,14 +1018,14 @@
 								<input
 									type="checkbox"
 									checked={watchedKeys.includes(key)}
-									onchange={() => toggleWatchKey(key)}
-									class="h-4 w-4 rounded border-gray-300 bg-white text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
+									onchange={() => cmpState.toggleWatchKey(key)}
+									class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
 								/>
 								<span class="font-mono text-sm font-medium text-gray-700 dark:text-gray-300"
 									>{key}</span
 								>
 								{#if watchedKeys.includes(key)}
-									<span class="ml-auto text-xs font-medium text-indigo-600 dark:text-indigo-400"
+									<span class="ml-auto text-xs font-medium text-green-600 dark:text-green-400"
 										>Watching</span
 									>
 								{/if}

@@ -3,9 +3,9 @@
 	import { onMount, untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { logState } from '$lib/logState.svelte';
-	import { loggerState, type KeyLogEntry } from '$lib/panelState.svelte';
+	import { comparatorState, loggerState, type KeyLogEntry } from '$lib/panelState.svelte';
 	import { fly } from 'svelte/transition';
-	import { deepEqualIgnoreOrder } from '$lib/utils/jsonCompare';
+	import { deepEqualIgnoreOrder, sortById } from '$lib/utils/jsonCompare';
 
 	import JsonViewer from '$lib/components/JsonViewer.svelte';
 
@@ -30,6 +30,175 @@
 
 	let syncedExpandedPaths = new SvelteSet<string>();
 	let server1ScrollContainer = $state<HTMLElement | undefined>(undefined);
+
+	let traceKeyPath = $state('');
+	let showChart = $state(false);
+	let chartTimeRange = $state<'30m' | '1h' | '2h' | '6h' | '24h' | 'all'>('all');
+	let chartLogs = $state<KeyLogEntry[]>([]);
+
+	const trendByLogId = $derived.by(() => {
+		const map = new Map<
+			number,
+			{ server1: 'up' | 'down' | 'same' | null; server2: 'up' | 'down' | 'same' | null }
+		>();
+		const last = new Map<string, { s1: number; s2: number }>();
+		for (const log of filteredLogs) {
+			const s1 = typeof log.server1_value === 'number' ? log.server1_value : NaN;
+			const s2 = typeof log.server2_value === 'number' ? log.server2_value : NaN;
+			const prev = last.get(log.key_path);
+			const t1 =
+				prev !== undefined && !isNaN(s1)
+					? s1 > prev.s1
+						? 'up'
+						: s1 < prev.s1
+							? 'down'
+							: 'same'
+					: null;
+			const t2 =
+				prev !== undefined && !isNaN(s2)
+					? s2 > prev.s2
+						? 'up'
+						: s2 < prev.s2
+							? 'down'
+							: 'same'
+					: null;
+			map.set(log.id, { server1: t1, server2: t2 });
+			last.set(log.key_path, {
+				s1: isNaN(s1) ? (prev?.s1 ?? 0) : s1,
+				s2: isNaN(s2) ? (prev?.s2 ?? 0) : s2
+			});
+		}
+		return map;
+	});
+
+	const S1_COLORS = ['#16a34a', '#15803d', '#166534', '#22c55e', '#4ade80', '#86efac'];
+	const S2_COLORS = ['#f97316', '#ea580c', '#c2410c', '#fb923c', '#fdba74', '#fed7aa'];
+
+	const chartData = $derived.by(() => {
+		const empty = {
+			entries: [] as KeyLogEntry[],
+			hasNumeric: false,
+			s1: { series: [] as { label: string; points: { x: number; y: number }[] }[], maxLen: 0 },
+			s2: { series: [] as { label: string; points: { x: number; y: number }[] }[], maxLen: 0 },
+			minVal: 0,
+			maxVal: 1,
+			range: 1
+		};
+		if (!traceKeyPath) return empty;
+
+		let raw = chartLogs.filter((l) => l.key_path === traceKeyPath);
+
+		if (chartTimeRange !== 'all') {
+			const ms = {
+				'30m': 30 * 60 * 1000,
+				'1h': 60 * 60 * 1000,
+				'2h': 2 * 60 * 60 * 1000,
+				'6h': 6 * 60 * 60 * 1000,
+				'24h': 24 * 60 * 60 * 1000
+			}[chartTimeRange];
+			const cutoff = Date.now() - ms;
+			raw = raw.filter((l) => new Date(l.timestamp).getTime() >= cutoff);
+		}
+
+		const entries = raw;
+		const allRawVals = entries.flatMap((e) => {
+			const s1 = e.server1_value;
+			const s2 = e.server2_value;
+			const a1 = Array.isArray(s1) ? (s1 as unknown[]) : [s1];
+			const a2 = Array.isArray(s2) ? (s2 as unknown[]) : [s2];
+			return [...a1, ...a2].map((v) => Number(v));
+		});
+		const hasNumeric = allRawVals.some((v) => !isNaN(v));
+
+		function buildSeries(
+			getVal: (e: KeyLogEntry) => unknown,
+			colors: string[]
+		): { series: { label: string; points: { x: number; y: number }[] }[]; maxLen: number } {
+			const maxLen = entries.reduce((m, e) => {
+				const v = getVal(e);
+				return Array.isArray(v) ? Math.max(m, v.length) : Math.max(m, 1);
+			}, 0);
+			const series: { label: string; points: { x: number; y: number }[] }[] = [];
+			for (let i = 0; i < maxLen; i++) {
+				const points: { x: number; y: number }[] = [];
+				for (let ei = 0; ei < entries.length; ei++) {
+					const raw = getVal(entries[ei]);
+					let val: number;
+					if (Array.isArray(raw)) {
+						val = i < raw.length ? Number(raw[i]) : NaN;
+					} else {
+						val = i === 0 ? Number(raw) : NaN;
+					}
+					if (!isNaN(val)) {
+						points.push({ x: ei, y: val });
+					}
+				}
+				if (points.length > 0) {
+					series.push({ label: `#${i}`, points });
+				}
+			}
+			return { series, maxLen };
+		}
+
+		const s1 = buildSeries((e) => e.server1_value, S1_COLORS);
+		const s2 = buildSeries((e) => e.server2_value, S2_COLORS);
+
+		const allNumericVals = entries
+			.flatMap((e) => {
+				const a1 = Array.isArray(e.server1_value)
+					? (e.server1_value as unknown[]).map(Number)
+					: [Number(e.server1_value)];
+				const a2 = Array.isArray(e.server2_value)
+					? (e.server2_value as unknown[]).map(Number)
+					: [Number(e.server2_value)];
+				return [...a1, ...a2];
+			})
+			.filter((v) => !isNaN(v));
+
+		const minVal = allNumericVals.length > 0 ? Math.min(...allNumericVals) : 0;
+		const maxVal = allNumericVals.length > 0 ? Math.max(...allNumericVals) : 1;
+		const range = maxVal - minVal || 1;
+
+		return { entries, hasNumeric, s1, s2, minVal, maxVal, range };
+	});
+
+	let columnWidths = $state<Record<string, number>>({});
+	const COLUMN_KEYS = ['timestamp', 'keypath', 'server1', 'server2', 'match'];
+	let resizingColumn = $state<string | null>(null);
+	let resizeStartX = $state(0);
+	let resizeStartWidth = $state(0);
+
+	function startResize(e: MouseEvent, col: string) {
+		e.preventDefault();
+		const th = (e.currentTarget as HTMLElement).parentElement;
+		if (!th) return;
+		resizingColumn = col;
+		resizeStartX = e.clientX;
+		resizeStartWidth = th.offsetWidth;
+	}
+
+	function resetColumnWidths() {
+		columnWidths = {};
+	}
+
+	$effect(() => {
+		if (!resizingColumn) return;
+		function onMouseMove(e: MouseEvent) {
+			if (!resizingColumn) return;
+			const diff = e.clientX - resizeStartX;
+			const newWidth = Math.max(60, resizeStartWidth + diff);
+			columnWidths = { ...columnWidths, [resizingColumn]: newWidth };
+		}
+		function onMouseUp() {
+			resizingColumn = null;
+		}
+		document.addEventListener('mousemove', onMouseMove);
+		document.addEventListener('mouseup', onMouseUp);
+		return () => {
+			document.removeEventListener('mousemove', onMouseMove);
+			document.removeEventListener('mouseup', onMouseUp);
+		};
+	});
 	let server2ScrollContainer = $state<HTMLElement | undefined>(undefined);
 	let isScrollSyncing = false;
 
@@ -223,17 +392,49 @@
 		}
 	}
 
+	async function fetchChartLogs() {
+		if (!loggerState.selectedEndpoint || !traceKeyPath) return;
+		try {
+			let url = `/api/keylog?endpoint=${encodeURIComponent(loggerState.selectedEndpoint)}&keyPath=${encodeURIComponent(traceKeyPath)}&limit=10000`;
+			const res = await fetch(url);
+			const data = await res.json();
+			chartLogs = data.logs || [];
+		} catch (e) {
+			console.error('Failed to fetch chart logs:', e);
+		}
+	}
+
+	$effect(() => {
+		void traceKeyPath;
+		void showChart;
+		void loggerState.selectedEndpoint;
+		if (showChart && traceKeyPath && loggerState.selectedEndpoint) {
+			fetchChartLogs();
+		} else {
+			chartLogs = [];
+		}
+	});
+
 	function sortForDisplay<T>(arr: readonly T[]): T[] {
 		if (arr.length === 0) return [];
 		const allNumbers = arr.every((x) => typeof x === 'number' && !Number.isNaN(x));
 		if (allNumbers) {
 			return [...arr].sort((a, b) => (a as number) - (b as number));
 		}
+		const allObjects = arr.every((x) => typeof x === 'object' && x !== null);
+		if (allObjects) {
+			return [...arr].sort(sortById);
+		}
 		return [...arr].sort((a, b) => {
 			const sa = typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a);
 			const sb = typeof b === 'object' && b !== null ? JSON.stringify(b) : String(b);
 			return sa.localeCompare(sb);
 		});
+	}
+
+	function lastPathSegment(path: string): string {
+		const parts = path.split('.');
+		return parts[parts.length - 1];
 	}
 
 	function formatValue(value: unknown): string {
@@ -244,7 +445,7 @@
 	}
 
 	function valuesMatch(v1: unknown, v2: unknown): boolean {
-		return deepEqualIgnoreOrder(v1, v2);
+		return deepEqualIgnoreOrder(v1, v2, [], comparatorState.numericTolerancePercent);
 	}
 
 	function formatTimestamp(ts: string): string {
@@ -314,10 +515,18 @@
 			</div>
 			<div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
 				<span
-					class="rounded-full bg-indigo-100 px-3 py-1 font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
+					class="rounded-full bg-green-100 px-3 py-1 font-medium text-green-700 dark:bg-green-900/30 dark:text-green-300"
 				>
 					{loggerState.totalCount} total logs
 				</span>
+				{#if Object.keys(columnWidths).length > 0}
+					<button
+						onclick={resetColumnWidths}
+						class="rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+					>
+						Reset columns
+					</button>
+				{/if}
 			</div>
 		</div>
 
@@ -332,7 +541,7 @@
 				<select
 					id="endpoint-select"
 					bind:value={loggerState.selectedEndpoint}
-					class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+					class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
 				>
 					<option value="">Select endpoint...</option>
 					{#each configuredEndpoints as endpoint (endpoint.id)}
@@ -361,7 +570,7 @@
 							(e.target as HTMLSelectElement).value = '';
 						}}
 						disabled={!loggerState.selectedEndpoint}
-						class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+						class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
 					>
 						<option value="" disabled selected>Add key path...</option>
 						{#each loggerState.keyPaths as kp (kp)}
@@ -375,12 +584,12 @@
 						<div class="flex flex-wrap gap-2">
 							{#each [...loggerState.selectedKeyPaths] as kp (kp)}
 								<span
-									class="flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-1 text-[11px] font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
+									class="flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-[11px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-300"
 								>
 									{kp}
 									<button
 										onclick={() => loggerState.selectedKeyPaths.delete(kp)}
-										class="hover:text-indigo-900 dark:hover:text-indigo-100"
+										class="hover:text-green-900 dark:hover:text-green-100"
 										aria-label="Remove key path"
 									>
 										<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -422,7 +631,7 @@
 					bind:value={loggerState.limit}
 					min="10"
 					max="1000"
-					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
 				/>
 			</div>
 
@@ -463,78 +672,329 @@
 						Diff
 					</button>
 				</div>
+				{#if comparatorState.numericTolerancePercent > 0}
+					<div
+						class="mt-1.5 flex items-center gap-1 rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
+					>
+						<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+							></path>
+						</svg>
+						±{comparatorState.numericTolerancePercent}% tolerance
+					</div>
+				{/if}
 			</div>
 
 			<div
 				class="col-span-12 flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700"
 			>
-				<div class="flex items-center gap-2">
-					<div
-						class="mr-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
-					>
-						Time Range:
-					</div>
-					<div
-						class="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-900"
-					>
-						{#each ['live', '1h', '24h', 'all'] as range (range)}
-							<button
-								onclick={() => (loggerState.timeRange = range as 'live' | '1h' | '24h' | 'all')}
-								class="rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-all {loggerState.timeRange ===
-								range
-									? 'bg-white text-indigo-700 shadow-sm dark:bg-indigo-900/30 dark:text-indigo-300'
-									: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
-							>
-								{range === '1h' ? 'Last 1h' : range === '24h' ? 'Last 24h' : range}
-							</button>
-						{/each}
-					</div>
-					{#if loggerState.timeRange === 'live'}
+				<div class="flex items-center gap-4">
+					<div class="flex items-center gap-2">
 						<div
-							class="ml-2 flex items-center gap-1.5 text-xs font-medium text-green-600 dark:text-green-400"
+							class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 						>
-							<span class="relative flex h-2 w-2">
-								<span
-									class="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"
-								></span>
-								<span class="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
-							</span>
-							Live
+							Time Range:
 						</div>
-					{/if}
+						<div
+							class="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-900"
+						>
+							{#each ['live', '1h', '24h', 'all'] as range (range)}
+								<button
+									onclick={() => (loggerState.timeRange = range as 'live' | '1h' | '24h' | 'all')}
+									class="rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-all {loggerState.timeRange ===
+									range
+										? 'bg-white text-green-700 shadow-sm dark:bg-green-900/30 dark:text-green-300'
+										: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
+								>
+									{range === '1h' ? 'Last 1h' : range === '24h' ? 'Last 24h' : range}
+								</button>
+							{/each}
+						</div>
+					</div>
+					<div class="flex items-center gap-2">
+						<div
+							class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+						>
+							Trace:
+						</div>
+						<select
+							bind:value={traceKeyPath}
+							class="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+						>
+							<option value="">Select key...</option>
+							{#each [...new Set(filteredLogs.map((l) => l.key_path))] as kp (kp)}
+								<option value={kp}>{lastPathSegment(kp)}</option>
+							{/each}
+						</select>
+						<button
+							onclick={() => {
+								if (traceKeyPath) showChart = !showChart;
+							}}
+							disabled={!traceKeyPath}
+							class="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all {showChart &&
+							traceKeyPath
+								? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+								: 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+						>
+							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
+								/>
+							</svg>
+							Chart
+						</button>
+					</div>
 				</div>
-
-				<div class="flex items-center gap-2">
-					<button
-						onclick={() => {
-							if (loggerState.selectedEndpoint) {
-								fetchLogs(false);
-								fetchCount();
-							}
-						}}
-						disabled={!loggerState.selectedEndpoint || loggerState.loading}
-						class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-					>
-						Refresh
-					</button>
+				<div class="flex items-center gap-3">
 					<button
 						onclick={exportCSV}
-						disabled={loggerState.logs.length === 0}
-						class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+						class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-all hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
 					>
+						<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+							><path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+							></path></svg
+						>
 						Export CSV
 					</button>
-
+					<button
+						onclick={() => fetchLogs()}
+						class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-all hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+						title="Refresh"
+					>
+						<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+							></path>
+						</svg>
+					</button>
 					<button
 						onclick={clearLogs}
-						class="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-50 dark:border-red-900/30 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20"
+						class="flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 transition-all hover:bg-red-50 dark:border-red-900/30 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20"
 					>
-						Clear Logs
+						Clear
 					</button>
 				</div>
 			</div>
 		</div>
 	</div>
+
+	<!-- Chart -->
+	{#if showChart && traceKeyPath && chartData.entries.length > 1}
+		{@const pad = { top: 20, right: 16, bottom: 28, left: 48 }}
+		{@const cw = 400}
+		{@const ch = 220}
+		{@const iw = cw - pad.left - pad.right}
+		{@const ih = ch - pad.top - pad.bottom}
+		{@const scaleY = (v: number) => pad.top + ih - ((v - chartData.minVal) / chartData.range) * ih}
+		{@const scaleX = (ei: number) =>
+			pad.left + (ei / Math.max(chartData.entries.length - 1, 1)) * iw}
+		{@const yTicks = Array.from({ length: 5 }, (_, i) => {
+			const v = chartData.minVal + (chartData.range * i) / 4;
+			return { value: v, y: scaleY(v) };
+		})}
+		<div
+			class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+		>
+			<div class="mb-3 flex flex-wrap items-center gap-3">
+				<h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+					Trace: <span class="font-mono text-green-600 dark:text-green-400">{traceKeyPath}</span>
+				</h3>
+				<div class="ml-auto flex items-center gap-2">
+					<span class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Time:</span>
+					<div
+						class="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-0.5 dark:border-gray-700 dark:bg-gray-900"
+					>
+						{#each ['30m', '1h', '2h', '6h', '24h', 'all'] as range (range)}
+							<button
+								onclick={() =>
+									(chartTimeRange = range as '30m' | '1h' | '2h' | '6h' | '24h' | 'all')}
+								class="rounded-md px-2.5 py-1.5 text-xs font-medium transition-all {chartTimeRange ===
+								range
+									? 'bg-white text-green-700 shadow-sm dark:bg-green-900/30 dark:text-green-300'
+									: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
+							>
+								{range === 'all' ? 'All' : range}
+							</button>
+						{/each}
+					</div>
+					<span class="text-xs text-gray-500">({chartData.entries.length} pts)</span>
+				</div>
+			</div>
+			{#if chartData.hasNumeric}
+				<div class="grid grid-cols-2 gap-6">
+					<div>
+						<h4
+							class="mb-2 text-xs font-bold tracking-wide text-green-600 uppercase dark:text-green-400"
+						>
+							Server 1
+						</h4>
+						<svg viewBox="0 0 {cw} {ch}" class="w-full">
+							{#each yTicks as tick}
+								<line
+									x1={pad.left}
+									x2={cw - pad.right}
+									y1={tick.y}
+									y2={tick.y}
+									stroke="currentColor"
+									class="text-gray-200 dark:text-gray-700"
+									stroke-width="1"
+								/>
+							{/each}
+							{#each yTicks as tick}
+								<text
+									x={pad.left - 4}
+									y={tick.y + 3}
+									text-anchor="end"
+									class="fill-gray-500 text-[9px] dark:fill-gray-400"
+								>
+									{tick.value.toFixed(1)}
+								</text>
+							{/each}
+							<clipPath id="clip-s1">
+								<rect x={pad.left} y={pad.top} width={iw} height={ih} />
+							</clipPath>
+							<g clip-path="url(#clip-s1)">
+								{#each chartData.s1.series as s, si}
+									<polyline
+										points={s.points.map((p) => `${scaleX(p.x)},${scaleY(p.y)}`).join(' ')}
+										fill="none"
+										stroke={S1_COLORS[si % S1_COLORS.length]}
+										stroke-width="2"
+										stroke-linejoin="round"
+										stroke-linecap="round"
+									/>
+								{/each}
+							</g>
+							{#if chartData.s1.series.length > 1}
+								<text
+									x={pad.left + 4}
+									y={pad.top - 4}
+									class="fill-gray-400 text-[8px] dark:fill-gray-500"
+								>
+									{chartData.s1.series.length} lines
+								</text>
+							{/if}
+							<!-- legend for multi-line -->
+							{#if chartData.s1.series.length > 1}
+								<g transform="translate({pad.left}, {ch - 16})">
+									{#each chartData.s1.series.slice(0, 6) as s, si}
+										<line
+											x1={si * 50}
+											y1={0}
+											x2={si * 50 + 14}
+											y2={0}
+											stroke={S1_COLORS[si % S1_COLORS.length]}
+											stroke-width="2"
+										/>
+										<text
+											x={si * 50 + 16}
+											y={3}
+											class="fill-gray-500 text-[8px] dark:fill-gray-400"
+										>
+											{s.label}
+										</text>
+									{/each}
+								</g>
+							{/if}
+						</svg>
+					</div>
+					<div>
+						<h4
+							class="mb-2 text-xs font-bold tracking-wide text-orange-600 uppercase dark:text-orange-400"
+						>
+							Server 2
+						</h4>
+						<svg viewBox="0 0 {cw} {ch}" class="w-full">
+							{#each yTicks as tick}
+								<line
+									x1={pad.left}
+									x2={cw - pad.right}
+									y1={tick.y}
+									y2={tick.y}
+									stroke="currentColor"
+									class="text-gray-200 dark:text-gray-700"
+									stroke-width="1"
+								/>
+							{/each}
+							{#each yTicks as tick}
+								<text
+									x={pad.left - 4}
+									y={tick.y + 3}
+									text-anchor="end"
+									class="fill-gray-500 text-[9px] dark:fill-gray-400"
+								>
+									{tick.value.toFixed(1)}
+								</text>
+							{/each}
+							<clipPath id="clip-s2">
+								<rect x={pad.left} y={pad.top} width={iw} height={ih} />
+							</clipPath>
+							<g clip-path="url(#clip-s2)">
+								{#each chartData.s2.series as s, si}
+									<polyline
+										points={s.points.map((p) => `${scaleX(p.x)},${scaleY(p.y)}`).join(' ')}
+										fill="none"
+										stroke={S2_COLORS[si % S2_COLORS.length]}
+										stroke-width="2"
+										stroke-linejoin="round"
+										stroke-linecap="round"
+									/>
+								{/each}
+							</g>
+							{#if chartData.s2.series.length > 1}
+								<text
+									x={pad.left + 4}
+									y={pad.top - 4}
+									class="fill-gray-400 text-[8px] dark:fill-gray-500"
+								>
+									{chartData.s2.series.length} lines
+								</text>
+							{/if}
+							{#if chartData.s2.series.length > 1}
+								<g transform="translate({pad.left}, {ch - 16})">
+									{#each chartData.s2.series.slice(0, 6) as s, si}
+										<line
+											x1={si * 50}
+											y1={0}
+											x2={si * 50 + 14}
+											y2={0}
+											stroke={S2_COLORS[si % S2_COLORS.length]}
+											stroke-width="2"
+										/>
+										<text
+											x={si * 50 + 16}
+											y={3}
+											class="fill-gray-500 text-[8px] dark:fill-gray-400"
+										>
+											{s.label}
+										</text>
+									{/each}
+								</g>
+							{/if}
+						</svg>
+					</div>
+				</div>
+			{:else}
+				<div class="flex items-center justify-center py-8 text-sm text-gray-400 dark:text-gray-500">
+					Values are not numeric — chart cannot be rendered
+				</div>
+			{/if}
+		</div>
+	{/if}
 
 	<!-- Logs Table -->
 	{#if !loggerState.selectedEndpoint}
@@ -558,7 +1018,7 @@
 				Choose an endpoint from the dropdown above to view logged key values over time.
 				{#if loggedEndpoints.length === 0}
 					<br /><br />
-					<strong class="text-indigo-600">No logs yet.</strong> Enable key watching in the API Comparator
+					<strong class="text-green-600">No logs yet.</strong> Enable key watching in the API Comparator
 					to start logging.
 				{/if}
 			</p>
@@ -567,7 +1027,7 @@
 		<div
 			class="flex items-center justify-center rounded-xl border border-gray-200 bg-white p-16 dark:border-gray-700 dark:bg-gray-800"
 		>
-			<svg class="h-8 w-8 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24">
+			<svg class="h-8 w-8 animate-spin text-green-600" fill="none" viewBox="0 0 24 24">
 				<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
 				></circle>
 				<path
@@ -585,38 +1045,78 @@
 		</div>
 	{:else}
 		<div
-			class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
+			class="max-h-[65vh] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
 		>
 			<div class="overflow-x-auto">
-				<table class="w-full">
+				<table class="w-full" style="table-layout: fixed;">
 					<thead>
 						<tr
 							class="border-b border-gray-100 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50"
 						>
 							<th
-								class="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								class="relative px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								style={columnWidths.timestamp ? `width: ${columnWidths.timestamp}px` : ''}
 							>
-								Timestamp
+								<span class="flex items-center gap-1"> Timestamp </span>
+								<button
+									aria-label="Resize timestamp column"
+									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-gray-600/20 dark:hover:bg-green-500/40"
+									onmousedown={(e) => startResize(e, 'timestamp')}
+								>
+									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-gray-600"></div>
+								</button>
 							</th>
 							<th
-								class="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								class="relative px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								style={columnWidths.keypath ? `width: ${columnWidths.keypath}px` : ''}
 							>
 								Key Path
+								<button
+									aria-label="Resize key path column"
+									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-gray-600/20 dark:hover:bg-green-500/40"
+									onmousedown={(e) => startResize(e, 'keypath')}
+								>
+									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-gray-600"></div>
+								</button>
 							</th>
 							<th
-								class="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								class="relative px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								style={columnWidths.server1 ? `width: ${columnWidths.server1}px` : ''}
 							>
 								Server 1
+								<button
+									aria-label="Resize server 1 column"
+									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-gray-600/20 dark:hover:bg-green-500/40"
+									onmousedown={(e) => startResize(e, 'server1')}
+								>
+									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-gray-600"></div>
+								</button>
 							</th>
 							<th
-								class="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								class="relative px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								style={columnWidths.server2 ? `width: ${columnWidths.server2}px` : ''}
 							>
 								Server 2
+								<button
+									aria-label="Resize server 2 column"
+									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-gray-600/20 dark:hover:bg-green-500/40"
+									onmousedown={(e) => startResize(e, 'server2')}
+								>
+									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-gray-600"></div>
+								</button>
 							</th>
 							<th
-								class="px-4 py-3 text-center text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								class="relative px-4 py-3 text-center text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								style={columnWidths.match ? `width: ${columnWidths.match}px` : ''}
 							>
 								Match
+								<button
+									aria-label="Resize match column"
+									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-gray-600/20 dark:hover:bg-green-500/40"
+									onmousedown={(e) => startResize(e, 'match')}
+								>
+									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-gray-600"></div>
+								</button>
 							</th>
 						</tr>
 					</thead>
@@ -628,15 +1128,22 @@
 							<tr
 								in:fly={{ y: -10, duration: 300 }}
 								onclick={() => openDetail(log)}
-								class="cursor-pointer transition-colors hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10"
+								class="cursor-pointer transition-colors hover:bg-green-50/50 dark:hover:bg-green-900/10"
 							>
-								<td class="px-4 py-3 text-sm whitespace-nowrap text-gray-600 dark:text-gray-400">
+								<td
+									class="truncate px-4 py-3 text-sm whitespace-nowrap text-gray-600 dark:text-gray-400"
+								>
 									{formatTimestamp(log.timestamp)}
 								</td>
-								<td class="px-4 py-3 font-mono text-sm text-gray-900 dark:text-gray-200">
-									{log.key_path}
+								<td
+									class="truncate px-4 py-3 font-mono text-sm text-gray-900 dark:text-gray-200"
+									title={log.key_path}
+								>
+									{lastPathSegment(log.key_path)}
 								</td>
-								<td class="max-w-xs px-4 py-3 font-mono text-sm text-gray-700 dark:text-gray-300">
+								<td
+									class="overflow-hidden px-4 py-3 font-mono text-sm text-gray-700 dark:text-gray-300"
+								>
 									{#if isArray}
 										<button
 											type="button"
@@ -644,7 +1151,7 @@
 												e.stopPropagation();
 												openArrayDetail(log);
 											}}
-											class="group inline-flex max-w-full items-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs text-indigo-700 transition-colors hover:bg-indigo-100 dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/40"
+											class="group inline-flex max-w-full items-center gap-1.5 rounded-md border border-green-200 bg-green-50 px-2 py-1 text-xs text-green-700 transition-colors hover:bg-green-100 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/40"
 											title="View array elements"
 										>
 											<span class="font-semibold"
@@ -652,17 +1159,62 @@
 													? (log.server1_value as unknown[]).length
 													: 0} items]</span
 											>
-											<span class="truncate text-indigo-500/70 dark:text-indigo-400/70">
+											<span class="truncate text-green-500/70 dark:text-green-400/70">
 												{formatValue(log.server1_value)}
 											</span>
 										</button>
 									{:else}
-										<div class="truncate" title={formatValue(log.server1_value)}>
+										{@const trend = trendByLogId.get(log.id)}
+										<div
+											class="flex items-center gap-0.5 truncate"
+											title={formatValue(log.server1_value)}
+										>
+											{#if trend?.server1}
+												{#if trend.server1 === 'up'}
+													<svg
+														class="h-3 w-3 shrink-0 text-green-500"
+														fill="currentColor"
+														viewBox="0 0 20 20"
+													>
+														<path
+															fill-rule="evenodd"
+															d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"
+															clip-rule="evenodd"
+														/>
+													</svg>
+												{:else if trend.server1 === 'down'}
+													<svg
+														class="h-3 w-3 shrink-0 text-red-500"
+														fill="currentColor"
+														viewBox="0 0 20 20"
+													>
+														<path
+															fill-rule="evenodd"
+															d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z"
+															clip-rule="evenodd"
+														/>
+													</svg>
+												{:else}
+													<svg
+														class="h-3 w-3 shrink-0 text-gray-400"
+														fill="currentColor"
+														viewBox="0 0 20 20"
+													>
+														<path
+															fill-rule="evenodd"
+															d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+															clip-rule="evenodd"
+														/>
+													</svg>
+												{/if}
+											{/if}
 											{formatValue(log.server1_value)}
 										</div>
 									{/if}
 								</td>
-								<td class="max-w-xs px-4 py-3 font-mono text-sm text-gray-700 dark:text-gray-300">
+								<td
+									class="overflow-hidden px-4 py-3 font-mono text-sm text-gray-700 dark:text-gray-300"
+								>
 									{#if isArray}
 										<button
 											type="button"
@@ -670,7 +1222,7 @@
 												e.stopPropagation();
 												openArrayDetail(log);
 											}}
-											class="group inline-flex max-w-full items-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs text-indigo-700 transition-colors hover:bg-indigo-100 dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/40"
+											class="group inline-flex max-w-full items-center gap-1.5 rounded-md border border-green-200 bg-green-50 px-2 py-1 text-xs text-green-700 transition-colors hover:bg-green-100 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/40"
 											title="View array elements"
 										>
 											<span class="font-semibold"
@@ -678,12 +1230,55 @@
 													? (log.server2_value as unknown[]).length
 													: 0} items]</span
 											>
-											<span class="truncate text-indigo-500/70 dark:text-indigo-400/70">
+											<span class="truncate text-green-500/70 dark:text-green-400/70">
 												{formatValue(log.server2_value)}
 											</span>
 										</button>
 									{:else}
-										<div class="truncate" title={formatValue(log.server2_value)}>
+										{@const trend = trendByLogId.get(log.id)}
+										<div
+											class="flex items-center gap-0.5 truncate"
+											title={formatValue(log.server2_value)}
+										>
+											{#if trend?.server2}
+												{#if trend.server2 === 'up'}
+													<svg
+														class="h-3 w-3 shrink-0 text-green-500"
+														fill="currentColor"
+														viewBox="0 0 20 20"
+													>
+														<path
+															fill-rule="evenodd"
+															d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"
+															clip-rule="evenodd"
+														/>
+													</svg>
+												{:else if trend.server2 === 'down'}
+													<svg
+														class="h-3 w-3 shrink-0 text-red-500"
+														fill="currentColor"
+														viewBox="0 0 20 20"
+													>
+														<path
+															fill-rule="evenodd"
+															d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z"
+															clip-rule="evenodd"
+														/>
+													</svg>
+												{:else}
+													<svg
+														class="h-3 w-3 shrink-0 text-gray-400"
+														fill="currentColor"
+														viewBox="0 0 20 20"
+													>
+														<path
+															fill-rule="evenodd"
+															d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+															clip-rule="evenodd"
+														/>
+													</svg>
+												{/if}
+											{/if}
 											{formatValue(log.server2_value)}
 										</div>
 									{/if}
@@ -740,7 +1335,7 @@
 			>
 				<div>
 					<h3 class="text-lg font-semibold text-gray-800 dark:text-white">
-						Log Detail: <span class="font-mono text-indigo-600 dark:text-indigo-400"
+						Log Detail: <span class="font-mono text-green-600 dark:text-green-400"
 							>{selectedLogEntry.key_path}</span
 						>
 					</h3>
@@ -836,7 +1431,7 @@
 				<button
 					aria-label="Close modal"
 					onclick={() => (showDetailModal = false)}
-					class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
+					class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-500/20 focus:outline-none"
 				>
 					Close
 				</button>
@@ -883,7 +1478,7 @@
 				<div class="min-w-0">
 					<h3 class="text-lg font-semibold text-gray-800 dark:text-white">
 						Array Compare:
-						<span class="font-mono text-indigo-600 dark:text-indigo-400"
+						<span class="font-mono text-green-600 dark:text-green-400"
 							>{arrayDetailLog.key_path}</span
 						>
 					</h3>
@@ -1059,7 +1654,7 @@
 				</button>
 				<button
 					onclick={closeArrayDetail}
-					class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
+					class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-500/20 focus:outline-none"
 				>
 					Close
 				</button>

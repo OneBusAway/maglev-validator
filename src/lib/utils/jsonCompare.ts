@@ -175,11 +175,23 @@ function scheduleCacheCleanup() {
 	}, 60000);
 }
 
-export function deepEqualIgnoreOrder(a: unknown, b: unknown, ignoredKeys: string[] = []): boolean {
+export function deepEqualIgnoreOrder(
+	a: unknown,
+	b: unknown,
+	ignoredKeys: string[] = [],
+	numericTolerancePercent: number = 0
+): boolean {
 	if (Object.is(a, b)) return true;
 
 	if (typeof a !== typeof b) return false;
 	if (a === null || b === null) return a === b;
+
+	if (typeof a === 'number' && typeof b === 'number' && numericTolerancePercent > 0) {
+		const maxAbs = Math.max(Math.abs(a), Math.abs(b));
+		if (maxAbs === 0) return true;
+		const percentDiff = (Math.abs(a - b) / maxAbs) * 100;
+		if (percentDiff <= numericTolerancePercent) return true;
+	}
 
 	if (typeof a === 'object' && typeof b === 'object' && ignoredKeys.length === 0) {
 		const aCache = equalityCache.get(a as object);
@@ -195,9 +207,15 @@ export function deepEqualIgnoreOrder(a: unknown, b: unknown, ignoredKeys: string
 			result = false;
 		} else if (a.length === 0) {
 			result = true;
+		} else if (numericTolerancePercent > 0) {
+			const aSorted = [...a].sort(sortById);
+			const bSorted = [...b].sort(sortById);
+			result = aSorted.every((item, index) =>
+				deepEqualIgnoreOrder(item, bSorted[index], ignoredKeys, numericTolerancePercent)
+			);
 		} else {
-			const aSorted = a.map((item) => stableStringify(item, ignoredKeys)).sort(sortById);
-			const bSorted = b.map((item) => stableStringify(item, ignoredKeys)).sort(sortById);
+			const aSorted = [...a].sort(sortById).map((item) => stableStringify(item, ignoredKeys));
+			const bSorted = [...b].sort(sortById).map((item) => stableStringify(item, ignoredKeys));
 			result = aSorted.every((value, index) => value === bSorted[index]);
 		}
 	} else if (isObject(a) && isObject(b)) {
@@ -213,7 +231,9 @@ export function deepEqualIgnoreOrder(a: unknown, b: unknown, ignoredKeys: string
 			result = true;
 		} else {
 			result = aKeys.every(
-				(key, index) => key === bKeys[index] && deepEqualIgnoreOrder(a[key], b[key], ignoredKeys)
+				(key, index) =>
+					key === bKeys[index] &&
+					deepEqualIgnoreOrder(a[key], b[key], ignoredKeys, numericTolerancePercent)
 			);
 		}
 	} else {
@@ -237,12 +257,15 @@ export function getDiffStatus(
 	value: unknown,
 	otherValue: unknown,
 	side: 'left' | 'right',
-	ignoredKeys: string[] = []
+	ignoredKeys: string[] = [],
+	numericTolerancePercent: number = 0
 ): DiffStatus {
 	if (otherValue === undefined) {
 		return side === 'left' ? 'missing' : 'added';
 	}
-	return deepEqualIgnoreOrder(value, otherValue, ignoredKeys) ? 'same' : 'different';
+	return deepEqualIgnoreOrder(value, otherValue, ignoredKeys, numericTolerancePercent)
+		? 'same'
+		: 'different';
 }
 
 const MAX_DIFF_COUNT = 999;
@@ -251,12 +274,13 @@ export function countDifferences(
 	a: unknown,
 	b: unknown,
 	ignoredKeys: string[] = [],
-	maxCount: number = MAX_DIFF_COUNT
+	maxCount: number = MAX_DIFF_COUNT,
+	numericTolerancePercent: number = 0
 ): number {
 	if (a === undefined && b === undefined) return 0;
 	if (a === undefined || b === undefined) return 1;
 	if (isPrimitive(a) || isPrimitive(b)) {
-		return deepEqualIgnoreOrder(a, b, ignoredKeys) ? 0 : 1;
+		return deepEqualIgnoreOrder(a, b, ignoredKeys, numericTolerancePercent) ? 0 : 1;
 	}
 
 	if (isArray(a) && isArray(b)) {
@@ -269,7 +293,7 @@ export function countDifferences(
 				let sampleDiffs = 0;
 				for (let i = 0; i < sampleSize && i < a.length; i++) {
 					const idx = Math.floor((i / sampleSize) * a.length);
-					if (!deepEqualIgnoreOrder(a[idx], b[idx], ignoredKeys)) {
+					if (!deepEqualIgnoreOrder(a[idx], b[idx], ignoredKeys, numericTolerancePercent)) {
 						sampleDiffs++;
 					}
 				}
@@ -312,11 +336,17 @@ export function countDifferences(
 		for (const key of keys) {
 			if (ignoredKeys.includes(key)) continue;
 			if (diff >= maxCount) break;
-			diff += countDifferences(a[key], b[key], ignoredKeys, maxCount - diff);
+			diff += countDifferences(
+				a[key],
+				b[key],
+				ignoredKeys,
+				maxCount - diff,
+				numericTolerancePercent
+			);
 		}
 		return Math.min(diff, maxCount);
 	}
-	return deepEqualIgnoreOrder(a, b, ignoredKeys) ? 0 : 1;
+	return deepEqualIgnoreOrder(a, b, ignoredKeys, numericTolerancePercent) ? 0 : 1;
 }
 
 export function sortEntries(obj: Record<string, unknown>): [string, unknown][] {

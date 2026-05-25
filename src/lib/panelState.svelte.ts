@@ -26,10 +26,29 @@ export class ComparatorState {
 	focusPath = $state('');
 	isExpanded = $state(false);
 
+	toggleWatchKey(key: string) {
+		const current = new SvelteSet(
+			this.watchedKeysInput
+				.split(',')
+				.map((k) => k.trim())
+				.filter((k) => k.length > 0)
+		);
+		if (current.has(key)) {
+			current.delete(key);
+		} else {
+			current.add(key);
+		}
+		this.watchedKeysInput = Array.from(current).join(', ');
+		if (typeof localStorage !== 'undefined') {
+			localStorage.setItem(`watch_${this.selectedEndpoint}`, this.watchedKeysInput);
+		}
+	}
+
 	autoRefresh = $state(false);
 	refreshInterval = $state(5);
 	lastLoggedTime = $state<number | null>(null);
 	refreshTimer: number | undefined = undefined;
+	numericTolerancePercent = $state(0);
 }
 
 export interface ProtobufFeedData {

@@ -9,9 +9,16 @@
 		response2: unknown;
 		focusPath?: string;
 		ignoredKeys?: string[];
+		numericTolerancePercent?: number;
 	}
 
-	let { response1, response2, focusPath = '', ignoredKeys = [] }: Props = $props();
+	let {
+		response1,
+		response2,
+		focusPath = '',
+		ignoredKeys = [],
+		numericTolerancePercent = 0
+	}: Props = $props();
 
 	const trimmedPath = $derived(focusPath.trim());
 	const focused1 = $derived(trimmedPath ? getByPath(response1, trimmedPath) : response1);
@@ -338,7 +345,7 @@
 		<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
 			{#if isSearching}
 				<svg
-					class="h-4 w-4 animate-spin text-indigo-500"
+					class="h-4 w-4 animate-spin text-green-500"
 					xmlns="http://www.w3.org/2000/svg"
 					fill="none"
 					viewBox="0 0 24 24"
@@ -367,7 +374,7 @@
 			bind:value={localSearchQuery}
 			oninput={handleSearchInput}
 			placeholder="Search (min 2 chars)..."
-			class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pr-10 pl-10 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:placeholder:text-gray-500"
+			class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pr-10 pl-10 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:placeholder:text-gray-500"
 		/>
 		{#if localSearchQuery}
 			<button
@@ -390,7 +397,7 @@
 	<button
 		onclick={() => (syncScroll = !syncScroll)}
 		class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {syncScroll
-			? 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400'
+			? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
 			: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'}"
 		title="{syncScroll ? 'Disable' : 'Enable'} synchronized scrolling"
 	>
@@ -408,7 +415,7 @@
 	<button
 		onclick={() => (syncSelect = !syncSelect)}
 		class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {syncSelect
-			? 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400'
+			? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
 			: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'}"
 		title="{syncSelect ? 'Disable' : 'Enable'} synchronized expand/collapse"
 	>
@@ -427,7 +434,7 @@
 		<button
 			onclick={() => (showSortModal = !showSortModal)}
 			class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {sortEnabled
-				? 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400'
+				? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
 				: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'}"
 			title="Sort arrays by ID to align matching items"
 		>
@@ -480,7 +487,7 @@
 							</label>
 							<select
 								bind:value={selectedArrayPath}
-								class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+								class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
 							>
 								<option value="auto">Auto-detect best array</option>
 								{#each detectedArrays as arr (arr.path)}
@@ -503,7 +510,7 @@
 									<label
 										class="flex cursor-pointer items-start gap-2 border-b border-gray-100 px-3 py-2 last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 {selectedIdField ===
 										field.value
-											? 'bg-indigo-50 dark:bg-indigo-900/20'
+											? 'bg-green-50 dark:bg-green-900/20'
 											: ''}"
 									>
 										<input
@@ -511,7 +518,7 @@
 											name="idField"
 											value={field.value}
 											bind:group={selectedIdField}
-											class="mt-0.5 h-3.5 w-3.5 accent-indigo-600"
+											class="mt-0.5 h-3.5 w-3.5 accent-green-600"
 										/>
 										<div class="flex-1">
 											<span class="text-sm font-medium text-gray-700 dark:text-gray-200"
@@ -534,7 +541,7 @@
 							<button
 								onclick={doSort}
 								disabled={sortLoading}
-								class="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
+								class="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
 							>
 								{#if sortLoading}
 									<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -633,6 +640,7 @@
 			matchingPaths={matchingPaths1}
 			{syncedExpandedPaths}
 			onToggle={syncSelect ? handleToggle : undefined}
+			{numericTolerancePercent}
 		/>
 	</div>
 	<div
@@ -650,6 +658,7 @@
 			matchingPaths={matchingPaths2}
 			{syncedExpandedPaths}
 			onToggle={syncSelect ? handleToggle : undefined}
+			{numericTolerancePercent}
 		/>
 	</div>
 </div>

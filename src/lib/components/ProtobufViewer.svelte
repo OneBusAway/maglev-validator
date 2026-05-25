@@ -325,7 +325,7 @@
 					onclick={() => (protobufState.activeTab = tab.id)}
 					class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all {protobufState.activeTab ===
 					tab.id
-						? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400'
+						? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
 						: 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'}"
 				>
 					{#if tab.icon === 'trip'}
@@ -389,7 +389,7 @@
 										? 'bg-red-200 text-red-800 dark:bg-red-800 dark:text-red-200'
 										: 'bg-red-100 text-red-600 dark:bg-red-700 dark:text-red-300'
 									: protobufState.activeTab === tab.id
-										? 'bg-indigo-200 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-200'
+										? 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200'
 										: 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-300'}"
 							title={tab.isLimited
 								? `Showing ${tab.count} of ${tab.total} (limited to prevent memory issues)`
@@ -413,7 +413,7 @@
 					<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
 						{#if isSearching}
 							<svg
-								class="h-4 w-4 animate-spin text-indigo-500"
+								class="h-4 w-4 animate-spin text-green-500"
 								xmlns="http://www.w3.org/2000/svg"
 								fill="none"
 								viewBox="0 0 24 24"
@@ -453,7 +453,7 @@
 						value={protobufState.searchQuery}
 						oninput={handleSearchInput}
 						placeholder="Search vehicle ID, trip, route..."
-						class="w-64 rounded-lg border border-gray-200 bg-gray-50 py-1.5 pr-8 pl-9 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+						class="w-64 rounded-lg border border-gray-200 bg-gray-50 py-1.5 pr-8 pl-9 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:placeholder:text-gray-500"
 					/>
 					{#if protobufState.searchQuery}
 						<button
@@ -560,8 +560,8 @@
 								onclick={() => (activeRawTextTab = tab.id)}
 								class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium shadow-sm transition-colors {activeRawTextTab ===
 								tab.id
-									? 'bg-indigo-500 text-white dark:bg-indigo-600'
-									: 'bg-white text-gray-700 hover:bg-blue-50 hover:text-indigo-700 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-400'}"
+									? 'bg-green-500 text-white dark:bg-green-600'
+									: 'bg-white text-gray-700 hover:bg-blue-50 hover:text-green-700 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-green-900/30 dark:hover:text-green-400'}"
 							>
 								{#if tab.icon === 'trip'}
 									<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -762,7 +762,7 @@
 							>
 								<div class="flex items-center gap-3">
 									<span
-										class="rounded bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400"
+										class="rounded bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/50 dark:text-green-400"
 									>
 										#{index + 1}
 									</span>
@@ -770,6 +770,10 @@
 										{@const tripUpdate = item as Record<string, unknown>}
 										{@const trip = tripUpdate.trip as Record<string, string> | undefined}
 										{@const vehicleInfo = tripUpdate.vehicle as Record<string, string> | undefined}
+										{@const stopTimeUpdates = tripUpdate.stopTimeUpdate as
+											| Array<Record<string, string>>
+											| undefined}
+										{@const tripStopId = stopTimeUpdates?.[0]?.stopId}
 										<span class="font-mono text-sm">
 											{trip?.tripId || tripUpdate.id || 'Unknown Trip'}
 										</span>
@@ -778,6 +782,13 @@
 												class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-700 dark:bg-green-900/50 dark:text-green-400"
 											>
 												Route: {trip.routeId}
+											</span>
+										{/if}
+										{#if tripStopId}
+											<span
+												class="rounded bg-pink-100 px-2 py-0.5 text-xs text-pink-700 dark:bg-pink-900/50 dark:text-pink-400"
+											>
+												Stop: {tripStopId}
 											</span>
 										{/if}
 										{#if vehicleInfo?.id || vehicleInfo?.label}
@@ -806,6 +817,7 @@
 										{@const vehicle = item as Record<string, unknown>}
 										{@const vehicleInfo = vehicle.vehicle as Record<string, string> | undefined}
 										{@const trip = vehicle.trip as Record<string, string> | undefined}
+										{@const vehicleStopId = (vehicle as Record<string, string>).stopId}
 										<span class="font-mono text-sm">
 											{vehicleInfo?.id || vehicleInfo?.label || vehicle.id || 'Unknown Vehicle'}
 										</span>
@@ -814,6 +826,13 @@
 												class="rounded bg-purple-100 px-2 py-0.5 text-xs text-purple-700 dark:bg-purple-900/50 dark:text-purple-400"
 											>
 												Route: {trip.routeId}
+											</span>
+										{/if}
+										{#if vehicleStopId}
+											<span
+												class="rounded bg-pink-100 px-2 py-0.5 text-xs text-pink-700 dark:bg-pink-900/50 dark:text-pink-400"
+											>
+												Stop: {vehicleStopId}
 											</span>
 										{/if}
 										{#if trip?.tripId}
@@ -864,7 +883,7 @@
 								disabled={paginationLoading?.[
 									protobufState.activeTab as 'tripUpdates' | 'vehiclePositions' | 'alerts'
 								]}
-								class="inline-flex items-center gap-2 rounded-lg border border-indigo-300 bg-indigo-50 px-6 py-3 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
+								class="inline-flex items-center gap-2 rounded-lg border border-green-300 bg-green-50 px-6 py-3 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-green-700 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50"
 							>
 								{#if paginationLoading?.[protobufState.activeTab as 'tripUpdates' | 'vehiclePositions' | 'alerts']}
 									<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">

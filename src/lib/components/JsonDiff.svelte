@@ -134,7 +134,7 @@
 				class:border-green-400={status === 'added' && side === 'left'}
 				class:border-gray-200={status === 'same'}
 			>
-				<span class="font-bold text-indigo-700">"{key}"</span><span class="mx-1 text-gray-500"
+				<span class="font-bold text-green-700">"{key}"</span><span class="mx-1 text-gray-500"
 					>:</span
 				>
 				{#if isPrimitive(value)}

@@ -12,6 +12,7 @@
 		matchingPaths?: Set<string>;
 		syncedExpandedPaths?: Set<string>;
 		onToggle?: (path: string, expanded: boolean) => void;
+		numericTolerancePercent?: number;
 	}
 
 	let {
@@ -22,7 +23,8 @@
 		searchQuery = '',
 		matchingPaths = new Set<string>(),
 		syncedExpandedPaths,
-		onToggle
+		onToggle,
+		numericTolerancePercent = 0
 	}: Props = $props();
 
 	let globalExpand = $state<boolean | null>(null);
@@ -145,6 +147,7 @@
 				{matchingPaths}
 				{syncedExpandedPaths}
 				{onToggle}
+				{numericTolerancePercent}
 			/>
 		{:else}
 			<div class="py-8 text-center text-gray-400 italic">No JSON data</div>

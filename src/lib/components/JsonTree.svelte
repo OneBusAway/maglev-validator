@@ -9,6 +9,7 @@
 		isPrimitive,
 		sortEntries
 	} from '$lib/utils/jsonCompare';
+	import { comparatorState } from '$lib/panelState.svelte';
 
 	interface Props {
 		value: unknown;
@@ -26,6 +27,7 @@
 		currentPath?: string;
 		syncedExpandedPaths?: Set<string>;
 		onToggle?: (path: string, expanded: boolean) => void;
+		numericTolerancePercent?: number;
 	}
 
 	const CHUNK_SIZE = 50;
@@ -47,7 +49,8 @@
 		matchingPaths = new Set<string>(),
 		currentPath = '',
 		syncedExpandedPaths,
-		onToggle
+		onToggle,
+		numericTolerancePercent = 0
 	}: Props = $props();
 
 	function matchesSearch(text: string): boolean {
@@ -145,12 +148,28 @@
 								: false
 	);
 
+	function normalizeKeyPath(path: string): string {
+		return path.replace(/\[\d+\]/g, '.*');
+	}
+
+	const watchedKeySet = $derived(
+		new Set(
+			comparatorState.watchedKeysInput
+				.split(',')
+				.map((k) => k.trim())
+				.filter((k) => k.length > 0)
+				.map((k) => normalizeKeyPath(k))
+		)
+	);
+
+	const isWatched = $derived(!!currentPath && watchedKeySet.has(normalizeKeyPath(currentPath)));
+
 	const isPrimitiveValue = $derived(isPrimitive(value));
 	const status = $derived(
 		skipComparison
 			? 'same'
 			: isPrimitiveValue || expanded || level === 0
-				? getDiffStatus(value, otherValue, side, ignoredKeys)
+				? getDiffStatus(value, otherValue, side, ignoredKeys, numericTolerancePercent)
 				: 'same'
 	);
 	const hasDiff = $derived(status !== 'same' && !isReference);
@@ -158,7 +177,7 @@
 	const diffCount = $derived(
 		skipComparison || expanded || isReference || isPrimitiveValue
 			? 0
-			: countDifferences(value, otherValue, ignoredKeys)
+			: countDifferences(value, otherValue, ignoredKeys, 999, numericTolerancePercent)
 	);
 
 	const arrayItems = $derived(isArray(value) ? value : []);
@@ -279,7 +298,7 @@
 			valueMatchesSearch
 				? 'bg-yellow-50/30 ring-2 ring-yellow-400/50 dark:bg-yellow-900/20'
 				: ''} {currentPath && matchingPaths.has(currentPath)
-				? 'bg-indigo-100/50 ring-2 ring-indigo-500/50 dark:bg-indigo-900/30'
+				? 'bg-green-100/50 ring-2 ring-green-500/50 dark:bg-green-900/30'
 				: ''}"
 		>
 			{#if isArray(value) || isObject(value)}
@@ -290,7 +309,43 @@
 					<span class="transition-transform {expanded ? 'rotate-0' : '-rotate-90'}">▼</span>
 				</button>
 			{:else}
-				<span class="mr-2 w-5 flex-shrink-0"></span>
+				<span class="mr-1 w-5 flex-shrink-0"></span>
+			{/if}
+
+			{#if currentPath}
+				<button
+					onclick={(e) => {
+						e.stopPropagation();
+						comparatorState.toggleWatchKey(normalizeKeyPath(currentPath));
+					}}
+					class="mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-700 {isWatched
+						? 'text-green-600 opacity-100 dark:text-green-400'
+						: 'text-gray-400 dark:text-gray-500'}"
+					title={isWatched ? 'Remove from watched keys' : 'Add to watched keys'}
+				>
+					{#if isWatched}
+						<svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+							<path
+								d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+							/>
+						</svg>
+					{:else}
+						<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+							/>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+							/>
+						</svg>
+					{/if}
+				</button>
 			{/if}
 
 			<span class="mr-1 flex-shrink-0 font-semibold text-cyan-700 select-text dark:text-cyan-400">
@@ -353,7 +408,7 @@
 								e.stopPropagation();
 								expandAllChildren();
 							}}
-							class="flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
+							class="flex items-center gap-1 rounded-md border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700 transition-colors hover:bg-green-100 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
 							title="Expand all items"
 						>
 							<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -427,6 +482,7 @@
 						currentPath={currentPath ? `${currentPath}[${index}]` : `[${index}]`}
 						{syncedExpandedPaths}
 						{onToggle}
+						{numericTolerancePercent}
 					/>
 				{/each}
 				{#if hasMoreItems}
@@ -499,6 +555,7 @@
 						currentPath={currentPath ? `${currentPath}.${key}` : key}
 						{syncedExpandedPaths}
 						{onToggle}
+						{numericTolerancePercent}
 					/>
 				{/each}
 				{#if hasMoreEntries}

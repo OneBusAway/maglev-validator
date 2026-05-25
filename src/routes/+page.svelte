@@ -209,7 +209,7 @@
 				<button
 					onclick={toggleSplitMode}
 					class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors {isSplitMode
-						? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
+						? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
 						: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'}"
 					title="Toggle Split View"
 				>
@@ -278,7 +278,7 @@
 					<select
 						id="left-panel"
 						bind:value={leftPanel}
-						class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+						class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
 					>
 						{#each leftPanelOptions as option (option.value)}
 							<option value={option.value}>{option.label}</option>
@@ -302,7 +302,7 @@
 					<select
 						id="right-panel"
 						bind:value={rightPanel}
-						class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+						class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
 					>
 						{#each rightPanelOptions as option (option.value)}
 							<option value={option.value}>{option.label}</option>
@@ -311,7 +311,7 @@
 				</div>
 				<button
 					onclick={() => splitPaneRef?.resetSplit()}
-					class="rounded-lg bg-indigo-100 p-2 text-indigo-600 transition-colors hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800"
+					class="rounded-lg bg-green-100 p-2 text-green-600 transition-colors hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800"
 					title="Reset split to 50/50"
 				>
 					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -381,7 +381,7 @@
 						<button
 							onclick={() => (loggerSubTab = 'api')}
 							class="rounded-lg px-6 py-2 text-sm font-bold transition-all {loggerSubTab === 'api'
-								? 'bg-white text-indigo-600 shadow-sm dark:bg-gray-700 dark:text-indigo-400'
+								? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
 								: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
 						>
 							API Response Logs
@@ -390,7 +390,7 @@
 							onclick={() => (loggerSubTab = 'gtfsrt')}
 							class="rounded-lg px-6 py-2 text-sm font-bold transition-all {loggerSubTab ===
 							'gtfsrt'
-								? 'bg-white text-indigo-600 shadow-sm dark:bg-gray-700 dark:text-indigo-400'
+								? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
 								: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
 						>
 							GTFS-RT Snapshots

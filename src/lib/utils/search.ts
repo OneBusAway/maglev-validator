@@ -49,6 +49,7 @@ export interface GTFSVehiclePosition {
 		directionId?: number;
 		startTime?: string;
 		startDate?: string;
+		stopId?: string;
 	};
 	position?: {
 		latitude?: number;
@@ -81,6 +82,7 @@ export interface SearchIndex {
 	vehicleIds: Map<string, Set<number>>;
 	tripIds: Map<string, Set<number>>;
 	routeIds: Map<string, Set<number>>;
+	stopIds: Map<string, Set<number>>;
 	labels: Map<string, Set<number>>;
 }
 
@@ -92,6 +94,7 @@ export function buildSearchIndex(
 		vehicleIds: new Map(),
 		tripIds: new Map(),
 		routeIds: new Map(),
+		stopIds: new Map(),
 		labels: new Map()
 	};
 
@@ -114,6 +117,14 @@ export function buildSearchIndex(
 			addToIndex(index.routeIds, tripUpdate.trip?.routeId, idx);
 			addToIndex(index.vehicleIds, tripUpdate.vehicle?.id, idx);
 			addToIndex(index.labels, tripUpdate.vehicle?.label, idx);
+			const stopTimeUpdates = tripUpdate.stopTimeUpdate as
+				| Array<Record<string, unknown>>
+				| undefined;
+			if (stopTimeUpdates) {
+				stopTimeUpdates.forEach((stu) => {
+					addToIndex(index.stopIds, stu.stopId as string, idx);
+				});
+			}
 		} else if (type === 'vehiclePositions') {
 			const vehicle = e as GTFSVehiclePosition;
 			addToIndex(index.vehicleIds, vehicle.vehicle?.id, idx);
@@ -121,6 +132,8 @@ export function buildSearchIndex(
 			addToIndex(index.labels, vehicle.vehicle?.label, idx);
 			addToIndex(index.tripIds, vehicle.trip?.tripId, idx);
 			addToIndex(index.routeIds, vehicle.trip?.routeId, idx);
+			addToIndex(index.stopIds, (e as Record<string, string>).stopId, idx);
+			addToIndex(index.stopIds, vehicle.trip?.stopId, idx);
 		} else if (type === 'alerts') {
 			const alert = e as GTFSAlert;
 			addToIndex(index.tripIds, alert.id, idx);
@@ -138,7 +151,13 @@ export function searchWithIndex(entities: unknown[], query: string, index: Searc
 	const lowerQuery = query.toLowerCase().trim();
 	const matchingIndices = new Set<number>();
 
-	for (const map of [index.vehicleIds, index.tripIds, index.routeIds, index.labels]) {
+	for (const map of [
+		index.vehicleIds,
+		index.tripIds,
+		index.routeIds,
+		index.stopIds,
+		index.labels
+	]) {
 		for (const [key, indices] of map) {
 			if (key.includes(lowerQuery)) {
 				indices.forEach((idx) => matchingIndices.add(idx));
@@ -223,22 +242,34 @@ export function filterGTFSEntities<T extends unknown[]>(
 
 		if (type === 'tripUpdates') {
 			const tripUpdate = e as GTFSTripUpdate;
+			const stopTimeUpdates = tripUpdate.stopTimeUpdate as
+				| Array<Record<string, string>>
+				| undefined;
+			const hasStopIdMatch = stopTimeUpdates?.some((stu) =>
+				stu.stopId?.toLowerCase().includes(lowerQuery)
+			);
+			const tripRaw = tripUpdate.trip as Record<string, string> | undefined;
 			return (
 				tripUpdate.id?.toLowerCase().includes(lowerQuery) ||
 				tripUpdate.trip?.tripId?.toLowerCase().includes(lowerQuery) ||
 				tripUpdate.trip?.routeId?.toLowerCase().includes(lowerQuery) ||
 				tripUpdate.trip?.scheduleRelationship?.toLowerCase().includes(lowerQuery) ||
 				tripUpdate.vehicle?.id?.toLowerCase().includes(lowerQuery) ||
-				tripUpdate.vehicle?.label?.toLowerCase().includes(lowerQuery)
+				tripUpdate.vehicle?.label?.toLowerCase().includes(lowerQuery) ||
+				tripRaw?.stopId?.toLowerCase().includes(lowerQuery) ||
+				hasStopIdMatch
 			);
 		} else if (type === 'vehiclePositions') {
 			const vehicle = e as GTFSVehiclePosition;
+			const raw = e as Record<string, string>;
 			return (
 				vehicle.id?.toLowerCase().includes(lowerQuery) ||
 				vehicle.vehicle?.id?.toLowerCase().includes(lowerQuery) ||
 				vehicle.vehicle?.label?.toLowerCase().includes(lowerQuery) ||
 				vehicle.trip?.tripId?.toLowerCase().includes(lowerQuery) ||
-				vehicle.trip?.routeId?.toLowerCase().includes(lowerQuery)
+				vehicle.trip?.routeId?.toLowerCase().includes(lowerQuery) ||
+				raw.stopId?.toLowerCase().includes(lowerQuery) ||
+				(raw.trip as unknown as Record<string, string>)?.stopId?.toLowerCase().includes(lowerQuery)
 			);
 		} else if (type === 'alerts') {
 			const alert = e as GTFSAlert;

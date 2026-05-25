@@ -373,7 +373,7 @@
 						type="text"
 						bind:value={pbState.tripUpdatesUrl}
 						placeholder="https://example.com/gtfs-rt/trip-updates"
-						class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-indigo-500/40"
+						class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-green-500/40"
 					/>
 				</label>
 			</div>
@@ -386,7 +386,7 @@
 						type="text"
 						bind:value={pbState.vehiclePositionsUrl}
 						placeholder="https://example.com/gtfs-rt/vehicle-positions"
-						class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-indigo-500/40"
+						class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-green-500/40"
 					/>
 				</label>
 			</div>
@@ -399,7 +399,7 @@
 						type="text"
 						bind:value={pbState.serviceAlertsUrl}
 						placeholder="https://example.com/gtfs-rt/service-alerts"
-						class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-indigo-500/40"
+						class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-green-500/40"
 					/>
 				</label>
 			</div>
@@ -412,7 +412,7 @@
 				>
 				<button
 					onclick={addHeader}
-					class="text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-blue-300"
+					class="text-sm font-medium text-green-600 transition-colors hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
 				>
 					+ Add Header
 				</button>
@@ -425,14 +425,14 @@
 							value={header.key}
 							oninput={(e) => updateHeader(index, 'key', e.currentTarget.value)}
 							placeholder="Header Name (e.g., x-api-key)"
-							class="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600"
+							class="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600"
 						/>
 						<input
 							type="text"
 							value={header.value}
 							oninput={(e) => updateHeader(index, 'value', e.currentTarget.value)}
 							placeholder="Header Value"
-							class="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600"
+							class="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600"
 						/>
 						{#if pbState.headers.length > 1}
 							<button
@@ -469,7 +469,7 @@
 					<input
 						type="checkbox"
 						bind:checked={pbState.autoRefresh}
-						class="h-4 w-4 rounded border-gray-300 bg-white text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
+						class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
 					/>
 					<span class="text-sm font-medium text-gray-600 dark:text-gray-400">Auto-refresh</span>
 				</label>
@@ -480,7 +480,7 @@
 							bind:value={pbState.refreshInterval}
 							min="5"
 							max="300"
-							class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-indigo-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+							class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
 						/>
 						<span class="text-xs text-gray-400">sec</span>
 					</div>
@@ -491,7 +491,7 @@
 						type="checkbox"
 						bind:checked={pbState.loggingEnabled}
 						onchange={saveToLocalStorage}
-						class="h-4 w-4 rounded border-gray-300 bg-white text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
+						class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
 					/>
 					<span class="text-sm font-medium text-gray-600 dark:text-gray-400">Enable logging</span>
 				</label>
@@ -505,7 +505,7 @@
 			<button
 				onclick={fetchAllFeeds}
 				disabled={pbState.loading}
-				class="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 font-medium text-white transition-all hover:bg-indigo-700 hover:shadow-lg active:scale-[0.98] disabled:bg-indigo-400 disabled:shadow-none"
+				class="flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 font-medium text-white transition-all hover:bg-green-700 hover:shadow-lg active:scale-[0.98] disabled:bg-green-400 disabled:shadow-none"
 				title="Fetch All Feeds (Ctrl+Enter)"
 			>
 				{#if pbState.loading}
@@ -526,7 +526,7 @@
 					Fetching...
 				{:else}
 					<span>Fetch All Feeds</span>
-					<kbd class="ml-1 rounded bg-indigo-500 px-1.5 py-0.5 text-xs font-normal">Ctrl+↵</kbd>
+					<kbd class="ml-1 rounded bg-green-500 px-1.5 py-0.5 text-xs font-normal">Ctrl+↵</kbd>
 				{/if}
 			</button>
 		</div>

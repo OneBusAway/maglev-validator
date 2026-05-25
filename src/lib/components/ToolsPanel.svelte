@@ -115,7 +115,7 @@
 							type="checkbox"
 							id="auto-open"
 							bind:checked={autoOpen}
-							class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800"
+							class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800"
 						/>
 						<label
 							for="auto-open"
@@ -138,13 +138,13 @@
 						type="text"
 						bind:value={inputValue}
 						placeholder="e.g. 1770671432"
-						class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+						class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
 					/>
 				</div>
 
 				{#if result.isValid}
 					<div
-						class="rounded-lg border border-indigo-100 bg-indigo-50/50 p-4 dark:border-indigo-900/30 dark:bg-indigo-900/10"
+						class="rounded-lg border border-green-100 bg-green-50/50 p-4 dark:border-green-900/30 dark:bg-green-900/10"
 					>
 						<div class="space-y-3">
 							<div>
@@ -160,8 +160,8 @@
 							{#if result.serviceDay}
 								<div>
 									<!-- Helper: Common Timestamps -->
-									<div class="text-xs text-indigo-600 dark:text-indigo-400">GTFS Service Time</div>
-									<div class="font-mono text-sm font-medium text-indigo-700 dark:text-indigo-300">
+									<div class="text-xs text-green-600 dark:text-green-400">GTFS Service Time</div>
+									<div class="font-mono text-sm font-medium text-green-700 dark:text-green-300">
 										{result.serviceDay}
 									</div>
 								</div>
@@ -170,7 +170,7 @@
 								<div class="text-xs text-gray-500 dark:text-gray-400">Relative</div>
 								<div class="text-sm text-gray-700 dark:text-gray-300">{result.relative}</div>
 							</div>
-							<div class="border-t border-indigo-100 pt-2 dark:border-indigo-900/30">
+							<div class="border-t border-green-100 pt-2 dark:border-green-900/30">
 								<span
 									class="inline-flex items-center rounded-full bg-white px-2 py-0.5 text-xs font-medium text-gray-600 shadow-sm dark:bg-gray-800 dark:text-gray-300"
 								>

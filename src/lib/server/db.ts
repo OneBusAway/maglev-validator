@@ -232,6 +232,7 @@ export interface GetKeyLogsParams {
 	keyPath?: string | string[];
 	since?: string;
 	limit?: number;
+	offset?: number;
 }
 
 export function getKeyLogs(params: GetKeyLogsParams = {}): KeyLogEntry[] {
@@ -268,6 +269,11 @@ export function getKeyLogs(params: GetKeyLogsParams = {}): KeyLogEntry[] {
 	if (params.limit) {
 		query += ' LIMIT ?';
 		queryParams.push(params.limit);
+	}
+
+	if (params.offset) {
+		query += ' OFFSET ?';
+		queryParams.push(params.offset);
 	}
 
 	const stmt = db.prepare(query);

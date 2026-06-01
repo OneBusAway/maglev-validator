@@ -392,14 +392,18 @@ export function parsePath(path: string): (string | number)[] {
 export function getByPath(obj: unknown, path: string): unknown {
 	if (!path) return obj;
 	const tokens = parsePath(path);
-	let current: unknown = obj;
-	for (const token of tokens) {
+	function walk(current: unknown, idx: number): unknown {
+		if (idx >= tokens.length) return current;
 		if (current === null || current === undefined) return undefined;
-		if (isObject(current) || isArray(current)) {
-			current = (current as Record<string | number, unknown>)[token];
-		} else {
-			return undefined;
+		const token = tokens[idx];
+		if (token === '*') {
+			if (!isArray(current)) return undefined;
+			return current.map((item) => walk(item, idx + 1));
 		}
+		if (isObject(current) || isArray(current)) {
+			return walk((current as Record<string | number, unknown>)[token], idx + 1);
+		}
+		return undefined;
 	}
-	return current;
+	return walk(obj, 0);
 }

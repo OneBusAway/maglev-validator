@@ -42,7 +42,12 @@
 
 			if (data !== undefined && otherData !== undefined) {
 				setTimeout(() => {
-					rootsAreEqual = deepEqualIgnoreOrder(data, otherData, ignoredKeys);
+					rootsAreEqual = deepEqualIgnoreOrder(
+						data,
+						otherData,
+						ignoredKeys,
+						numericTolerancePercent
+					);
 				}, 0);
 			} else {
 				rootsAreEqual = false;

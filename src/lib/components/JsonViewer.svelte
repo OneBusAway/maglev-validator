@@ -35,23 +35,18 @@
 	let lastOtherDataRef = $state<unknown>(null);
 
 	$effect(() => {
+		void numericTolerancePercent;
 		if (data !== lastDataRef || otherData !== lastOtherDataRef) {
 			lastDataRef = data;
 			lastOtherDataRef = otherData;
-			rootsAreEqual = null;
-
-			if (data !== undefined && otherData !== undefined) {
-				setTimeout(() => {
-					rootsAreEqual = deepEqualIgnoreOrder(
-						data,
-						otherData,
-						ignoredKeys,
-						numericTolerancePercent
-					);
-				}, 0);
-			} else {
-				rootsAreEqual = false;
-			}
+		}
+		rootsAreEqual = null;
+		if (data !== undefined && otherData !== undefined) {
+			setTimeout(() => {
+				rootsAreEqual = deepEqualIgnoreOrder(data, otherData, ignoredKeys, numericTolerancePercent);
+			}, 0);
+		} else {
+			rootsAreEqual = false;
 		}
 	});
 

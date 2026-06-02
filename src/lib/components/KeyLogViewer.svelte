@@ -383,13 +383,17 @@
 		});
 	});
 
+	let pollTick = 0;
 	$effect(() => {
 		if (loggerState.timeRange === 'live' && loggerState.selectedEndpoint) {
 			fetchLogs(true);
 			fetchCount();
+			pollTick = 0;
 			livePollTimer = setInterval(() => {
+				pollTick++;
 				fetchLogs(true);
 				fetchCount();
+				if (showChart && traceKeyPath && pollTick % 5 === 0) fetchChartLogs();
 			}, 1000);
 			return () => {
 				if (livePollTimer !== undefined) {
@@ -507,7 +511,23 @@
 		const capturedEndpoint = loggerState.selectedEndpoint;
 		const capturedKey = traceKeyPath;
 		try {
-			let url = `/api/keylog?endpoint=${encodeURIComponent(capturedEndpoint)}&keyPath=${encodeURIComponent(capturedKey)}&limit=10000`;
+			let url = `/api/keylog?endpoint=${encodeURIComponent(capturedEndpoint)}&keyPath=${encodeURIComponent(capturedKey)}`;
+			const chartRange = chartTimeRange as string;
+			const isLive = loggerState.timeRange === 'live';
+			const range = isLive ? '1h' : chartRange;
+			const ms = {
+				'30m': 30 * 60 * 1000,
+				'1h': 60 * 60 * 1000,
+				'2h': 2 * 60 * 60 * 1000,
+				'6h': 6 * 60 * 60 * 1000,
+				'24h': 24 * 60 * 60 * 1000
+			} as Record<string, number>;
+			const rangeMs = ms[range];
+			if (rangeMs) {
+				const since = new Date(Date.now() - rangeMs).toISOString();
+				url += `&since=${encodeURIComponent(since)}`;
+			}
+			url += `&limit=${isLive ? 500 : 10000}`;
 			const res = await fetch(url);
 			if (capturedEndpoint !== loggerState.selectedEndpoint || capturedKey !== traceKeyPath) return;
 			const data = await res.json();
@@ -1584,6 +1604,7 @@
 							matchingPaths={selectedRequestLog ? new Set([selectedLogEntry.key_path]) : undefined}
 							{syncedExpandedPaths}
 							onToggle={handleToggle}
+							numericTolerancePercent={comparatorState.numericTolerancePercent}
 						/>
 					</div>
 				</div>
@@ -1611,6 +1632,7 @@
 							matchingPaths={selectedRequestLog ? new Set([selectedLogEntry.key_path]) : undefined}
 							{syncedExpandedPaths}
 							onToggle={handleToggle}
+							numericTolerancePercent={comparatorState.numericTolerancePercent}
 						/>
 					</div>
 				</div>

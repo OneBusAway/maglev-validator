@@ -5,7 +5,7 @@
 	import { logState } from '$lib/logState.svelte';
 	import { comparatorState, loggerState, type KeyLogEntry } from '$lib/panelState.svelte';
 	import { fly } from 'svelte/transition';
-	import { deepEqualIgnoreOrder, sortById } from '$lib/utils/jsonCompare';
+	import { deepEqualIgnoreOrder } from '$lib/utils/jsonCompare';
 
 	import JsonViewer from '$lib/components/JsonViewer.svelte';
 
@@ -28,21 +28,93 @@
 		arrayDetailLog = null;
 	}
 
-	let syncedExpandedPaths = new SvelteSet<string>();
-	let server1ScrollContainer = $state<HTMLElement | undefined>(undefined);
-
 	let traceKeyPath = $state('');
 	let showChart = $state(false);
 	let chartTimeRange = $state<'30m' | '1h' | '2h' | '6h' | '24h' | 'all'>('all');
+	let limitInput = $state(loggerState.limit);
 	let chartLogs = $state<KeyLogEntry[]>([]);
+
+	const matchCache = $derived.by(() => {
+		const map = new SvelteMap<number, boolean>();
+		for (const log of loggerState.logs) {
+			map.set(
+				log.id,
+				valuesMatch(log.server1_value, log.server2_value, comparatorState.numericTolerancePercent)
+			);
+		}
+		return map;
+	});
 
 	const filteredLogs = $derived(
 		loggerState.logs.filter((log) => {
+			if (
+				loggerState.selectedKeyPaths.size > 0 &&
+				!loggerState.selectedKeyPaths.has(log.key_path)
+			) {
+				return false;
+			}
 			if (loggerState.filterMode === 'all') return true;
-			const match = valuesMatch(log.server1_value, log.server2_value);
+			const match = matchCache.get(log.id) ?? false;
 			return loggerState.filterMode === 'match' ? match : !match;
 		})
 	);
+
+	const globalStatsLogs = $derived(
+		loggerState.selectedKeyPaths.size > 0
+			? loggerState.logs.filter((log) => loggerState.selectedKeyPaths.has(log.key_path))
+			: loggerState.logs
+	);
+
+	const globalMatchStats = $derived.by(() => {
+		const logs = globalStatsLogs;
+		const total = logs.length;
+		if (total === 0) return { total: 0, matched: 0, mismatched: 0, matchPct: 0 };
+		const matched = logs.filter((log) => matchCache.get(log.id)).length;
+		return {
+			total,
+			matched,
+			mismatched: total - matched,
+			matchPct: Math.round((matched / total) * 100)
+		};
+	});
+
+	let currentPage = $state(1);
+	let totalPages = $derived(
+		loggerState.totalCount > 0 && Number.isFinite(loggerState.limit) && loggerState.limit > 0
+			? Math.ceil(loggerState.totalCount / loggerState.limit)
+			: 1
+	);
+
+	function goToPage(page: number) {
+		if (page < 1 || page > totalPages) return;
+		currentPage = page;
+		fetchLogs();
+	}
+
+	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+	$effect(() => {
+		void limitInput;
+		clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => {
+			const val = Number(limitInput);
+			if (!Number.isFinite(val) || val < 1) return;
+			loggerState.limit = Math.min(Math.round(val), 1000);
+		}, 400);
+	});
+
+	$effect(() => {
+		void loggerState.selectedEndpoint;
+		void loggerState.timeRange;
+		void loggerState.filterMode;
+		void [...loggerState.selectedKeyPaths];
+		currentPage = 1;
+		void loggerState.timeRange;
+		if (loggerState.timeRange !== 'live') fetchLogs();
+	});
+
+	let server1ScrollContainer = $state<HTMLElement | undefined>(undefined);
+
+	let syncedExpandedPaths = new SvelteSet<string>();
 
 	const trendByLogId = $derived.by(() => {
 		const map = new SvelteMap<
@@ -374,6 +446,7 @@
 
 	async function fetchLogs(silent = false) {
 		if (!loggerState.selectedEndpoint) return;
+		if (!Number.isFinite(loggerState.limit) || loggerState.limit < 1) return;
 
 		if (!silent) loggerState.loading = true;
 		try {
@@ -381,19 +454,19 @@
 
 			if (loggerState.timeRange === 'live') {
 				url += `&limit=${loggerState.limit}`;
-			} else if (loggerState.timeRange !== 'all') {
-				const now = new Date();
-				let since;
-				if (loggerState.timeRange === '1h') {
-					since = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
-				} else if (loggerState.timeRange === '24h') {
-					since = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-				}
-				if (since) url += `&since=${encodeURIComponent(since)}`;
-
-				url += `&limit=${1000}`;
 			} else {
+				if (loggerState.timeRange !== 'all') {
+					const now = new Date();
+					let since;
+					if (loggerState.timeRange === '1h') {
+						since = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+					} else if (loggerState.timeRange === '24h') {
+						since = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+					}
+					if (since) url += `&since=${encodeURIComponent(since)}`;
+				}
 				url += `&limit=${loggerState.limit}`;
+				url += `&offset=${(currentPage - 1) * loggerState.limit}`;
 			}
 
 			if (loggerState.selectedKeyPaths.size > 0) {
@@ -455,23 +528,6 @@
 		}
 	});
 
-	function sortForDisplay<T>(arr: readonly T[]): T[] {
-		if (arr.length === 0) return [];
-		const allNumbers = arr.every((x) => typeof x === 'number' && !Number.isNaN(x));
-		if (allNumbers) {
-			return [...arr].sort((a, b) => (a as number) - (b as number));
-		}
-		const allObjects = arr.every((x) => typeof x === 'object' && x !== null);
-		if (allObjects) {
-			return [...arr].sort(sortById);
-		}
-		return [...arr].sort((a, b) => {
-			const sa = typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a);
-			const sb = typeof b === 'object' && b !== null ? JSON.stringify(b) : String(b);
-			return sa.localeCompare(sb);
-		});
-	}
-
 	function lastPathSegment(path: string): string {
 		const parts = path.split('.');
 		return parts[parts.length - 1];
@@ -479,13 +535,13 @@
 
 	function formatValue(value: unknown): string {
 		if (value === null || value === undefined) return '—';
-		if (Array.isArray(value)) return JSON.stringify(sortForDisplay(value));
+		if (Array.isArray(value)) return JSON.stringify(value);
 		if (typeof value === 'object') return JSON.stringify(value);
 		return String(value);
 	}
 
-	function valuesMatch(v1: unknown, v2: unknown): boolean {
-		return deepEqualIgnoreOrder(v1, v2, [], comparatorState.numericTolerancePercent);
+	function valuesMatch(v1: unknown, v2: unknown, tolerance?: number): boolean {
+		return deepEqualIgnoreOrder(v1, v2, [], tolerance ?? comparatorState.numericTolerancePercent);
 	}
 
 	function formatTimestamp(ts: string): string {
@@ -555,10 +611,33 @@
 			</div>
 			<div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
 				<span
-					class="rounded-full bg-green-100 px-3 py-1 font-medium text-green-700 dark:bg-green-900/30 dark:text-green-300"
+					class="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300"
 				>
-					{loggerState.totalCount} total logs
+					{loggerState.totalCount} total
 				</span>
+				{#if globalMatchStats.total > 0}
+					<span
+						class="rounded-full px-3 py-1 font-medium {globalMatchStats.matchPct >= 80
+							? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+							: globalMatchStats.matchPct >= 50
+								? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+								: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}"
+					>
+						{globalMatchStats.matchPct}% match
+					</span>
+					<span class="flex items-center gap-0.5">
+						{#each Array.from({ length: 10 }, (_u, i) => i) as i (i)}
+							<span
+								class="h-2.5 w-1.5 rounded-sm {i <
+								Math.round((globalMatchStats.matchPct / 100) * 10)
+									? 'bg-green-500 dark:bg-green-400'
+									: 'bg-gray-200 dark:bg-gray-700'}"
+							></span>
+						{/each}
+					</span>
+					<span class="text-green-600 dark:text-green-400">{globalMatchStats.matched} ✓</span>
+					<span class="text-red-500">{globalMatchStats.mismatched} ✗</span>
+				{/if}
 				{#if Object.keys(columnWidths).length > 0}
 					<button
 						onclick={resetColumnWidths}
@@ -668,7 +747,7 @@
 				<input
 					id="limit-input"
 					type="number"
-					bind:value={loggerState.limit}
+					bind:value={limitInput}
 					min="10"
 					max="1000"
 					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
@@ -1161,7 +1240,7 @@
 					</thead>
 					<tbody class="divide-y divide-gray-100 dark:divide-gray-700">
 						{#each filteredLogs as log (log.id)}
-							{@const match = valuesMatch(log.server1_value, log.server2_value)}
+							{@const match = matchCache.get(log.id) ?? false}
 							{@const isArray =
 								Array.isArray(log.server1_value) || Array.isArray(log.server2_value)}
 							<tr
@@ -1357,6 +1436,79 @@
 				</table>
 			</div>
 		</div>
+
+		{#if totalPages > 1 && loggerState.timeRange !== 'live'}
+			<div
+				class="flex items-center justify-between border-t border-gray-100 bg-gray-50/60 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/30"
+			>
+				<div class="text-xs text-gray-500 dark:text-gray-400">
+					Page {currentPage} of {totalPages} ({loggerState.totalCount} total)
+				</div>
+				<div class="flex items-center gap-1">
+					<button
+						disabled={currentPage <= 1}
+						onclick={() => goToPage(1)}
+						class="rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors {currentPage <= 1
+							? 'text-gray-300 dark:text-gray-600'
+							: 'text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'}"
+						title="First page"
+					>
+						«
+					</button>
+					<button
+						disabled={currentPage <= 1}
+						onclick={() => goToPage(currentPage - 1)}
+						class="rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors {currentPage <= 1
+							? 'text-gray-300 dark:text-gray-600'
+							: 'text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'}"
+						title="Previous page"
+					>
+						‹
+					</button>
+					{#each { length: Math.min(totalPages, 7) } as _, i (i)}
+						{@const pageNum = (() => {
+							if (totalPages <= 7) return i + 1;
+							const half = 3;
+							let start = currentPage - half;
+							if (start < 1) start = 1;
+							if (start + 6 > totalPages) start = totalPages - 6;
+							return start + i;
+						})()}
+						<button
+							onclick={() => goToPage(pageNum)}
+							class="min-w-[28px] rounded-lg px-2 py-1.5 text-xs font-medium transition-colors {pageNum ===
+							currentPage
+								? 'bg-green-600 text-white'
+								: 'text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'}"
+						>
+							{pageNum}
+						</button>
+					{/each}
+					<button
+						disabled={currentPage >= totalPages}
+						onclick={() => goToPage(currentPage + 1)}
+						class="rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors {currentPage >=
+						totalPages
+							? 'text-gray-300 dark:text-gray-600'
+							: 'text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'}"
+						title="Next page"
+					>
+						›
+					</button>
+					<button
+						disabled={currentPage >= totalPages}
+						onclick={() => goToPage(totalPages)}
+						class="rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors {currentPage >=
+						totalPages
+							? 'text-gray-300 dark:text-gray-600'
+							: 'text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'}"
+						title="Last page"
+					>
+						»
+					</button>
+				</div>
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -1486,8 +1638,8 @@
 	{@const s2Raw = Array.isArray(arrayDetailLog.server2_value)
 		? (arrayDetailLog.server2_value as unknown[])
 		: []}
-	{@const s1 = sortForDisplay(s1Raw)}
-	{@const s2 = sortForDisplay(s2Raw)}
+	{@const s1 = s1Raw}
+	{@const s2 = s2Raw}
 	{@const maxLen = Math.max(s1.length, s2.length)}
 	{@const rows = Array.from({ length: maxLen }, (_, i) => ({
 		index: i,
@@ -1495,7 +1647,10 @@
 		v2: i < s2.length ? s2[i] : undefined,
 		hasV1: i < s1.length,
 		hasV2: i < s2.length,
-		match: i < s1.length && i < s2.length && valuesMatch(s1[i], s2[i])
+		match:
+			i < s1.length &&
+			i < s2.length &&
+			valuesMatch(s1[i], s2[i], comparatorState.numericTolerancePercent)
 	}))}
 	{@const filteredRows = rows.filter((r) => {
 		if (arrayDetailFilter === 'all') return true;
@@ -1503,6 +1658,12 @@
 		return !r.match;
 	})}
 	{@const matchCount = rows.filter((r) => r.match).length}
+	{@const matchPct = maxLen > 0 ? Math.round((matchCount / maxLen) * 100) : 0}
+	{@const barSegments = 10}
+	{@const filledBars = Math.round((matchPct / 100) * barSegments)}
+	{@const mismatchCount = rows.filter((r) => r.hasV1 && r.hasV2 && !r.match).length}
+	{@const missing1Count = rows.filter((r) => !r.hasV1 && r.hasV2).length}
+	{@const missing2Count = rows.filter((r) => r.hasV1 && !r.hasV2).length}
 	<div
 		class="fixed inset-0 z-110 flex items-center justify-center bg-gray-900/50 p-4 backdrop-blur-sm sm:p-6"
 		role="dialog"
@@ -1521,10 +1682,42 @@
 							>{arrayDetailLog.key_path}</span
 						>
 					</h3>
-					<p class="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
-						{formatTimestamp(arrayDetailLog.timestamp)} • Server 1: {s1.length} • Server 2: {s2.length}
-						• {matchCount}/{maxLen} matching
-					</p>
+					<div class="mt-2 flex flex-wrap items-center gap-3">
+						<span
+							class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-bold {matchPct >=
+							80
+								? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+								: matchPct >= 50
+									? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+									: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}"
+						>
+							{matchPct}% match
+						</span>
+						<span class="flex items-center gap-0.5">
+							{#each Array(barSegments) as _, i (i)}
+								<span
+									class="h-3 w-2 rounded-sm {i < filledBars
+										? 'bg-green-500 dark:bg-green-400'
+										: 'bg-gray-200 dark:bg-gray-700'}"
+								></span>
+							{/each}
+						</span>
+					</div>
+					<div
+						class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400"
+					>
+						<span>{formatTimestamp(arrayDetailLog.timestamp)}</span>
+						<span>Server 1: {s1.length}</span>
+						<span>Server 2: {s2.length}</span>
+						<span class="text-green-600 dark:text-green-400">✓ {matchCount} matched</span>
+						<span class="text-red-500">✗ {mismatchCount} diff</span>
+						{#if missing2Count > 0}
+							<span class="text-orange-500">+{missing2Count} extra S1</span>
+						{/if}
+						{#if missing1Count > 0}
+							<span class="text-orange-500">+{missing1Count} extra S2</span>
+						{/if}
+					</div>
 				</div>
 				<button
 					aria-label="Close"

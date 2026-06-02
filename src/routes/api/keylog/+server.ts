@@ -100,8 +100,10 @@ export const GET: RequestHandler = async ({ url }) => {
 		const since = url.searchParams.get('since') || undefined;
 		const limitStr = url.searchParams.get('limit');
 		const limit = limitStr ? parseInt(limitStr, 10) : undefined;
+		const offsetStr = url.searchParams.get('offset');
+		const offset = offsetStr ? parseInt(offsetStr, 10) : undefined;
 
-		const logs = getKeyLogs({ endpoint, keyPath, since, limit });
+		const logs = getKeyLogs({ endpoint, keyPath, since, limit, offset });
 
 		const parsedLogs = logs.map((log) => ({
 			...log,

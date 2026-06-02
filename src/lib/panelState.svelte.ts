@@ -23,6 +23,10 @@ export class ComparatorState {
 	ignoredKeysInput = $state('');
 	watchedKeysInput = $state('');
 	watchSearch = $state('');
+	focusPaths = $state<string[]>([]);
+	focusPathSearch = $state('');
+	focusSuggestions = $state<string[]>([]);
+	showFocusSuggestions = $state(false);
 	focusPath = $state('');
 	isExpanded = $state(false);
 

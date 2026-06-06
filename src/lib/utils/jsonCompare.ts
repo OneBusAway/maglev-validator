@@ -398,8 +398,9 @@ export function getByPath(obj: unknown, path: string): unknown {
 		const token = tokens[idx];
 		if (token === '*') {
 			if (!isArray(current)) return undefined;
-			const sorted = [...current].sort(sortById);
-			return sorted.map((item) => walk(item, idx + 1));
+			const hasStableIds = current.every((item) => findIdValue(item) !== null);
+			const items = hasStableIds ? [...current].sort(sortById) : current;
+			return items.map((item) => walk(item, idx + 1));
 		}
 		if (isObject(current) || isArray(current)) {
 			return walk((current as Record<string | number, unknown>)[token], idx + 1);

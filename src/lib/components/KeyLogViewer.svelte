@@ -512,9 +512,8 @@
 		const capturedKey = traceKeyPath;
 		try {
 			let url = `/api/keylog?endpoint=${encodeURIComponent(capturedEndpoint)}&keyPath=${encodeURIComponent(capturedKey)}`;
-			const chartRange = chartTimeRange as string;
 			const isLive = loggerState.timeRange === 'live';
-			const range = isLive ? '1h' : chartRange;
+			const range = chartTimeRange;
 			const ms = {
 				'30m': 30 * 60 * 1000,
 				'1h': 60 * 60 * 1000,
@@ -541,6 +540,7 @@
 		void traceKeyPath;
 		void showChart;
 		void loggerState.selectedEndpoint;
+		void chartTimeRange;
 		if (showChart && traceKeyPath && loggerState.selectedEndpoint) {
 			fetchChartLogs();
 		} else {

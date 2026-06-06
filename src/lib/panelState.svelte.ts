@@ -56,13 +56,21 @@ export class ComparatorState {
 }
 
 export interface ProtobufFeedData {
-	header: Record<string, unknown>;
+	header: unknown;
 	tripUpdates: unknown[];
 	vehiclePositions: unknown[];
 	alerts: unknown[];
 	entityCount: number;
-	totals: Record<string, unknown>;
-	limited: boolean;
+	totals: {
+		tripUpdates: number;
+		vehiclePositions: number;
+		alerts: number;
+	};
+	limited: {
+		tripUpdates: boolean;
+		vehiclePositions: boolean;
+		alerts: boolean;
+	};
 }
 
 export class ProtobufState {

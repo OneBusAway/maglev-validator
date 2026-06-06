@@ -12,6 +12,25 @@
 		}
 	}
 
+	function saveUrlToHistory(url: string, history: string[]): string[] {
+		if (!url || history.includes(url)) return history;
+		return [url, ...history.filter((u) => u !== url)].slice(0, 5);
+	}
+
+	function saveUrlHistories() {
+		if (typeof localStorage !== 'undefined') {
+			localStorage.setItem('tripUpdatesUrlHistory', JSON.stringify(pbState.tripUpdatesUrlHistory));
+			localStorage.setItem(
+				'vehiclePositionsUrlHistory',
+				JSON.stringify(pbState.vehiclePositionsUrlHistory)
+			);
+			localStorage.setItem(
+				'serviceAlertsUrlHistory',
+				JSON.stringify(pbState.serviceAlertsUrlHistory)
+			);
+		}
+	}
+
 	onMount(() => {
 		window.addEventListener('keydown', handleKeyDown);
 
@@ -35,6 +54,17 @@
 				if (localStorage.gtfsRtLoggingEnabled !== undefined) {
 					pbState.loggingEnabled = localStorage.gtfsRtLoggingEnabled === 'true';
 				}
+			}
+
+			try {
+				const tuHistory = localStorage.getItem('tripUpdatesUrlHistory');
+				if (tuHistory) pbState.tripUpdatesUrlHistory = JSON.parse(tuHistory);
+				const vpHistory = localStorage.getItem('vehiclePositionsUrlHistory');
+				if (vpHistory) pbState.vehiclePositionsUrlHistory = JSON.parse(vpHistory);
+				const saHistory = localStorage.getItem('serviceAlertsUrlHistory');
+				if (saHistory) pbState.serviceAlertsUrlHistory = JSON.parse(saHistory);
+			} catch (e) {
+				console.error('Failed to parse URL history', e);
 			}
 		}
 	});
@@ -137,6 +167,26 @@
 		pbState.loading = true;
 		pbState.error = undefined;
 		saveToLocalStorage();
+
+		if (pbState.tripUpdatesUrl) {
+			pbState.tripUpdatesUrlHistory = saveUrlToHistory(
+				pbState.tripUpdatesUrl,
+				pbState.tripUpdatesUrlHistory
+			);
+		}
+		if (pbState.vehiclePositionsUrl) {
+			pbState.vehiclePositionsUrlHistory = saveUrlToHistory(
+				pbState.vehiclePositionsUrl,
+				pbState.vehiclePositionsUrlHistory
+			);
+		}
+		if (pbState.serviceAlertsUrl) {
+			pbState.serviceAlertsUrlHistory = saveUrlToHistory(
+				pbState.serviceAlertsUrl,
+				pbState.serviceAlertsUrlHistory
+			);
+		}
+		saveUrlHistories();
 
 		const sessionId = crypto.randomUUID();
 
@@ -372,9 +422,15 @@
 					<input
 						type="text"
 						bind:value={pbState.tripUpdatesUrl}
+						list="trip-updates-history"
 						placeholder="https://example.com/gtfs-rt/trip-updates"
 						class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-green-500/40"
 					/>
+					<datalist id="trip-updates-history">
+						{#each pbState.tripUpdatesUrlHistory as url (url)}
+							<option value={url}></option>
+						{/each}
+					</datalist>
 				</label>
 			</div>
 			<div>
@@ -385,9 +441,15 @@
 					<input
 						type="text"
 						bind:value={pbState.vehiclePositionsUrl}
+						list="vehicle-positions-history"
 						placeholder="https://example.com/gtfs-rt/vehicle-positions"
 						class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-green-500/40"
 					/>
+					<datalist id="vehicle-positions-history">
+						{#each pbState.vehiclePositionsUrlHistory as url (url)}
+							<option value={url}></option>
+						{/each}
+					</datalist>
 				</label>
 			</div>
 			<div>
@@ -398,9 +460,15 @@
 					<input
 						type="text"
 						bind:value={pbState.serviceAlertsUrl}
+						list="service-alerts-history"
 						placeholder="https://example.com/gtfs-rt/service-alerts"
 						class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-green-500/40"
 					/>
+					<datalist id="service-alerts-history">
+						{#each pbState.serviceAlertsUrlHistory as url (url)}
+							<option value={url}></option>
+						{/each}
+					</datalist>
 				</label>
 			</div>
 		</div>

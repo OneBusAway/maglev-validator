@@ -56,19 +56,30 @@ export class ComparatorState {
 }
 
 export interface ProtobufFeedData {
-	header: Record<string, unknown>;
+	header: unknown;
 	tripUpdates: unknown[];
 	vehiclePositions: unknown[];
 	alerts: unknown[];
 	entityCount: number;
-	totals: Record<string, unknown>;
-	limited: boolean;
+	totals: {
+		tripUpdates: number;
+		vehiclePositions: number;
+		alerts: number;
+	};
+	limited: {
+		tripUpdates: boolean;
+		vehiclePositions: boolean;
+		alerts: boolean;
+	};
 }
 
 export class ProtobufState {
 	tripUpdatesUrl = $state('');
 	vehiclePositionsUrl = $state('');
 	serviceAlertsUrl = $state('');
+	tripUpdatesUrlHistory = $state<string[]>([]);
+	vehiclePositionsUrlHistory = $state<string[]>([]);
+	serviceAlertsUrlHistory = $state<string[]>([]);
 	headers = $state<{ key: string; value: string }[]>([{ key: '', value: '' }]);
 
 	loading = $state(false);

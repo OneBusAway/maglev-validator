@@ -134,17 +134,10 @@
 	});
 
 	$effect(() => {
-		if (cmpState.selectedEndpoint !== cmpState.lastEndpoint) {
-			if (typeof localStorage !== 'undefined') {
-				// Only update if we changed endpoints locally
-				if (cmpState.lastEndpoint !== '') {
-					cmpState.ignoredKeysInput =
-						localStorage.getItem(`ignore_${cmpState.selectedEndpoint}`) || '';
-					cmpState.watchedKeysInput =
-						localStorage.getItem(`watch_${cmpState.selectedEndpoint}`) || '';
-				}
-			}
-			cmpState.lastEndpoint = cmpState.selectedEndpoint;
+		const endpoint = cmpState.selectedEndpoint;
+		if (typeof localStorage !== 'undefined') {
+			cmpState.ignoredKeysInput = localStorage.getItem(`ignore_${endpoint}`) || '';
+			cmpState.watchedKeysInput = localStorage.getItem(`watch_${endpoint}`) || '';
 		}
 	});
 

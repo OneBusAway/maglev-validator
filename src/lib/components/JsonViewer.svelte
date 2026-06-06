@@ -33,26 +33,36 @@
 	let rootsAreEqual = $state<boolean | null>(null);
 	let lastDataRef = $state<unknown>(null);
 	let lastOtherDataRef = $state<unknown>(null);
+	let pendingTimer: ReturnType<typeof setTimeout> | undefined;
 
 	$effect(() => {
+		void numericTolerancePercent;
+		void ignoredKeys;
+
+		if (pendingTimer !== undefined) {
+			clearTimeout(pendingTimer);
+			pendingTimer = undefined;
+		}
+
 		if (data !== lastDataRef || otherData !== lastOtherDataRef) {
 			lastDataRef = data;
 			lastOtherDataRef = otherData;
-			rootsAreEqual = null;
-
-			if (data !== undefined && otherData !== undefined) {
-				setTimeout(() => {
-					rootsAreEqual = deepEqualIgnoreOrder(
-						data,
-						otherData,
-						ignoredKeys,
-						numericTolerancePercent
-					);
-				}, 0);
-			} else {
-				rootsAreEqual = false;
-			}
 		}
+		rootsAreEqual = null;
+		if (data !== undefined && otherData !== undefined) {
+			pendingTimer = setTimeout(() => {
+				rootsAreEqual = deepEqualIgnoreOrder(data, otherData, ignoredKeys, numericTolerancePercent);
+			}, 0);
+		} else {
+			rootsAreEqual = false;
+		}
+
+		return () => {
+			if (pendingTimer !== undefined) {
+				clearTimeout(pendingTimer);
+				pendingTimer = undefined;
+			}
+		};
 	});
 
 	function expandAll() {

@@ -6,6 +6,7 @@
 	import { browser } from '$app/environment';
 	import { logState } from '$lib/logState.svelte';
 	import { comparatorState as cmpState } from '$lib/panelState.svelte';
+	import { sortById, findIdValue } from '$lib/utils/jsonCompare';
 
 	let isLogging = $state(false);
 	let server1UrlHistory = $state<string[]>([]);
@@ -179,7 +180,9 @@
 
 			if (part === '*') {
 				if (!Array.isArray(current)) return undefined;
-				return current.map((item) => walk(item, idx + 1));
+				const hasStableIds = current.every((item) => findIdValue(item) !== null);
+				const items = hasStableIds ? [...current].sort(sortById) : current;
+				return items.map((item) => walk(item, idx + 1));
 			}
 
 			if (Array.isArray(current)) {

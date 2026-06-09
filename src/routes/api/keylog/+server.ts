@@ -15,12 +15,13 @@ import {
 export const POST: RequestHandler = async ({ request }) => {
 	try {
 		const body = await request.json();
-		const { endpoint, timestamp, keys, response1, response2 } = body as {
+		const { endpoint, timestamp, keys, response1, response2, idValue } = body as {
 			endpoint: string;
 			timestamp: string;
 			keys: Array<{ path: string; server1Value: unknown; server2Value: unknown }>;
 			response1?: unknown;
 			response2?: unknown;
+			idValue?: string | null;
 		};
 
 		if (!endpoint || !timestamp || !keys || !Array.isArray(keys)) {
@@ -33,7 +34,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				endpoint,
 				response1,
 				response2,
-				keys
+				keys: keys.map((k) => ({ ...k, idValue: idValue || null }))
 			});
 		} else {
 			const entries: InsertKeyLogParams[] = keys.map((key) => ({
@@ -41,7 +42,8 @@ export const POST: RequestHandler = async ({ request }) => {
 				endpoint,
 				key_path: key.path,
 				server1_value: key.server1Value,
-				server2_value: key.server2Value
+				server2_value: key.server2Value,
+				id_value: idValue || null
 			}));
 			insertKeyLogs(entries);
 		}
@@ -102,8 +104,9 @@ export const GET: RequestHandler = async ({ url }) => {
 		const limit = limitStr ? parseInt(limitStr, 10) : undefined;
 		const offsetStr = url.searchParams.get('offset');
 		const offset = offsetStr ? parseInt(offsetStr, 10) : undefined;
+		const idValue = url.searchParams.get('idValue') || undefined;
 
-		const logs = getKeyLogs({ endpoint, keyPath, since, limit, offset });
+		const logs = getKeyLogs({ endpoint, keyPath, since, limit, offset, idValue });
 
 		const parsedLogs = logs.map((log) => ({
 			...log,

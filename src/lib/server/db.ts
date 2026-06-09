@@ -18,10 +18,16 @@ export function getDatabase(): Database.Database {
 function initializeDatabase(database: Database.Database) {
 	const tableInfo = database.pragma('table_info(key_logs)') as Array<{ name: string }>;
 	const hasRequestId = tableInfo.some((col) => col.name === 'request_id');
+	const hasIdValue = tableInfo.some((col) => col.name === 'id_value');
 
 	if (tableInfo.length > 0 && !hasRequestId) {
 		console.log('Migrating database: Dropping old key_logs table to support full response logging');
 		database.exec('DROP TABLE IF EXISTS key_logs');
+	}
+
+	if (tableInfo.length > 0 && !hasIdValue) {
+		console.log('Migrating database: Adding id_value column to key_logs');
+		database.exec('ALTER TABLE key_logs ADD COLUMN id_value TEXT');
 	}
 
 	database.exec(`
@@ -42,6 +48,7 @@ function initializeDatabase(database: Database.Database) {
 			key_path TEXT NOT NULL,
 			server1_value TEXT,
 			server2_value TEXT,
+			id_value TEXT,
 			created_at INTEGER DEFAULT (strftime('%s', 'now')),
 			FOREIGN KEY(request_id) REFERENCES request_logs(id)
 		);
@@ -154,6 +161,7 @@ export interface InsertKeyLogParams {
 	key_path: string;
 	server1_value: unknown;
 	server2_value: unknown;
+	id_value?: string | null;
 }
 
 export interface InsertLogBatchParams {
@@ -165,6 +173,7 @@ export interface InsertLogBatchParams {
 		path: string;
 		server1Value: unknown;
 		server2Value: unknown;
+		idValue?: string | null;
 	}>;
 }
 
@@ -177,8 +186,8 @@ export function insertLogBatch(params: InsertLogBatchParams): void {
 	`);
 
 	const insertKey = db.prepare(`
-		INSERT INTO key_logs (request_id, timestamp, endpoint, key_path, server1_value, server2_value)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO key_logs (request_id, timestamp, endpoint, key_path, server1_value, server2_value, id_value)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`);
 
 	const transaction = db.transaction(() => {
@@ -197,7 +206,8 @@ export function insertLogBatch(params: InsertLogBatchParams): void {
 				params.endpoint,
 				key.path,
 				JSON.stringify(key.server1Value),
-				JSON.stringify(key.server2Value)
+				JSON.stringify(key.server2Value),
+				key.idValue || null
 			);
 		}
 	});
@@ -208,8 +218,8 @@ export function insertLogBatch(params: InsertLogBatchParams): void {
 export function insertKeyLogs(entries: InsertKeyLogParams[]): void {
 	const db = getDatabase();
 	const stmt = db.prepare(`
-		INSERT INTO key_logs (timestamp, endpoint, key_path, server1_value, server2_value)
-		VALUES (?, ?, ?, ?, ?)
+		INSERT INTO key_logs (timestamp, endpoint, key_path, server1_value, server2_value, id_value)
+		VALUES (?, ?, ?, ?, ?, ?)
 	`);
 
 	const insertMany = db.transaction((items: InsertKeyLogParams[]) => {
@@ -219,7 +229,8 @@ export function insertKeyLogs(entries: InsertKeyLogParams[]): void {
 				item.endpoint,
 				item.key_path,
 				JSON.stringify(item.server1_value),
-				JSON.stringify(item.server2_value)
+				JSON.stringify(item.server2_value),
+				item.id_value || null
 			);
 		}
 	});
@@ -233,6 +244,7 @@ export interface GetKeyLogsParams {
 	since?: string;
 	limit?: number;
 	offset?: number;
+	idValue?: string;
 }
 
 export function getKeyLogs(params: GetKeyLogsParams = {}): KeyLogEntry[] {
@@ -262,6 +274,11 @@ export function getKeyLogs(params: GetKeyLogsParams = {}): KeyLogEntry[] {
 	if (params.since) {
 		query += ' AND timestamp >= ?';
 		queryParams.push(params.since);
+	}
+
+	if (params.idValue) {
+		query += ' AND id_value = ?';
+		queryParams.push(params.idValue);
 	}
 
 	query += ' ORDER BY timestamp DESC, key_path ASC';

@@ -45,12 +45,25 @@
 		return map;
 	});
 
+	const availableIds = $derived(
+		[
+			...new Set(
+				loggerState.logs
+					.map((l) => l.id_value)
+					.filter((v): v is string => v !== null && v !== undefined)
+			)
+		].sort()
+	);
+
 	const filteredLogs = $derived(
 		loggerState.logs.filter((log) => {
 			if (
 				loggerState.selectedKeyPaths.size > 0 &&
 				!loggerState.selectedKeyPaths.has(log.key_path)
 			) {
+				return false;
+			}
+			if (loggerState.idFilter && log.id_value !== loggerState.idFilter) {
 				return false;
 			}
 			if (loggerState.filterMode === 'all') return true;
@@ -439,6 +452,9 @@
 						url += `&keyPath=${encodeURIComponent(kp)}`;
 					}
 				}
+				if (loggerState.idFilter) {
+					url += `&idValue=${encodeURIComponent(loggerState.idFilter)}`;
+				}
 			}
 			const res = await fetch(url);
 			const data = await res.json();
@@ -479,6 +495,10 @@
 				}
 			}
 
+			if (loggerState.idFilter) {
+				url += `&idValue=${encodeURIComponent(loggerState.idFilter)}`;
+			}
+
 			const res = await fetch(url);
 			const data = await res.json();
 			loggerState.logs = data.logs || [];
@@ -510,6 +530,7 @@
 		if (!loggerState.selectedEndpoint || !traceKeyPath) return;
 		const capturedEndpoint = loggerState.selectedEndpoint;
 		const capturedKey = traceKeyPath;
+		const capturedIdFilter = loggerState.idFilter;
 		try {
 			let url = `/api/keylog?endpoint=${encodeURIComponent(capturedEndpoint)}&keyPath=${encodeURIComponent(capturedKey)}`;
 			const isLive = loggerState.timeRange === 'live';
@@ -526,6 +547,9 @@
 				const since = new Date(Date.now() - rangeMs).toISOString();
 				url += `&since=${encodeURIComponent(since)}`;
 			}
+			if (capturedIdFilter) {
+				url += `&idValue=${encodeURIComponent(capturedIdFilter)}`;
+			}
 			url += `&limit=${isLive ? 500 : 10000}`;
 			const res = await fetch(url);
 			if (capturedEndpoint !== loggerState.selectedEndpoint || capturedKey !== traceKeyPath) return;
@@ -541,6 +565,7 @@
 		void showChart;
 		void loggerState.selectedEndpoint;
 		void chartTimeRange;
+		void loggerState.idFilter;
 		if (showChart && traceKeyPath && loggerState.selectedEndpoint) {
 			fetchChartLogs();
 		} else {
@@ -774,7 +799,7 @@
 				/>
 			</div>
 
-			<div class="col-span-4">
+			<div class="col-span-2">
 				<div
 					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 				>
@@ -825,6 +850,36 @@
 						</svg>
 						±{comparatorState.numericTolerancePercent}% tolerance
 					</div>
+				{/if}
+			</div>
+
+			<div class="col-span-2">
+				<label
+					for="id-filter-select"
+					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+				>
+					ID Filter
+				</label>
+				<select
+					id="id-filter-select"
+					value={loggerState.idFilter}
+					onchange={(e) => {
+						loggerState.idFilter = (e.target as HTMLSelectElement).value;
+					}}
+					class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+				>
+					<option value="">All IDs</option>
+					{#each availableIds as id (id)}
+						<option value={id}>{id}</option>
+					{/each}
+				</select>
+				{#if loggerState.idFilter}
+					<button
+						onclick={() => (loggerState.idFilter = '')}
+						class="mt-1 text-[11px] font-medium text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+					>
+						Clear ID filter
+					</button>
 				{/if}
 			</div>
 
@@ -1219,6 +1274,19 @@
 							</th>
 							<th
 								class="relative px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								style={columnWidths.idvalue ? `width: ${columnWidths.idvalue}px` : ''}
+							>
+								ID Value
+								<button
+									aria-label="Resize ID value column"
+									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-gray-600/20 dark:hover:bg-green-500/40"
+									onmousedown={(e) => startResize(e, 'idvalue')}
+								>
+									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-gray-600"></div>
+								</button>
+							</th>
+							<th
+								class="relative px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 								style={columnWidths.server1 ? `width: ${columnWidths.server1}px` : ''}
 							>
 								Server 1
@@ -1278,6 +1346,12 @@
 									title={log.key_path}
 								>
 									{lastPathSegment(log.key_path)}
+								</td>
+								<td
+									class="truncate px-4 py-3 font-mono text-sm text-gray-500 dark:text-gray-500"
+									title={log.id_value ?? ''}
+								>
+									{log.id_value || '-'}
 								</td>
 								<td
 									class="overflow-hidden px-4 py-3 font-mono text-sm text-gray-700 dark:text-gray-300"

@@ -2,7 +2,7 @@
 	import { endpoints } from '$lib/endpoints';
 	import DiffViewer from '$lib/components/DiffViewer.svelte';
 	import { onMount, onDestroy, untrack } from 'svelte';
-	import { SvelteSet } from 'svelte/reactivity';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { browser } from '$app/environment';
 	import { logState } from '$lib/logState.svelte';
 	import { comparatorState as cmpState } from '$lib/panelState.svelte';
@@ -14,6 +14,18 @@
 	let isProcessingData = $state(false);
 	let processingMessage = $state('');
 	let inputHistory = $state<Record<string, string[]>>({});
+	let batchIdsInput = $state('');
+	const BATCH_IDS_KEY = 'batchIdsInput';
+
+	function saveBatchIds() {
+		if (typeof localStorage !== 'undefined') {
+			localStorage.setItem(BATCH_IDS_KEY, batchIdsInput);
+		}
+	}
+
+	const hasInPathParam = $derived(
+		endpoints.find((e) => e.id === cmpState.selectedEndpoint)?.params.some((p) => p.inPath) ?? false
+	);
 
 	const watchedKeys = $derived(
 		cmpState.watchedKeysInput
@@ -96,6 +108,7 @@
 			}
 
 			loadInputHistory();
+			batchIdsInput = localStorage.getItem(BATCH_IDS_KEY) || '';
 
 			// Load saved params for all endpoints
 			if (Object.keys(cmpState.endpointParams).length === 0 && localStorage.comparatorParams) {
@@ -199,7 +212,7 @@
 		return walk(obj, 0);
 	}
 
-	async function logWatchedKeys(resp1: unknown, resp2: unknown) {
+	async function logWatchedKeys(resp1: unknown, resp2: unknown, idValue?: string) {
 		if (watchedKeys.length === 0) return;
 
 		const keys = watchedKeys.map((keyPath) => ({
@@ -218,7 +231,8 @@
 					timestamp: new Date().toISOString(),
 					keys,
 					response1: resp1,
-					response2: resp2
+					response2: resp2,
+					idValue: idValue || null
 				})
 			});
 			logState.triggerUpdate();
@@ -335,45 +349,119 @@
 			return;
 		}
 
-		let timeoutId: number | undefined = undefined;
-		let didTimeout = false;
+		const idParamName = endpoint.params.find((p) => p.inPath)?.name;
+
+		const parsedBatchIds = batchIdsInput
+			.split('\n')
+			.map((s) => s.trim())
+			.filter((s) => s.length > 0);
+
+		const isBatchMode = parsedBatchIds.length > 1 && !!idParamName;
+		const idsToFetch = idParamName
+			? isBatchMode
+				? parsedBatchIds
+				: [cmpState.params[idParamName]].filter(Boolean)
+			: [''];
+
+		if (idsToFetch.length === 0) {
+			cmpState.error = 'Please enter an ID value';
+			cmpState.loading = false;
+			return;
+		}
+
+		const batchResults = new SvelteMap<
+			string,
+			{
+				response1: unknown;
+				response2: unknown;
+				currentUrl1: string;
+				currentUrl2: string;
+				error?: string;
+			}
+		>();
+
+		const fetchPair = async (id: string) => {
+			const params = idParamName ? { ...cmpState.params, [idParamName]: id } : cmpState.params;
+			const url1 = buildUrl(cmpState.server1Base, endpoint, params);
+			const url2 = buildUrl(cmpState.server2Base, endpoint, params);
+
+			const controller = new AbortController();
+			const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+			try {
+				const res = await fetch('/api/proxy', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ url1, url2 }),
+					signal: controller.signal
+				});
+				clearTimeout(timeoutId);
+				const data = await res.json();
+				if (data.error) {
+					return { id, result: { error: data.error } as const };
+				}
+				return {
+					id,
+					result: { response1: data.response1, response2: data.response2, url1, url2 } as const
+				};
+			} catch (e) {
+				clearTimeout(timeoutId);
+				const msg = e instanceof Error ? e.message : 'Unknown error';
+				return { id, result: { error: msg } as const };
+			}
+		};
+
 		try {
-			const url1 = buildUrl(cmpState.server1Base, endpoint, cmpState.params);
-			const url2 = buildUrl(cmpState.server2Base, endpoint, cmpState.params);
+			const settled = await Promise.allSettled(idsToFetch.map((id) => fetchPair(id)));
 
-			cmpState.currentUrl1 = url1;
-			cmpState.currentUrl2 = url2;
-
-			const timeoutPromise = new Promise((_, reject) => {
-				timeoutId = window.setTimeout(() => {
-					didTimeout = true;
-					reject(new Error('Request timed out after 5 seconds'));
-				}, 5000);
-			});
-
-			const fetchPromise = fetch('/api/proxy', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ url1, url2 })
-			});
-
-			const response = await Promise.race([fetchPromise, timeoutPromise]);
-			if (didTimeout) return;
-
-			if (timeoutId !== undefined) clearTimeout(timeoutId);
-
-			const data = await (response as Response).json();
-
-			if (data.error) {
-				cmpState.error = data.error;
-				return;
+			for (const s of settled) {
+				if (s.status === 'fulfilled') {
+					const { id, result } = s.value;
+					if ('error' in result) {
+						batchResults.set(id, {
+							response1: null,
+							response2: null,
+							currentUrl1: '',
+							currentUrl2: '',
+							error: result.error
+						});
+					} else {
+						batchResults.set(id, {
+							response1: result.response1,
+							response2: result.response2,
+							currentUrl1: result.url1,
+							currentUrl2: result.url2
+						});
+					}
+				}
 			}
 
-			cmpState.response1 = data.response1;
-			cmpState.response2 = data.response2;
+			const firstId = idsToFetch[0];
+			const firstResult = batchResults.get(firstId);
+
+			if (isBatchMode) {
+				cmpState.batchIds = idsToFetch;
+				cmpState.batchResults = batchResults;
+				const prevSelected = cmpState.selectedBatchId;
+				cmpState.selectedBatchId =
+					batchResults.has(prevSelected) && idsToFetch.includes(prevSelected)
+						? prevSelected
+						: firstId;
+			}
+
+			if (firstResult) {
+				if (firstResult.error) {
+					cmpState.error = firstResult.error;
+				} else {
+					cmpState.response1 = firstResult.response1;
+					cmpState.response2 = firstResult.response2;
+					cmpState.currentUrl1 = firstResult.currentUrl1;
+					cmpState.currentUrl2 = firstResult.currentUrl2;
+				}
+			}
 
 			const dataSize =
-				JSON.stringify(data.response1).length + JSON.stringify(data.response2).length;
+				JSON.stringify(cmpState.response1).length + JSON.stringify(cmpState.response2).length;
 			if (dataSize > 500000) {
 				isProcessingData = true;
 				processingMessage = 'Processing large response...';
@@ -402,16 +490,29 @@
 				isProcessingData = false;
 			}
 
-			await logWatchedKeys(data.response1, data.response2);
-		} catch (e) {
-			if (didTimeout) {
-				cmpState.error = 'Request timed out. Please try again.';
-			} else {
-				cmpState.error = e instanceof Error ? e.message : 'Unknown error';
+			for (const [id, result] of batchResults) {
+				if (!result.error) {
+					await logWatchedKeys(result.response1, result.response2, id);
+				}
 			}
+		} catch (e) {
+			cmpState.error = e instanceof Error ? e.message : 'Unknown error';
 		} finally {
-			if (timeoutId !== undefined) clearTimeout(timeoutId);
 			cmpState.loading = false;
+		}
+	}
+
+	function selectBatchId(id: string) {
+		cmpState.selectedBatchId = id;
+		const result = cmpState.batchResults.get(id);
+		if (result) {
+			cmpState.response1 = result.response1;
+			cmpState.response2 = result.response2;
+			cmpState.currentUrl1 = result.currentUrl1;
+			cmpState.currentUrl2 = result.currentUrl2;
+			if (result.error) {
+				cmpState.error = result.error;
+			}
 		}
 	}
 
@@ -551,6 +652,31 @@
 					{/if}
 				</div>
 			{/each}
+
+			{#if hasInPathParam}
+				<div class="col-span-3">
+					<label
+						for="batch-ids"
+						class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+					>
+						Batch IDs
+						<span class="text-xs font-normal text-gray-400 normal-case"
+							>(one per line for multi-ID comparison)</span
+						>
+					</label>
+					<textarea
+						id="batch-ids"
+						value={batchIdsInput}
+						oninput={(e) => {
+							batchIdsInput = (e.target as HTMLTextAreaElement).value;
+							saveBatchIds();
+						}}
+						placeholder="1_12345&#10;1_67890&#10;1_11111"
+						rows="3"
+						class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600"
+					></textarea>
+				</div>
+			{/if}
 
 			<div class="col-span-2">
 				<label
@@ -733,7 +859,30 @@
 
 {#if cmpState.response1 || cmpState.response2}
 	<div class="mb-4 flex items-center justify-between">
-		<h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Response Comparison</h2>
+		<div class="flex items-center gap-4">
+			<h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Response Comparison</h2>
+			{#if cmpState.batchIds.length > 1}
+				<div class="flex items-center gap-2">
+					<select
+						class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+						value={cmpState.selectedBatchId}
+						onchange={(e) => selectBatchId(e.currentTarget.value)}
+					>
+						{#each cmpState.batchIds as id (id)}
+							<option value={id}
+								>{id}{cmpState.batchResults.get(id)?.error ? ' (failed)' : ''}</option
+							>
+						{/each}
+					</select>
+					<span class="text-xs text-gray-400">
+						{cmpState.selectedBatchId &&
+						cmpState.batchResults.get(cmpState.selectedBatchId)?.currentUrl1
+							? '1 URL shown'
+							: ''}
+					</span>
+				</div>
+			{/if}
+		</div>
 		<div class="flex items-center gap-6 text-sm font-medium">
 			<span class="mr-4 flex items-center gap-2 text-gray-600 dark:text-gray-400">
 				<span class="h-3 w-3 rounded bg-red-500"></span> Different

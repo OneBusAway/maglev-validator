@@ -172,6 +172,125 @@ export const endpoints = [
 		]
 	},
 	{
+		id: 'arrivals-and-departures-for-location',
+		name: 'Arrivals and Departures for Location',
+		path: 'arrivals-and-departures-for-location.json',
+		params: [
+			{
+				name: 'lat',
+				label: 'Latitude',
+				required: true,
+				inPath: false,
+				default: '',
+				placeholder: 'e.g., 38.5382'
+			},
+			{
+				name: 'lon',
+				label: 'Longitude',
+				required: true,
+				inPath: false,
+				default: '',
+				placeholder: 'e.g., -121.7617'
+			},
+			{
+				name: 'key',
+				label: 'API Key',
+				required: true,
+				inPath: false,
+				default: 'test',
+				placeholder: 'API Key'
+			},
+			{
+				name: 'radius',
+				label: 'Radius',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Search radius in meters (default: 10000)'
+			},
+			{
+				name: 'latSpan',
+				label: 'Latitude Span',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'e.g., 0.01 (alternative to radius)'
+			},
+			{
+				name: 'lonSpan',
+				label: 'Longitude Span',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'e.g., 0.01 (alternative to radius)'
+			},
+			{
+				name: 'time',
+				label: 'Time',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Unix timestamp (optional)'
+			},
+			{
+				name: 'minutesBefore',
+				label: 'Minutes Before',
+				required: false,
+				inPath: false,
+				default: '5',
+				placeholder: 'Include vehicles arrived in previous n minutes (default: 5, max: 60)'
+			},
+			{
+				name: 'minutesAfter',
+				label: 'Minutes After',
+				required: false,
+				inPath: false,
+				default: '35',
+				placeholder: 'Include vehicles arriving in next n minutes (default: 35, max: 240)'
+			},
+			{
+				name: 'frequencyMinutesBefore',
+				label: 'Frequency Minutes Before',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Defaults to minutesBefore value'
+			},
+			{
+				name: 'frequencyMinutesAfter',
+				label: 'Frequency Minutes After',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Defaults to minutesAfter value'
+			},
+			{
+				name: 'maxCount',
+				label: 'Max Count',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Maximum arrivals/departures to return (default: 250)'
+			},
+			{
+				name: 'emptyReturnsNotFound',
+				label: 'Empty Returns Not Found',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Return 404 when no stops found (default: false)'
+			},
+			{
+				name: 'routeType',
+				label: 'Route Type',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Comma-delimited route types (e.g., 0,3)'
+			}
+		]
+	},
+	{
 		id: 'stop',
 		name: 'Stop',
 		path: 'stop/{id}.json',

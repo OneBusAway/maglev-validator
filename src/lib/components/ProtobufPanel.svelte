@@ -82,6 +82,7 @@
 				feeds = feeds.map((f, i) => ({ ...f, id: f.id || `feed-${i}` }));
 				pbState.configFeeds = feeds;
 				pbState.configFileName = file.name;
+				pbState.feedData = null;
 				selectAllFeeds();
 				switchToFeed(feeds[0].id!);
 			} catch {
@@ -138,6 +139,8 @@
 					alerts: feed['service-alerts-url'] || ''
 				};
 			}
+		} else {
+			pbState.feedData = null;
 		}
 	}
 
@@ -250,6 +253,24 @@
 					}
 				}
 
+				const mergedLimited = { tripUpdates: false, vehiclePositions: false, alerts: false };
+				const mergedHasMore = { tripUpdates: false, vehiclePositions: false, alerts: false };
+				for (const r of urlResults) {
+					if (r.status === 'fulfilled' && r.value.data) {
+						const d = r.value.data;
+						if (d.limited) {
+							if (d.limited.tripUpdates) mergedLimited.tripUpdates = true;
+							if (d.limited.vehiclePositions) mergedLimited.vehiclePositions = true;
+							if (d.limited.alerts) mergedLimited.alerts = true;
+						}
+						if (d.pagination?.hasMore) {
+							if (d.pagination.hasMore.tripUpdates) mergedHasMore.tripUpdates = true;
+							if (d.pagination.hasMore.vehiclePositions) mergedHasMore.vehiclePositions = true;
+							if (d.pagination.hasMore.alerts) mergedHasMore.alerts = true;
+						}
+					}
+				}
+
 				const totals = {
 					tripUpdates: allTripUpdates.length,
 					vehiclePositions: allVehiclePositions.length,
@@ -265,7 +286,7 @@
 						alerts: allAlerts,
 						entityCount: allTripUpdates.length + allVehiclePositions.length + allAlerts.length,
 						totals,
-						limited: { tripUpdates: false, vehiclePositions: false, alerts: false }
+						limited: mergedLimited
 					}
 				};
 
@@ -275,6 +296,7 @@
 				};
 
 				pbState.loadingFeeds = { ...pbState.loadingFeeds, [feedId]: false };
+				pbState.paginationState.hasMore = mergedHasMore;
 
 				if (!pbState.activeDisplayFeedId || !pbState.feedResults[pbState.activeDisplayFeedId]) {
 					switchToFeed(feedId);
@@ -369,6 +391,24 @@
 			}
 		}
 
+		const mergedLimited = { tripUpdates: false, vehiclePositions: false, alerts: false };
+		const mergedHasMore = { tripUpdates: false, vehiclePositions: false, alerts: false };
+		for (const r of urlResults) {
+			if (r.status === 'fulfilled' && r.value.data) {
+				const d = r.value.data;
+				if (d.limited) {
+					if (d.limited.tripUpdates) mergedLimited.tripUpdates = true;
+					if (d.limited.vehiclePositions) mergedLimited.vehiclePositions = true;
+					if (d.limited.alerts) mergedLimited.alerts = true;
+				}
+				if (d.pagination?.hasMore) {
+					if (d.pagination.hasMore.tripUpdates) mergedHasMore.tripUpdates = true;
+					if (d.pagination.hasMore.vehiclePositions) mergedHasMore.vehiclePositions = true;
+					if (d.pagination.hasMore.alerts) mergedHasMore.alerts = true;
+				}
+			}
+		}
+
 		pbState.feedResults = {
 			...pbState.feedResults,
 			[feedId]: {
@@ -382,12 +422,13 @@
 					vehiclePositions: allVehiclePositions.length,
 					alerts: allAlerts.length
 				},
-				limited: { tripUpdates: false, vehiclePositions: false, alerts: false }
+				limited: mergedLimited
 			}
 		};
 
 		pbState.feedTiming = { ...pbState.feedTiming, [feedId]: timing };
 		pbState.loadingFeeds = { ...pbState.loadingFeeds, [feedId]: false };
+		pbState.paginationState.hasMore = mergedHasMore;
 
 		if (pbState.activeDisplayFeedId === feedId) {
 			switchToFeed(feedId);
@@ -502,16 +543,23 @@
 
 	function startAutoRefresh() {
 		stopAutoRefresh();
+		pbState.isRefreshing = false;
 		if (!pbState.feedData && pbState.configFeeds.length > 0) fetchAllConfigFeeds();
 		else if (!pbState.feedData) fetchAllFeedsManual();
 
-		pbState.refreshTimer = window.setInterval(() => {
-			if (pbState.configFeeds.length > 0 && pbState.activeDisplayFeedId) {
-				fetchSingleConfigFeed(pbState.activeDisplayFeedId);
-			} else if (pbState.configFeeds.length > 0) {
-				fetchAllConfigFeeds();
-			} else {
-				fetchAllFeedsManual();
+		pbState.refreshTimer = window.setInterval(async () => {
+			if (pbState.isRefreshing) return;
+			pbState.isRefreshing = true;
+			try {
+				if (pbState.configFeeds.length > 0 && pbState.activeDisplayFeedId) {
+					await fetchSingleConfigFeed(pbState.activeDisplayFeedId);
+				} else if (pbState.configFeeds.length > 0) {
+					await fetchAllConfigFeeds();
+				} else {
+					await fetchAllFeedsManual();
+				}
+			} finally {
+				pbState.isRefreshing = false;
 			}
 		}, pbState.refreshInterval * 1000);
 	}
@@ -601,6 +649,17 @@
 				...(alertData?.alerts || [])
 			];
 
+			const manualLimited: { tripUpdates: boolean; vehiclePositions: boolean; alerts: boolean } = {
+				tripUpdates: tripData?.limited?.tripUpdates ?? false,
+				vehiclePositions: vehicleData?.limited?.vehiclePositions ?? false,
+				alerts: alertData?.limited?.alerts ?? false
+			};
+			const manualHasMore: { tripUpdates: boolean; vehiclePositions: boolean; alerts: boolean } = {
+				tripUpdates: tripData?.pagination?.hasMore?.tripUpdates ?? false,
+				vehiclePositions: vehicleData?.pagination?.hasMore?.vehiclePositions ?? false,
+				alerts: alertData?.pagination?.hasMore?.alerts ?? false
+			};
+
 			pbState.feedData = {
 				header: tripData?.header || vehicleData?.header || alertData?.header,
 				tripUpdates: allTripUpdates,
@@ -612,12 +671,9 @@
 					vehiclePositions: allVehiclePositions.length,
 					alerts: allAlerts.length
 				},
-				limited: {
-					tripUpdates: false,
-					vehiclePositions: false,
-					alerts: false
-				}
+				limited: manualLimited
 			};
+			pbState.paginationState.hasMore = manualHasMore;
 
 			pbState.currentFetchUrls = {
 				tripUpdates: pbState.tripUpdatesUrl,
@@ -683,12 +739,19 @@
 
 			const currentOffset = (pbState.feedData[entityType] as unknown[])?.length || 0;
 
+			const activeFeed = pbState.activeDisplayFeedId
+				? pbState.configFeeds.find((f) => f.id === pbState.activeDisplayFeedId)
+				: undefined;
+			const paginationHeaders = activeFeed
+				? buildFeedHeaders(activeFeed).filter((h) => h.key && h.value)
+				: pbState.headers.filter((h) => h.key && h.value);
+
 			const response = await fetch('/api/protobuf', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					url,
-					headers: pbState.headers.filter((h) => h.key && h.value),
+					headers: paginationHeaders,
 					offset: {
 						tripUpdates: entityType === 'tripUpdates' ? currentOffset : 0,
 						vehiclePositions: entityType === 'vehiclePositions' ? currentOffset : 0,

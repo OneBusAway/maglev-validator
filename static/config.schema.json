@@ -138,6 +138,15 @@
 						"default": true
 					}
 				},
+				"anyOf": [
+					{ "required": ["trip-updates-url"] },
+					{ "required": ["vehicle-positions-url"] },
+					{ "required": ["service-alerts-url"] }
+				],
+				"dependentRequired": {
+					"realtime-auth-header-name": ["realtime-auth-header-value"],
+					"realtime-auth-header-value": ["realtime-auth-header-name"]
+				},
 				"additionalProperties": false
 			}
 		},

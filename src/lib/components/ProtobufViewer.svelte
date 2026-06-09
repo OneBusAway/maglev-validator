@@ -508,7 +508,7 @@
 					</div>
 				{/if}
 				<div
-					class="max-w-35 min-w-30 truncate overflow-hidden text-right text-sm whitespace-nowrap text-gray-500 dark:text-gray-400"
+					class="max-w-[35ch] min-w-[30ch] truncate text-right text-sm whitespace-nowrap text-gray-500 dark:text-gray-400"
 					title={`Total Entities: ${entityCount}`}
 				>
 					Total Entities: <span class="font-semibold text-gray-700 dark:text-gray-200"

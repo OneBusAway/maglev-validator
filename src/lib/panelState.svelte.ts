@@ -159,6 +159,7 @@ export class ProtobufState {
 	refreshInterval = $state(30);
 	loggingEnabled = $state(true);
 	lastFetchTime = $state<Date | null>(null);
+	isRefreshing = $state(false);
 	refreshTimer: number | undefined = undefined;
 
 	searchQuery = $state('');

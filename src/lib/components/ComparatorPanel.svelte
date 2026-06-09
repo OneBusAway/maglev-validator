@@ -512,7 +512,11 @@
 			cmpState.currentUrl2 = result.currentUrl2;
 			if (result.error) {
 				cmpState.error = result.error;
+			} else {
+				cmpState.error = undefined;
 			}
+		} else {
+			cmpState.error = undefined;
 		}
 	}
 

@@ -1,4 +1,4 @@
-import { SvelteSet } from 'svelte/reactivity';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { endpoints } from '$lib/endpoints';
 
 export class ComparatorState {
@@ -16,6 +16,21 @@ export class ComparatorState {
 
 	currentUrl1 = $state('');
 	currentUrl2 = $state('');
+
+	batchIds = $state<string[]>([]);
+	selectedBatchId = $state<string>('');
+	batchResults = $state<
+		Map<
+			string,
+			{
+				response1: unknown;
+				response2: unknown;
+				currentUrl1: string;
+				currentUrl2: string;
+				error?: string;
+			}
+		>
+	>(new SvelteMap());
 
 	showIgnoreModal = $state(false);
 	ignoreSearch = $state('');
@@ -73,6 +88,39 @@ export interface ProtobufFeedData {
 	};
 }
 
+export interface GtfsRtFeedConfig {
+	id?: string;
+	'agency-ids'?: string[];
+	'trip-updates-url': string;
+	'vehicle-positions-url': string;
+	'service-alerts-url': string;
+	'realtime-auth-header-name'?: string;
+	'realtime-auth-header-value'?: string;
+	headers?: Record<string, string>;
+	'refresh-interval'?: number;
+	enabled?: boolean;
+}
+
+export interface GtfsStaticFeedConfig {
+	url: string;
+	'auth-header-name'?: string;
+	'auth-header-value'?: string;
+	'enable-gtfs-tidy'?: boolean;
+}
+
+export interface MaglevConfig {
+	'gtfs-rt-feeds'?: GtfsRtFeedConfig[];
+	'gtfs-static-feed'?: GtfsStaticFeedConfig;
+}
+
+export interface FeedTiming {
+	tripUpdates: number;
+	vehiclePositions: number;
+	serviceAlerts: number;
+	total: number;
+	errors: string[];
+}
+
 export class ProtobufState {
 	tripUpdatesUrl = $state('');
 	vehiclePositionsUrl = $state('');
@@ -81,6 +129,16 @@ export class ProtobufState {
 	vehiclePositionsUrlHistory = $state<string[]>([]);
 	serviceAlertsUrlHistory = $state<string[]>([]);
 	headers = $state<{ key: string; value: string }[]>([{ key: '', value: '' }]);
+
+	configFeeds = $state<GtfsRtFeedConfig[]>([]);
+	configFileName = $state<string>('');
+	configError = $state<string>('');
+
+	selectedFeedIds = $state<Record<string, boolean>>({});
+	activeDisplayFeedId = $state<string>('');
+	feedResults = $state<Record<string, ProtobufFeedData | null>>({});
+	feedTiming = $state<Record<string, FeedTiming>>({});
+	loadingFeeds = $state<Record<string, boolean>>({});
 
 	loading = $state(false);
 	error = $state<string | undefined>(undefined);
@@ -101,6 +159,7 @@ export class ProtobufState {
 	refreshInterval = $state(30);
 	loggingEnabled = $state(true);
 	lastFetchTime = $state<Date | null>(null);
+	isRefreshing = $state(false);
 	refreshTimer: number | undefined = undefined;
 
 	searchQuery = $state('');
@@ -185,6 +244,7 @@ export interface KeyLogEntry {
 	server1_value: unknown;
 	server2_value: unknown;
 	created_at: number;
+	id_value?: string | null;
 }
 
 export class LoggerState {
@@ -195,6 +255,7 @@ export class LoggerState {
 	limit = $state(100);
 	timeRange = $state<'live' | '1h' | '24h' | 'all'>('live');
 	filterMode = $state<'all' | 'match' | 'mismatch'>('all');
+	idFilter = $state('');
 
 	keyPaths = $state<string[]>([]);
 	selectedKeyPaths = $state(new SvelteSet<string>());

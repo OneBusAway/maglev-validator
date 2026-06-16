@@ -31,16 +31,21 @@ export const POST: RequestHandler = async ({ request }) => {
 			);
 		}
 
-		const [response1, response2] = await Promise.all([
+		const [result1, result2] = await Promise.all([
 			fetch(url1)
-				.then((r) => r.json())
-				.catch((e) => ({ error: e.message })),
+				.then(async (r) => ({ data: await r.json(), status: r.status }))
+				.catch((e) => ({ data: { error: e.message }, status: 0 })),
 			fetch(url2)
-				.then((r) => r.json())
-				.catch((e) => ({ error: e.message }))
+				.then(async (r) => ({ data: await r.json(), status: r.status }))
+				.catch((e) => ({ data: { error: e.message }, status: 0 }))
 		]);
 
-		return json({ response1, response2 });
+		return json({
+			response1: result1.data,
+			response2: result2.data,
+			status1: result1.status,
+			status2: result2.status
+		});
 	} catch (error) {
 		return json(
 			{ error: error instanceof Error ? error.message : 'Unknown error' },

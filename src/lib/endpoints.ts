@@ -19,6 +19,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -82,6 +90,14 @@ export const endpoints = [
 				inPath: false,
 				default: '',
 				placeholder: 'Unix timestamp (optional)'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -121,6 +137,14 @@ export const endpoints = [
 				inPath: false,
 				default: '',
 				placeholder: 'YYYY-MM-DD or Unix timestamp (optional)'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -168,6 +192,14 @@ export const endpoints = [
 				inPath: false,
 				default: '',
 				placeholder: 'Unix timestamp (optional)'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -287,6 +319,14 @@ export const endpoints = [
 				inPath: false,
 				default: '',
 				placeholder: 'Comma-delimited route types (e.g., 0,3)'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -310,6 +350,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -333,6 +381,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -356,6 +412,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -371,6 +435,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -386,6 +458,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -441,6 +521,14 @@ export const endpoints = [
 				inPath: false,
 				default: '',
 				placeholder: 'Unix timestamp (optional)'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -464,6 +552,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -503,6 +599,14 @@ export const endpoints = [
 				inPath: false,
 				default: '',
 				placeholder: 'Search radius in meters (optional)'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -542,6 +646,14 @@ export const endpoints = [
 				inPath: false,
 				default: '',
 				placeholder: 'Search radius in meters (optional)'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -565,6 +677,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -628,6 +748,14 @@ export const endpoints = [
 				inPath: false,
 				default: '',
 				placeholder: 'Unix timestamp (optional)'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -651,6 +779,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -666,6 +802,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -697,6 +841,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -728,6 +880,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -751,6 +911,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -782,6 +950,14 @@ export const endpoints = [
 				inPath: false,
 				default: '',
 				placeholder: 'YYYY-MM-DD (optional)'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -813,6 +989,14 @@ export const endpoints = [
 				inPath: false,
 				default: '',
 				placeholder: 'YYYY-MM-DD (optional)'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -836,6 +1020,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -859,6 +1051,45 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
+			}
+		]
+	},
+	{
+		id: 'stops-for-agency',
+		name: 'Stops for Agency',
+		path: 'stops-for-agency/{id}.json',
+		params: [
+			{
+				name: 'id',
+				label: 'Agency ID',
+				required: true,
+				inPath: true,
+				default: 'unitrans',
+				placeholder: 'e.g., unitrans'
+			},
+			{
+				name: 'key',
+				label: 'API Key',
+				required: true,
+				inPath: false,
+				default: 'test',
+				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -906,6 +1137,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	},
@@ -929,6 +1168,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'includeReferences',
+				label: 'Include References',
+				required: false,
+				inPath: false,
+				default: 'true',
+				placeholder: 'Include referenced entities (default: true)'
 			}
 		]
 	}

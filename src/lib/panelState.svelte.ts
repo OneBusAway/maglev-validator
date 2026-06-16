@@ -17,6 +17,9 @@ export class ComparatorState {
 	currentUrl1 = $state('');
 	currentUrl2 = $state('');
 
+	status1 = $state<number | null>(null);
+	status2 = $state<number | null>(null);
+
 	batchIds = $state<string[]>([]);
 	selectedBatchId = $state<string>('');
 	batchResults = $state<
@@ -27,6 +30,8 @@ export class ComparatorState {
 				response2: unknown;
 				currentUrl1: string;
 				currentUrl2: string;
+				status1?: number;
+				status2?: number;
 				error?: string;
 			}
 		>

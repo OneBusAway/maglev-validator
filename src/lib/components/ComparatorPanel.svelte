@@ -376,6 +376,8 @@
 				response2: unknown;
 				currentUrl1: string;
 				currentUrl2: string;
+				status1?: number;
+				status2?: number;
 				error?: string;
 			}
 		>();
@@ -402,7 +404,14 @@
 				}
 				return {
 					id,
-					result: { response1: data.response1, response2: data.response2, url1, url2 } as const
+					result: {
+						response1: data.response1,
+						response2: data.response2,
+						status1: data.status1,
+						status2: data.status2,
+						url1,
+						url2
+					} as const
 				};
 			} catch (e) {
 				clearTimeout(timeoutId);
@@ -430,7 +439,9 @@
 							response1: result.response1,
 							response2: result.response2,
 							currentUrl1: result.url1,
-							currentUrl2: result.url2
+							currentUrl2: result.url2,
+							status1: result.status1,
+							status2: result.status2
 						});
 					}
 				}
@@ -455,6 +466,8 @@
 				} else {
 					cmpState.response1 = firstResult.response1;
 					cmpState.response2 = firstResult.response2;
+					cmpState.status1 = firstResult.status1 ?? null;
+					cmpState.status2 = firstResult.status2 ?? null;
 					cmpState.currentUrl1 = firstResult.currentUrl1;
 					cmpState.currentUrl2 = firstResult.currentUrl2;
 				}
@@ -508,6 +521,8 @@
 		if (result) {
 			cmpState.response1 = result.response1;
 			cmpState.response2 = result.response2;
+			cmpState.status1 = result.status1 ?? null;
+			cmpState.status2 = result.status2 ?? null;
 			cmpState.currentUrl1 = result.currentUrl1;
 			cmpState.currentUrl2 = result.currentUrl2;
 			if (result.error) {
@@ -861,7 +876,7 @@
 	</div>
 {/if}
 
-{#if cmpState.response1 || cmpState.response2}
+{#if cmpState.status1 !== null || cmpState.status2 !== null}
 	<div class="mb-4 flex items-center justify-between">
 		<div class="flex items-center gap-4">
 			<h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Response Comparison</h2>
@@ -911,6 +926,14 @@
 						class="shrink-0 rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
 						>1</span
 					>
+					{#if cmpState.status1 !== null}
+						<span
+							class="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium {cmpState.status1 >= 400
+								? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+								: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'}"
+							>{cmpState.status1}</span
+						>
+					{/if}
 					<code class="text-xs break-all text-gray-700 dark:text-gray-300"
 						>{cmpState.currentUrl1}</code
 					>
@@ -922,6 +945,14 @@
 						class="shrink-0 rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/50 dark:text-purple-300"
 						>2</span
 					>
+					{#if cmpState.status2 !== null}
+						<span
+							class="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium {cmpState.status2 >= 400
+								? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+								: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'}"
+							>{cmpState.status2}</span
+						>
+					{/if}
 					<code class="text-xs break-all text-gray-700 dark:text-gray-300"
 						>{cmpState.currentUrl2}</code
 					>

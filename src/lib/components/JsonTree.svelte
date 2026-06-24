@@ -5,6 +5,7 @@
 		countDifferences,
 		getDiffStatus,
 		isArray,
+		isKeyIgnored,
 		isObject,
 		isPrimitive,
 		sortEntries
@@ -169,7 +170,7 @@
 		skipComparison
 			? 'same'
 			: isPrimitiveValue || expanded || level === 0
-				? getDiffStatus(value, otherValue, side, ignoredKeys, numericTolerancePercent)
+				? getDiffStatus(value, otherValue, side, ignoredKeys, numericTolerancePercent, currentPath)
 				: 'same'
 	);
 	const hasDiff = $derived(status !== 'same' && !isReference);
@@ -177,7 +178,7 @@
 	const diffCount = $derived(
 		skipComparison || expanded || isReference || isPrimitiveValue
 			? 0
-			: countDifferences(value, otherValue, ignoredKeys, 999, numericTolerancePercent)
+			: countDifferences(value, otherValue, ignoredKeys, 999, numericTolerancePercent, currentPath)
 	);
 
 	const arrayItems = $derived(isArray(value) ? value : []);
@@ -525,7 +526,7 @@
 				{/if}
 			{:else if isObject(value)}
 				{@const entries = sortEntries(value as Record<string, unknown>).filter(
-					([key]) => !ignoredKeys.includes(key)
+					([key]) => !isKeyIgnored(key, currentPath, ignoredKeys)
 				)}
 				{@const visibleEntries = entries.slice(0, visibleCount)}
 				{@const hasMoreEntries = entries.length > visibleCount}

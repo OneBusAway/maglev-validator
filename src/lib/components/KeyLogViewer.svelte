@@ -5,7 +5,7 @@
 	import { logState } from '$lib/logState.svelte';
 	import { comparatorState, loggerState, type KeyLogEntry } from '$lib/panelState.svelte';
 	import { fly } from 'svelte/transition';
-	import { deepEqualIgnoreOrder } from '$lib/utils/jsonCompare';
+	import { deepEqualIgnoreOrder, findIdValue } from '$lib/utils/jsonCompare';
 
 	import JsonViewer from '$lib/components/JsonViewer.svelte';
 
@@ -41,6 +41,23 @@
 				log.id,
 				valuesMatch(log.server1_value, log.server2_value, comparatorState.numericTolerancePercent)
 			);
+		}
+		return map;
+	});
+
+	const detailMatchCache = $derived.by(() => {
+		const map = new SvelteMap<number, { matched: number; total: number }>();
+		for (const log of loggerState.logs) {
+			const s1 = log.server1_value;
+			const s2 = log.server2_value;
+			if (Array.isArray(s1) && Array.isArray(s2)) {
+				const rows = computeArrayRows(s1, s2);
+				const matched = rows.filter((r) => r.match).length;
+				map.set(log.id, { matched, total: rows.length });
+			} else {
+				const m = matchCache.get(log.id) ?? false;
+				map.set(log.id, { matched: m ? 1 : 0, total: 1 });
+			}
 		}
 		return map;
 	});
@@ -587,6 +604,75 @@
 
 	function valuesMatch(v1: unknown, v2: unknown, tolerance?: number): boolean {
 		return deepEqualIgnoreOrder(v1, v2, [], tolerance ?? comparatorState.numericTolerancePercent);
+	}
+
+	function getItemId(item: unknown): string | number | null {
+		if (item !== null && item !== undefined && typeof item === 'object') {
+			return findIdValue(item);
+		}
+		if (typeof item === 'string') {
+			return item;
+		}
+		return null;
+	}
+
+	function computeArrayRows(s1: unknown[], s2: unknown[]) {
+		const s2ById = new SvelteMap<string | number, { index: number; value: unknown }[]>();
+		for (let i = 0; i < s2.length; i++) {
+			const id = getItemId(s2[i]);
+			const key = id ?? `__idx_${i}`;
+			if (!s2ById.has(key)) s2ById.set(key, []);
+			s2ById.get(key)!.push({ index: i, value: s2[i] });
+		}
+		const usedS2Indices = new SvelteSet<number>();
+		const rows: {
+			id: string;
+			v1: unknown;
+			v2: unknown;
+			hasV1: boolean;
+			hasV2: boolean;
+			match: boolean;
+		}[] = [];
+		for (const item of s1) {
+			const id = getItemId(item);
+			const key = id ?? `__idx_${rows.length}`;
+			const candidates = s2ById.get(key);
+			const match = candidates?.find((c) => !usedS2Indices.has(c.index));
+			if (match) {
+				usedS2Indices.add(match.index);
+				rows.push({
+					id: String(id ?? ''),
+					v1: item,
+					v2: match.value,
+					hasV1: true,
+					hasV2: true,
+					match: valuesMatch(item, match.value, comparatorState.numericTolerancePercent)
+				});
+			} else {
+				rows.push({
+					id: String(id ?? ''),
+					v1: item,
+					v2: undefined,
+					hasV1: true,
+					hasV2: false,
+					match: false
+				});
+			}
+		}
+		for (let i = 0; i < s2.length; i++) {
+			if (!usedS2Indices.has(i)) {
+				const id = getItemId(s2[i]);
+				rows.push({
+					id: String(id ?? ''),
+					v1: undefined,
+					v2: s2[i],
+					hasV1: false,
+					hasV2: true,
+					match: false
+				});
+			}
+		}
+		return rows;
 	}
 
 	function formatTimestamp(ts: string): string {
@@ -1496,7 +1582,21 @@
 									{/if}
 								</td>
 								<td class="px-4 py-3 text-center">
-									{#if match}
+									{#if isArray}
+										{@const detail = detailMatchCache.get(log.id)}
+										{#if detail}
+											<span
+												class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium {detail.matched ===
+												detail.total
+													? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+													: detail.matched === 0
+														? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+														: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'}"
+											>
+												{detail.matched}/{detail.total}
+											</span>
+										{/if}
+									{:else if match}
 										<span
 											class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
 										>
@@ -1736,25 +1836,14 @@
 		: []}
 	{@const s1 = s1Raw}
 	{@const s2 = s2Raw}
-	{@const maxLen = Math.max(s1.length, s2.length)}
-	{@const rows = Array.from({ length: maxLen }, (_, i) => ({
-		index: i,
-		v1: i < s1.length ? s1[i] : undefined,
-		v2: i < s2.length ? s2[i] : undefined,
-		hasV1: i < s1.length,
-		hasV2: i < s2.length,
-		match:
-			i < s1.length &&
-			i < s2.length &&
-			valuesMatch(s1[i], s2[i], comparatorState.numericTolerancePercent)
-	}))}
+	{@const rows = computeArrayRows(s1, s2)}
 	{@const filteredRows = rows.filter((r) => {
 		if (arrayDetailFilter === 'all') return true;
 		if (arrayDetailFilter === 'match') return r.match;
 		return !r.match;
 	})}
 	{@const matchCount = rows.filter((r) => r.match).length}
-	{@const matchPct = maxLen > 0 ? Math.round((matchCount / maxLen) * 100) : 0}
+	{@const matchPct = rows.length > 0 ? Math.round((matchCount / rows.length) * 100) : 0}
 	{@const barSegments = 10}
 	{@const filledBars = Math.round((matchPct / 100) * barSegments)}
 	{@const mismatchCount = rows.filter((r) => r.hasV1 && r.hasV2 && !r.match).length}
@@ -1891,8 +1980,8 @@
 								class="border-b border-gray-100 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50"
 							>
 								<th
-									class="w-16 px-3 py-2 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
-									>#</th
+									class="w-24 px-3 py-2 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+									>ID</th
 								>
 								<th
 									class="px-3 py-2 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
@@ -1909,10 +1998,10 @@
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-							{#each filteredRows as row (row.index)}
+							{#each filteredRows as row, i (i)}
 								<tr class={row.match ? '' : 'bg-red-50/40 dark:bg-red-900/10'}>
 									<td class="px-3 py-2 font-mono text-xs text-gray-500 dark:text-gray-400"
-										>{row.index}</td
+										>{row.id || i}</td
 									>
 									<td
 										class="px-3 py-2 font-mono text-xs break-all text-gray-800 dark:text-gray-200"

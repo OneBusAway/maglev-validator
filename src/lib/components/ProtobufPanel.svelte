@@ -1,6 +1,6 @@
 <script lang="ts">
 	import ProtobufViewer from '$lib/components/ProtobufViewer.svelte';
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy, untrack } from 'svelte';
 	import { browser } from '$app/environment';
 	import { logState } from '$lib/logState.svelte';
 	import { protobufState as pbState, type GtfsRtFeedConfig } from '$lib/panelState.svelte';
@@ -511,11 +511,14 @@
 	});
 
 	$effect(() => {
-		if (pbState.autoRefresh) {
-			startAutoRefresh();
-		} else {
-			stopAutoRefresh();
-		}
+		const enabled = pbState.autoRefresh;
+		untrack(() => {
+			if (enabled) {
+				startAutoRefresh();
+			} else {
+				stopAutoRefresh();
+			}
+		});
 		return () => stopAutoRefresh();
 	});
 

@@ -131,12 +131,36 @@ export const endpoints = [
 				placeholder: 'true/false (optional)'
 			},
 			{
-				name: 'time',
-				label: 'Time',
+				name: 'radius',
+				label: 'Radius',
 				required: false,
 				inPath: false,
 				default: '',
-				placeholder: 'YYYY-MM-DD or Unix timestamp (optional)'
+				placeholder: 'Search radius in meters (optional)'
+			},
+			{
+				name: 'latSpan',
+				label: 'Latitude Span',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'e.g., 0.01 (alternative to radius)'
+			},
+			{
+				name: 'lonSpan',
+				label: 'Longitude Span',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'e.g., 0.01 (alternative to radius)'
+			},
+			{
+				name: 'query',
+				label: 'Query',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Route short name or stop code to search for (optional)'
 			},
 			{
 				name: 'includeReferences',
@@ -554,6 +578,30 @@ export const endpoints = [
 				placeholder: 'API Key'
 			},
 			{
+				name: 'includeStatus',
+				label: 'Include Status',
+				required: false,
+				inPath: false,
+				default: 'false',
+				placeholder: 'true/false — include tripStatus elements (default: false)'
+			},
+			{
+				name: 'includeSchedule',
+				label: 'Include Schedule',
+				required: false,
+				inPath: false,
+				default: 'false',
+				placeholder: 'true/false — include schedule elements (default: false)'
+			},
+			{
+				name: 'time',
+				label: 'Time',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Unix timestamp (optional)'
+			},
+			{
 				name: 'includeReferences',
 				label: 'Include References',
 				required: false,
@@ -599,6 +647,30 @@ export const endpoints = [
 				inPath: false,
 				default: '',
 				placeholder: 'Search radius in meters (optional)'
+			},
+			{
+				name: 'latSpan',
+				label: 'Latitude Span',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'e.g., 0.01 (alternative to radius)'
+			},
+			{
+				name: 'lonSpan',
+				label: 'Longitude Span',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'e.g., 0.01 (alternative to radius)'
+			},
+			{
+				name: 'query',
+				label: 'Query',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Route short name or stop code to search for (optional)'
 			},
 			{
 				name: 'includeReferences',
@@ -835,6 +907,38 @@ export const endpoints = [
 				placeholder: 'problem code'
 			},
 			{
+				name: 'userComment',
+				label: 'User Comment',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Additional comment text (optional)'
+			},
+			{
+				name: 'userLat',
+				label: 'User Latitude',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Reporting user latitude (optional)'
+			},
+			{
+				name: 'userLon',
+				label: 'User Longitude',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Reporting user longitude (optional)'
+			},
+			{
+				name: 'userLocationAccuracy',
+				label: 'User Location Accuracy',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Location accuracy in meters (optional)'
+			},
+			{
 				name: 'key',
 				label: 'API Key',
 				required: true,
@@ -872,6 +976,78 @@ export const endpoints = [
 				inPath: false,
 				default: 'vehicle_never_came',
 				placeholder: 'problem code'
+			},
+			{
+				name: 'serviceDate',
+				label: 'Service Date',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Service date in Unix ms (optional)'
+			},
+			{
+				name: 'vehicleId',
+				label: 'Vehicle ID',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Vehicle serving the trip (optional)'
+			},
+			{
+				name: 'stopId',
+				label: 'Stop ID',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Stop where problem occurred (optional)'
+			},
+			{
+				name: 'userComment',
+				label: 'User Comment',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Additional comment text (optional)'
+			},
+			{
+				name: 'userOnVehicle',
+				label: 'User On Vehicle',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'true/false (optional)'
+			},
+			{
+				name: 'userVehicleNumber',
+				label: 'User Vehicle Number',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Vehicle number as reported by user (optional)'
+			},
+			{
+				name: 'userLat',
+				label: 'User Latitude',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Reporting user latitude (optional)'
+			},
+			{
+				name: 'userLon',
+				label: 'User Longitude',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Reporting user longitude (optional)'
+			},
+			{
+				name: 'userLocationAccuracy',
+				label: 'User Location Accuracy',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Location accuracy in meters (optional)'
 			},
 			{
 				name: 'key',
@@ -1131,6 +1307,30 @@ export const endpoints = [
 				placeholder: 'e.g., 0.01'
 			},
 			{
+				name: 'includeTrip',
+				label: 'Include Trip',
+				required: false,
+				inPath: false,
+				default: 'false',
+				placeholder: 'true/false — include full trip elements in references (default: false)'
+			},
+			{
+				name: 'includeSchedule',
+				label: 'Include Schedule',
+				required: false,
+				inPath: false,
+				default: 'false',
+				placeholder: 'true/false — include schedule elements (default: false)'
+			},
+			{
+				name: 'time',
+				label: 'Time',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Unix timestamp for historical query (optional)'
+			},
+			{
 				name: 'key',
 				label: 'API Key',
 				required: true,
@@ -1168,6 +1368,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'test',
 				placeholder: 'API Key'
+			},
+			{
+				name: 'time',
+				label: 'Time',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'Unix timestamp for historical query (optional)'
 			},
 			{
 				name: 'includeReferences',

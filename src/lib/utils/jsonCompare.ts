@@ -40,7 +40,21 @@ export function isPrimitive(value: unknown): boolean {
 
 const stringifyCache = new WeakMap<object, Map<string, string>>();
 
-function stableStringifyImpl(value: unknown, ignoredKeys: string[] = []): string {
+export function isKeyIgnored(key: string, currentPath: string, ignoredKeys: string[]): boolean {
+	if (ignoredKeys.length === 0) return false;
+	const fullPath = currentPath ? `${currentPath}.${key}` : key;
+	const normalizedPath = fullPath.replace(/\[\d+\]/g, '.*');
+	return ignoredKeys.some((ignored) => {
+		const normalizedIgnored = ignored.replace(/\[\d+\]/g, '.*');
+		return normalizedPath === normalizedIgnored || normalizedPath.endsWith('.' + normalizedIgnored);
+	});
+}
+
+function stableStringifyImpl(
+	value: unknown,
+	ignoredKeys: string[] = [],
+	currentPath: string = ''
+): string {
 	if (value === null) return 'null';
 	if (value === undefined) return 'undefined';
 	if (typeof value === 'number' && Number.isNaN(value)) return 'NaN';
@@ -48,28 +62,36 @@ function stableStringifyImpl(value: unknown, ignoredKeys: string[] = []): string
 		if (value.length > 1000) {
 			return `[array:${value.length}]`;
 		}
-		const normalized = value.map((item) => stableStringify(item, ignoredKeys)).sort();
+		const itemPath = currentPath ? `${currentPath}.*` : '*';
+		const normalized = value.map((item) => stableStringify(item, ignoredKeys, itemPath)).sort();
 		return `[${normalized.join(',')}]`;
 	}
 	if (isObject(value)) {
-		const keys = Object.keys(value).filter((key) => !ignoredKeys.includes(key));
+		const keys = Object.keys(value).filter((key) => !isKeyIgnored(key, currentPath, ignoredKeys));
 		if (keys.length > 500) {
 			return `{object:${keys.length}}`;
 		}
-		const entries = keys.sort().map((key) => `${key}:${stableStringify(value[key], ignoredKeys)}`);
+		const entries = keys.sort().map((key) => {
+			const childPath = currentPath ? `${currentPath}.${key}` : key;
+			return `${key}:${stableStringify(value[key], ignoredKeys, childPath)}`;
+		});
 		return `{${entries.join(',')}}`;
 	}
 	return JSON.stringify(value);
 }
 
-function stableStringify(value: unknown, ignoredKeys: string[] = []): string {
+function stableStringify(
+	value: unknown,
+	ignoredKeys: string[] = [],
+	currentPath: string = ''
+): string {
 	if (typeof value === 'object' && value !== null) {
-		const cacheKey = ignoredKeys.join(',');
+		const cacheKey = currentPath + '|' + ignoredKeys.join(',');
 		let objCache = stringifyCache.get(value);
 		if (objCache?.has(cacheKey)) {
 			return objCache.get(cacheKey)!;
 		}
-		const result = stableStringifyImpl(value, ignoredKeys);
+		const result = stableStringifyImpl(value, ignoredKeys, currentPath);
 		if (!objCache) {
 			objCache = new Map();
 			stringifyCache.set(value, objCache);
@@ -77,7 +99,7 @@ function stableStringify(value: unknown, ignoredKeys: string[] = []): string {
 		objCache.set(cacheKey, result);
 		return result;
 	}
-	return stableStringifyImpl(value, ignoredKeys);
+	return stableStringifyImpl(value, ignoredKeys, currentPath);
 }
 
 export function sortById(a: unknown, b: unknown): number {
@@ -179,7 +201,8 @@ export function deepEqualIgnoreOrder(
 	a: unknown,
 	b: unknown,
 	ignoredKeys: string[] = [],
-	numericTolerancePercent: number = 0
+	numericTolerancePercent: number = 0,
+	currentPath: string = ''
 ): boolean {
 	if (Object.is(a, b)) return true;
 
@@ -208,23 +231,30 @@ export function deepEqualIgnoreOrder(
 			result = false;
 		} else if (a.length === 0) {
 			result = true;
-		} else if (numericTolerancePercent > 0) {
-			const aSorted = [...a].sort(sortById);
-			const bSorted = [...b].sort(sortById);
-			result = aSorted.every((item, index) =>
-				deepEqualIgnoreOrder(item, bSorted[index], ignoredKeys, numericTolerancePercent)
-			);
 		} else {
-			const aSorted = [...a].sort(sortById).map((item) => stableStringify(item, ignoredKeys));
-			const bSorted = [...b].sort(sortById).map((item) => stableStringify(item, ignoredKeys));
-			result = aSorted.every((value, index) => value === bSorted[index]);
+			const itemPath = currentPath ? `${currentPath}.*` : '*';
+			if (numericTolerancePercent > 0) {
+				const aSorted = [...a].sort(sortById);
+				const bSorted = [...b].sort(sortById);
+				result = aSorted.every((item, index) =>
+					deepEqualIgnoreOrder(item, bSorted[index], ignoredKeys, numericTolerancePercent, itemPath)
+				);
+			} else {
+				const aSorted = [...a]
+					.sort(sortById)
+					.map((item) => stableStringify(item, ignoredKeys, itemPath));
+				const bSorted = [...b]
+					.sort(sortById)
+					.map((item) => stableStringify(item, ignoredKeys, itemPath));
+				result = aSorted.every((value, index) => value === bSorted[index]);
+			}
 		}
 	} else if (isObject(a) && isObject(b)) {
 		const aKeys = Object.keys(a)
-			.filter((k) => !ignoredKeys.includes(k))
+			.filter((k) => !isKeyIgnored(k, currentPath, ignoredKeys))
 			.sort();
 		const bKeys = Object.keys(b)
-			.filter((k) => !ignoredKeys.includes(k))
+			.filter((k) => !isKeyIgnored(k, currentPath, ignoredKeys))
 			.sort();
 		if (aKeys.length !== bKeys.length) {
 			result = false;
@@ -234,7 +264,13 @@ export function deepEqualIgnoreOrder(
 			result = aKeys.every(
 				(key, index) =>
 					key === bKeys[index] &&
-					deepEqualIgnoreOrder(a[key], b[key], ignoredKeys, numericTolerancePercent)
+					deepEqualIgnoreOrder(
+						a[key],
+						b[key],
+						ignoredKeys,
+						numericTolerancePercent,
+						currentPath ? `${currentPath}.${key}` : key
+					)
 			);
 		}
 	} else {
@@ -264,12 +300,13 @@ export function getDiffStatus(
 	otherValue: unknown,
 	side: 'left' | 'right',
 	ignoredKeys: string[] = [],
-	numericTolerancePercent: number = 0
+	numericTolerancePercent: number = 0,
+	currentPath: string = ''
 ): DiffStatus {
 	if (otherValue === undefined) {
 		return side === 'left' ? 'missing' : 'added';
 	}
-	return deepEqualIgnoreOrder(value, otherValue, ignoredKeys, numericTolerancePercent)
+	return deepEqualIgnoreOrder(value, otherValue, ignoredKeys, numericTolerancePercent, currentPath)
 		? 'same'
 		: 'different';
 }
@@ -281,15 +318,17 @@ export function countDifferences(
 	b: unknown,
 	ignoredKeys: string[] = [],
 	maxCount: number = MAX_DIFF_COUNT,
-	numericTolerancePercent: number = 0
+	numericTolerancePercent: number = 0,
+	currentPath: string = ''
 ): number {
 	if (a === undefined && b === undefined) return 0;
 	if (a === undefined || b === undefined) return 1;
 	if (isPrimitive(a) || isPrimitive(b)) {
-		return deepEqualIgnoreOrder(a, b, ignoredKeys, numericTolerancePercent) ? 0 : 1;
+		return deepEqualIgnoreOrder(a, b, ignoredKeys, numericTolerancePercent, currentPath) ? 0 : 1;
 	}
 
 	if (isArray(a) && isArray(b)) {
+		const itemPath = currentPath ? `${currentPath}.*` : '*';
 		if (a.length > 100 || b.length > 100) {
 			if (a.length !== b.length) {
 				return Math.min(Math.abs(a.length - b.length) + 1, maxCount);
@@ -299,7 +338,9 @@ export function countDifferences(
 				let sampleDiffs = 0;
 				for (let i = 0; i < sampleSize && i < a.length; i++) {
 					const idx = Math.floor((i / sampleSize) * a.length);
-					if (!deepEqualIgnoreOrder(a[idx], b[idx], ignoredKeys, numericTolerancePercent)) {
+					if (
+						!deepEqualIgnoreOrder(a[idx], b[idx], ignoredKeys, numericTolerancePercent, itemPath)
+					) {
 						sampleDiffs++;
 					}
 				}
@@ -307,8 +348,8 @@ export function countDifferences(
 			}
 		}
 
-		const aItems = a.map((item) => ({ key: stableStringify(item, ignoredKeys), item }));
-		const bItems = b.map((item) => ({ key: stableStringify(item, ignoredKeys), item }));
+		const aItems = a.map((item) => ({ key: stableStringify(item, ignoredKeys, itemPath), item }));
+		const bItems = b.map((item) => ({ key: stableStringify(item, ignoredKeys, itemPath), item }));
 		aItems.sort((x, y) => sortById(x.item, y.item));
 		bItems.sort((x, y) => sortById(x.item, y.item));
 		let i = 0;
@@ -330,7 +371,13 @@ export function countDifferences(
 				j += 1;
 			} else if (
 				numericTolerancePercent > 0 &&
-				deepEqualIgnoreOrder(aItems[i].item, bItems[j].item, ignoredKeys, numericTolerancePercent)
+				deepEqualIgnoreOrder(
+					aItems[i].item,
+					bItems[j].item,
+					ignoredKeys,
+					numericTolerancePercent,
+					itemPath
+				)
 			) {
 				i += 1;
 				j += 1;
@@ -348,19 +395,21 @@ export function countDifferences(
 		const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
 		let diff = 0;
 		for (const key of keys) {
-			if (ignoredKeys.includes(key)) continue;
+			if (isKeyIgnored(key, currentPath, ignoredKeys)) continue;
 			if (diff >= maxCount) break;
+			const childPath = currentPath ? `${currentPath}.${key}` : key;
 			diff += countDifferences(
 				a[key],
 				b[key],
 				ignoredKeys,
 				maxCount - diff,
-				numericTolerancePercent
+				numericTolerancePercent,
+				childPath
 			);
 		}
 		return Math.min(diff, maxCount);
 	}
-	return deepEqualIgnoreOrder(a, b, ignoredKeys, numericTolerancePercent) ? 0 : 1;
+	return deepEqualIgnoreOrder(a, b, ignoredKeys, numericTolerancePercent, currentPath) ? 0 : 1;
 }
 
 export function sortEntries(obj: Record<string, unknown>): [string, unknown][] {

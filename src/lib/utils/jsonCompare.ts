@@ -102,7 +102,12 @@ function stableStringify(
 	return stableStringifyImpl(value, ignoredKeys, currentPath);
 }
 
-export function sortById(a: unknown, b: unknown): number {
+export function sortById(
+	a: unknown,
+	b: unknown,
+	ignoredKeys: string[] = [],
+	currentPath: string = ''
+): number {
 	const aId = findIdValue(a);
 	const bId = findIdValue(b);
 	if (aId !== null && bId !== null) {
@@ -111,7 +116,9 @@ export function sortById(a: unknown, b: unknown): number {
 		}
 		return String(aId).localeCompare(String(bId));
 	}
-	return stableStringify(a).localeCompare(stableStringify(b));
+	return stableStringify(a, ignoredKeys, currentPath).localeCompare(
+		stableStringify(b, ignoredKeys, currentPath)
+	);
 }
 
 export function sortTopLevelArrays(obj: unknown): unknown {
@@ -233,19 +240,21 @@ export function deepEqualIgnoreOrder(
 			result = true;
 		} else {
 			const itemPath = currentPath ? `${currentPath}.*` : '*';
+			const sortWithIgnored = (arr: unknown[]) =>
+				[...arr].sort((x, y) => sortById(x, y, ignoredKeys, itemPath));
 			if (numericTolerancePercent > 0) {
-				const aSorted = [...a].sort(sortById);
-				const bSorted = [...b].sort(sortById);
+				const aSorted = sortWithIgnored(a);
+				const bSorted = sortWithIgnored(b);
 				result = aSorted.every((item, index) =>
 					deepEqualIgnoreOrder(item, bSorted[index], ignoredKeys, numericTolerancePercent, itemPath)
 				);
 			} else {
-				const aSorted = [...a]
-					.sort(sortById)
-					.map((item) => stableStringify(item, ignoredKeys, itemPath));
-				const bSorted = [...b]
-					.sort(sortById)
-					.map((item) => stableStringify(item, ignoredKeys, itemPath));
+				const aSorted = sortWithIgnored(a).map((item) =>
+					stableStringify(item, ignoredKeys, itemPath)
+				);
+				const bSorted = sortWithIgnored(b).map((item) =>
+					stableStringify(item, ignoredKeys, itemPath)
+				);
 				result = aSorted.every((value, index) => value === bSorted[index]);
 			}
 		}
@@ -350,8 +359,8 @@ export function countDifferences(
 
 		const aItems = a.map((item) => ({ key: stableStringify(item, ignoredKeys, itemPath), item }));
 		const bItems = b.map((item) => ({ key: stableStringify(item, ignoredKeys, itemPath), item }));
-		aItems.sort((x, y) => sortById(x.item, y.item));
-		bItems.sort((x, y) => sortById(x.item, y.item));
+		aItems.sort((x, y) => sortById(x.item, y.item, ignoredKeys, itemPath));
+		bItems.sort((x, y) => sortById(x.item, y.item, ignoredKeys, itemPath));
 		let i = 0;
 		let j = 0;
 		let diff = 0;
@@ -410,6 +419,48 @@ export function countDifferences(
 		return Math.min(diff, maxCount);
 	}
 	return deepEqualIgnoreOrder(a, b, ignoredKeys, numericTolerancePercent, currentPath) ? 0 : 1;
+}
+
+export function countComparableItems(
+	a: unknown,
+	b: unknown,
+	ignoredKeys: string[] = [],
+	currentPath: string = ''
+): number {
+	if (a === undefined && b === undefined) return 0;
+	if (a === undefined || b === undefined) return 1;
+	if (isPrimitive(a) || isPrimitive(b)) return 1;
+
+	if (isArray(a) && isArray(b)) {
+		const itemPath = currentPath ? `${currentPath}.*` : '*';
+		const maxLen = Math.max(a.length, b.length);
+		let count = 0;
+		for (let i = 0; i < maxLen; i++) {
+			count += countComparableItems(a[i], b[i], ignoredKeys, itemPath);
+		}
+		return count;
+	}
+
+	if (isObject(a) && isObject(b)) {
+		const allKeys = new Set([
+			...Object.keys(a as Record<string, unknown>),
+			...Object.keys(b as Record<string, unknown>)
+		]);
+		let count = 0;
+		for (const key of allKeys) {
+			if (isKeyIgnored(key, currentPath, ignoredKeys)) continue;
+			const childPath = currentPath ? `${currentPath}.${key}` : key;
+			count += countComparableItems(
+				(a as Record<string, unknown>)[key],
+				(b as Record<string, unknown>)[key],
+				ignoredKeys,
+				childPath
+			);
+		}
+		return count;
+	}
+
+	return 1;
 }
 
 export function sortEntries(obj: Record<string, unknown>): [string, unknown][] {

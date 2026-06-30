@@ -6,7 +6,12 @@
 	import { browser } from '$app/environment';
 	import { logState } from '$lib/logState.svelte';
 	import { comparatorState as cmpState } from '$lib/panelState.svelte';
-	import { sortById, findIdValue } from '$lib/utils/jsonCompare';
+	import {
+		sortById,
+		findIdValue,
+		countDifferences,
+		countComparableItems
+	} from '$lib/utils/jsonCompare';
 
 	let isLogging = $state(false);
 	let server1UrlHistory = $state<string[]>([]);
@@ -40,6 +45,27 @@
 			.map((k) => k.trim())
 			.filter((k) => k.length > 0)
 	);
+
+	const MAX_COMPARABLE_BUDGET = 50000;
+
+	const diffStats = $derived.by(() => {
+		if (cmpState.response1 === null || cmpState.response2 === null) return null;
+		const total = countComparableItems(
+			cmpState.response1,
+			cmpState.response2,
+			ignoredKeys,
+			MAX_COMPARABLE_BUDGET
+		);
+		const mismatches = countDifferences(cmpState.response1, cmpState.response2, ignoredKeys);
+		return {
+			total: total.capped ? `${total.count}+` : total.count,
+			mismatches,
+			matches: total.capped
+				? `${Math.max(total.count - mismatches, 0)}+`
+				: total.count - mismatches,
+			capped: total.capped
+		};
+	});
 
 	const availableKeys = $derived.by(() => {
 		const keys = new Set<string>();
@@ -957,6 +983,46 @@
 						>{cmpState.currentUrl2}</code
 					>
 				</div>
+			{/if}
+		</div>
+	{/if}
+
+	{#if diffStats}
+		<div
+			class="mb-4 flex items-center gap-4 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800/50"
+		>
+			{#if diffStats.mismatches === 0}
+				<span class="flex items-center gap-1.5 font-medium text-green-700 dark:text-green-400">
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2.5"
+							d="M5 13l4 4L19 7"
+						/>
+					</svg>
+					All {diffStats.total} fields match
+				</span>
+			{:else}
+				<span class="flex items-center gap-1.5 font-medium text-red-600 dark:text-red-400">
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2.5"
+							d="M6 18L18 6M6 6l12 12"
+						/>
+					</svg>
+					{diffStats.mismatches} mismatch{diffStats.mismatches !== 1 ? 'es' : ''}
+				</span>
+				<span class="text-gray-500 dark:text-gray-400">
+					{diffStats.matches} / {diffStats.total} match
+				</span>
+			{/if}
+			{#if ignoredKeys.length > 0}
+				<span class="ml-auto text-xs text-gray-400 dark:text-gray-500">
+					({ignoredKeys.length} key{ignoredKeys.length !== 1 ? 's' : ''} ignored)
+				</span>
 			{/if}
 		</div>
 	{/if}

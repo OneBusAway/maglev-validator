@@ -468,7 +468,13 @@ export function countComparableItems(
 				continue;
 			}
 			if (budget <= 0) return { count, capped: true };
-			const sub = countComparableItems(aItems[i].item, bItems[j].item, ignoredKeys, budget, itemPath);
+			const sub = countComparableItems(
+				aItems[i].item,
+				bItems[j].item,
+				ignoredKeys,
+				budget,
+				itemPath
+			);
 			count += sub.count;
 			budget -= sub.count;
 			if (sub.capped) capped = true;

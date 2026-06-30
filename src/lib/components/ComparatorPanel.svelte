@@ -46,11 +46,18 @@
 			.filter((k) => k.length > 0)
 	);
 
+	const MAX_COMPARABLE_BUDGET = 50000;
+
 	const diffStats = $derived.by(() => {
-		if (!cmpState.response1 || !cmpState.response2) return null;
-		const total = countComparableItems(cmpState.response1, cmpState.response2, ignoredKeys);
+		if (cmpState.response1 === null || cmpState.response2 === null) return null;
+		const total = countComparableItems(cmpState.response1, cmpState.response2, ignoredKeys, MAX_COMPARABLE_BUDGET);
 		const mismatches = countDifferences(cmpState.response1, cmpState.response2, ignoredKeys);
-		return { total, mismatches, matches: total - mismatches };
+		return {
+			total: total.capped ? `${total.count}+` : total.count,
+			mismatches,
+			matches: total.capped ? `${Math.max(total.count - mismatches, 0)}+` : total.count - mismatches,
+			capped: total.capped
+		};
 	});
 
 	const availableKeys = $derived.by(() => {

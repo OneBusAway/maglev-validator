@@ -169,6 +169,14 @@ export const endpoints = [
 				inPath: false,
 				default: 'true',
 				placeholder: 'Include referenced entities (default: true)'
+			},
+			{
+				name: 'time',
+				label: 'Service Date',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'YYYY-MM-DD | epoch — defaults to today'
 			}
 		]
 	},
@@ -1384,6 +1392,68 @@ export const endpoints = [
 				inPath: false,
 				default: 'true',
 				placeholder: 'Include referenced entities (default: true)'
+			}
+		]
+	},
+	{
+		id: 'search-stop',
+		name: 'Search Stop',
+		path: 'search/stop.json',
+		params: [
+			{
+				name: 'input',
+				label: 'Input',
+				required: true,
+				inPath: false,
+				default: '',
+				placeholder: 'e.g., crystal'
+			},
+			{
+				name: 'maxCount',
+				label: 'Max Results',
+				required: false,
+				inPath: false,
+				default: '20',
+				placeholder: 'Max number of results (default: 20)'
+			},
+			{
+				name: 'key',
+				label: 'API Key',
+				required: true,
+				inPath: false,
+				default: 'test',
+				placeholder: 'API Key'
+			}
+		]
+	},
+	{
+		id: 'search-route',
+		name: 'Search Route',
+		path: 'search/route.json',
+		params: [
+			{
+				name: 'input',
+				label: 'Input',
+				required: true,
+				inPath: false,
+				default: '',
+				placeholder: 'e.g., crystal'
+			},
+			{
+				name: 'maxCount',
+				label: 'Max Results',
+				required: false,
+				inPath: false,
+				default: '20',
+				placeholder: 'Max number of results (default: 20)'
+			},
+			{
+				name: 'key',
+				label: 'API Key',
+				required: true,
+				inPath: false,
+				default: 'test',
+				placeholder: 'API Key'
 			}
 		]
 	}

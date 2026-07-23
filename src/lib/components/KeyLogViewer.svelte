@@ -601,9 +601,9 @@
 		void chartTimeRange;
 		void loggerState.idFilter;
 		if (showChart && traceKeyPath && loggerState.selectedEndpoint) {
-			fetchChartLogs();
+			untrack(() => fetchChartLogs());
 		} else {
-			chartLogs = [];
+			untrack(() => { chartLogs = []; });
 		}
 	});
 

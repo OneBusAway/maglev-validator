@@ -43,6 +43,7 @@
 	let endpointInput = $state('');
 	let showEndpointSuggestions = $state(false);
 	let endpointHighlightIndex = $state(-1);
+	let hideTimeout: ReturnType<typeof setTimeout> | undefined;
 
 	const filteredEndpoints = $derived(
 		endpointInput
@@ -54,6 +55,17 @@
 			: endpoints
 	);
 
+	// sync endpointInput when selectedEndpoint initializes or changes externally
+	let prevSelectedId = $state(cmpState.selectedEndpoint);
+	$effect(() => {
+		const id = cmpState.selectedEndpoint;
+		if (id !== prevSelectedId) {
+			prevSelectedId = id;
+			const ep = endpoints.find((e) => e.id === id);
+			endpointInput = ep?.name || id;
+		}
+	});
+
 	function onEndpointInput(e: Event) {
 		endpointInput = (e.target as HTMLInputElement).value;
 		showEndpointSuggestions = true;
@@ -61,12 +73,18 @@
 	}
 
 	function onEndpointFocus() {
+		if (hideTimeout) clearTimeout(hideTimeout);
+		hideTimeout = undefined;
 		showEndpointSuggestions = true;
 		endpointHighlightIndex = -1;
 	}
 
 	function onEndpointBlur() {
-		setTimeout(() => (showEndpointSuggestions = false), 200);
+		if (hideTimeout) clearTimeout(hideTimeout);
+		hideTimeout = setTimeout(() => {
+			showEndpointSuggestions = false;
+			hideTimeout = undefined;
+		}, 200);
 	}
 
 	function onEndpointKeydown(e: KeyboardEvent) {

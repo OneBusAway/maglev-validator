@@ -603,7 +603,9 @@
 		if (showChart && traceKeyPath && loggerState.selectedEndpoint) {
 			untrack(() => fetchChartLogs());
 		} else {
-			untrack(() => { chartLogs = []; });
+			untrack(() => {
+				chartLogs = [];
+			});
 		}
 	});
 

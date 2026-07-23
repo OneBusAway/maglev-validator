@@ -9,6 +9,7 @@
 	import {
 		sortById,
 		findIdValue,
+		matchArraysById,
 		countDifferences,
 		countComparableItems
 	} from '$lib/utils/jsonCompare';
@@ -21,6 +22,13 @@
 	let inputHistory = $state<Record<string, string[]>>({});
 	let batchIdsInput = $state('');
 	const BATCH_IDS_KEY = 'batchIdsInput';
+	let fetchAbortController = $state<AbortController | null>(null);
+
+	function stopFetch() {
+		if (fetchAbortController) {
+			fetchAbortController.abort();
+		}
+	}
 
 	function saveBatchIds() {
 		if (typeof localStorage !== 'undefined') {
@@ -31,6 +39,76 @@
 	const hasInPathParam = $derived(
 		endpoints.find((e) => e.id === cmpState.selectedEndpoint)?.params.some((p) => p.inPath) ?? false
 	);
+
+	let endpointInput = $state('');
+	let showEndpointSuggestions = $state(false);
+	let endpointHighlightIndex = $state(-1);
+	let hideTimeout: ReturnType<typeof setTimeout> | undefined;
+
+	const filteredEndpoints = $derived(
+		endpointInput
+			? endpoints.filter(
+					(e) =>
+						e.name.toLowerCase().includes(endpointInput.toLowerCase()) ||
+						e.id.toLowerCase().includes(endpointInput.toLowerCase())
+				)
+			: endpoints
+	);
+
+	// sync endpointInput when selectedEndpoint initializes or changes externally
+	let prevSelectedId = $state(cmpState.selectedEndpoint);
+	$effect(() => {
+		const id = cmpState.selectedEndpoint;
+		if (id !== prevSelectedId) {
+			prevSelectedId = id;
+			const ep = endpoints.find((e) => e.id === id);
+			endpointInput = ep?.name || id;
+		}
+	});
+
+	function onEndpointInput(e: Event) {
+		endpointInput = (e.target as HTMLInputElement).value;
+		showEndpointSuggestions = true;
+		endpointHighlightIndex = -1;
+	}
+
+	function onEndpointFocus() {
+		if (hideTimeout) clearTimeout(hideTimeout);
+		hideTimeout = undefined;
+		showEndpointSuggestions = true;
+		endpointHighlightIndex = -1;
+	}
+
+	function onEndpointBlur() {
+		if (hideTimeout) clearTimeout(hideTimeout);
+		hideTimeout = setTimeout(() => {
+			showEndpointSuggestions = false;
+			hideTimeout = undefined;
+		}, 200);
+	}
+
+	function onEndpointKeydown(e: KeyboardEvent) {
+		if (!showEndpointSuggestions) return;
+		if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			endpointHighlightIndex = Math.min(endpointHighlightIndex + 1, filteredEndpoints.length - 1);
+		} else if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			endpointHighlightIndex = Math.max(endpointHighlightIndex - 1, 0);
+		} else if (e.key === 'Enter' && endpointHighlightIndex >= 0) {
+			e.preventDefault();
+			selectEndpoint(filteredEndpoints[endpointHighlightIndex].id);
+		} else if (e.key === 'Escape') {
+			showEndpointSuggestions = false;
+		}
+	}
+
+	function selectEndpoint(id: string) {
+		cmpState.selectedEndpoint = id;
+		const ep = endpoints.find((e) => e.id === id);
+		endpointInput = ep?.name || id;
+		showEndpointSuggestions = false;
+	}
 
 	const watchedKeys = $derived(
 		cmpState.watchedKeysInput
@@ -238,14 +316,89 @@
 		return walk(obj, 0);
 	}
 
+	function getAlignedArrayValues(
+		resp1: unknown,
+		resp2: unknown,
+		keyPath: string
+	): { server1Value: unknown; server2Value: unknown } | null {
+		const normalized = keyPath.replace(/\[(\d+)\]/g, '.$1');
+		const parts = normalized.split('.');
+		const starIndex = parts.indexOf('*');
+		if (starIndex === -1) return null;
+
+		function walkToArray(obj: unknown): unknown[] {
+			let current = obj;
+			for (let i = 0; i < starIndex; i++) {
+				const part = parts[i];
+				if (current === null || current === undefined) return [];
+				if (Array.isArray(current)) {
+					const numericIdx = Number(part);
+					if (!Number.isInteger(numericIdx)) return [];
+					current = current[numericIdx];
+				} else if (typeof current === 'object') {
+					current = (current as Record<string, unknown>)[part];
+				} else {
+					return [];
+				}
+			}
+			if (!Array.isArray(current)) return [];
+			return current;
+		}
+
+		const arr1 = walkToArray(resp1);
+		const arr2 = walkToArray(resp2);
+
+		if (arr1.length === 0 && arr2.length === 0) {
+			return { server1Value: [], server2Value: [] };
+		}
+
+		const suffixPath = parts.slice(starIndex + 1).join('.');
+		const hasIds1 = arr1.length > 0 && arr1.every((item) => findIdValue(item) !== null);
+		const hasIds2 = arr2.length > 0 && arr2.every((item) => findIdValue(item) !== null);
+
+		if (hasIds1 && hasIds2) {
+			const matched = matchArraysById(arr1, arr2);
+			const s1Values = matched.map((m) => {
+				if (m.left === null || m.left === undefined) return 'missing';
+				return suffixPath ? getValueByPath(m.left, suffixPath) : m.left;
+			});
+			const s2Values = matched.map((m) => {
+				if (m.right === null || m.right === undefined) return 'missing';
+				return suffixPath ? getValueByPath(m.right, suffixPath) : m.right;
+			});
+			return { server1Value: s1Values, server2Value: s2Values };
+		}
+
+		if (hasIds1) {
+			const sorted1 = [...arr1].sort(sortById);
+			return {
+				server1Value: sorted1.map((item) => (suffixPath ? getValueByPath(item, suffixPath) : item)),
+				server2Value: arr2.map((item) => (suffixPath ? getValueByPath(item, suffixPath) : item))
+			};
+		}
+		if (hasIds2) {
+			const sorted2 = [...arr2].sort(sortById);
+			return {
+				server1Value: arr1.map((item) => (suffixPath ? getValueByPath(item, suffixPath) : item)),
+				server2Value: sorted2.map((item) => (suffixPath ? getValueByPath(item, suffixPath) : item))
+			};
+		}
+
+		return null;
+	}
+
 	async function logWatchedKeys(resp1: unknown, resp2: unknown, idValue?: string) {
 		if (watchedKeys.length === 0) return;
 
-		const keys = watchedKeys.map((keyPath) => ({
-			path: keyPath,
-			server1Value: getValueByPath(resp1, keyPath),
-			server2Value: getValueByPath(resp2, keyPath)
-		}));
+		const keys = watchedKeys.map((keyPath) => {
+			const aligned = getAlignedArrayValues(resp1, resp2, keyPath);
+			if (aligned) return { path: keyPath, ...aligned };
+			return {
+				path: keyPath,
+				server1Value: getValueByPath(resp1, keyPath),
+				server2Value: getValueByPath(resp2, keyPath)
+			};
+		});
 
 		try {
 			isLogging = true;
@@ -395,6 +548,9 @@
 			return;
 		}
 
+		fetchAbortController = new AbortController();
+		const globalSignal = fetchAbortController.signal;
+
 		const batchResults = new SvelteMap<
 			string,
 			{
@@ -413,17 +569,27 @@
 			const url1 = buildUrl(cmpState.server1Base, endpoint, params);
 			const url2 = buildUrl(cmpState.server2Base, endpoint, params);
 
-			const controller = new AbortController();
-			const timeoutId = setTimeout(() => controller.abort(), 5000);
+			if (globalSignal.aborted) {
+				return { id, result: { error: 'Cancelled' } as const };
+			}
+
+			const combinedController = new AbortController();
+			const timeoutId = setTimeout(() => combinedController.abort(), 5000);
+			const onGlobalAbort = () => {
+				clearTimeout(timeoutId);
+				combinedController.abort();
+			};
+			globalSignal.addEventListener('abort', onGlobalAbort, { once: true });
 
 			try {
 				const res = await fetch('/api/proxy', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ url1, url2 }),
-					signal: controller.signal
+					signal: combinedController.signal
 				});
 				clearTimeout(timeoutId);
+				globalSignal.removeEventListener('abort', onGlobalAbort);
 				const data = await res.json();
 				if (data.error) {
 					return { id, result: { error: data.error } as const };
@@ -441,6 +607,7 @@
 				};
 			} catch (e) {
 				clearTimeout(timeoutId);
+				globalSignal.removeEventListener('abort', onGlobalAbort);
 				const msg = e instanceof Error ? e.message : 'Unknown error';
 				return { id, result: { error: msg } as const };
 			}
@@ -529,15 +696,20 @@
 				isProcessingData = false;
 			}
 
-			for (const [id, result] of batchResults) {
-				if (!result.error) {
-					await logWatchedKeys(result.response1, result.response2, id);
+			if (!globalSignal.aborted) {
+				for (const [id, result] of batchResults) {
+					if (!result.error) {
+						await logWatchedKeys(result.response1, result.response2, id);
+					}
 				}
 			}
 		} catch (e) {
 			cmpState.error = e instanceof Error ? e.message : 'Unknown error';
 		} finally {
 			cmpState.loading = false;
+			if (!fetchAbortController?.signal.aborted) {
+				fetchAbortController = null;
+			}
 		}
 	}
 
@@ -652,20 +824,45 @@
 		<div class="grid grid-cols-12 gap-6">
 			<div class="col-span-3">
 				<label
-					for="api-endpoint"
+					for="api-endpoint-input"
 					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 					>API Endpoint</label
 				>
 				<div class="relative">
-					<select
-						id="api-endpoint"
-						bind:value={cmpState.selectedEndpoint}
-						class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:focus:ring-green-500/40"
-					>
-						{#each endpoints as endpoint (endpoint.id)}
-							<option value={endpoint.id}>{endpoint.name}</option>
-						{/each}
-					</select>
+					<input
+						id="api-endpoint-input"
+						type="text"
+						value={endpointInput}
+						oninput={onEndpointInput}
+						onfocus={onEndpointFocus}
+						onblur={onEndpointBlur}
+						onkeydown={onEndpointKeydown}
+						placeholder="Type to search endpoints..."
+						autocomplete="off"
+						class="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:placeholder:text-gray-600"
+					/>
+					{#if showEndpointSuggestions && filteredEndpoints.length > 0}
+						<div
+							class="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+						>
+							{#each filteredEndpoints as endpoint, i (endpoint.id)}
+								<button
+									type="button"
+									onmousedown={() => selectEndpoint(endpoint.id)}
+									class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors hover:bg-green-50 dark:hover:bg-green-900/20 {endpoint.id ===
+									cmpState.selectedEndpoint
+										? 'bg-green-50 font-medium text-green-700 dark:bg-green-900/20 dark:text-green-300'
+										: i === endpointHighlightIndex
+											? 'bg-green-100 dark:bg-green-900/30'
+											: 'text-gray-700 dark:text-gray-300'}"
+								>
+									<span>{endpoint.name}</span>
+									<span class="ml-auto text-xs text-gray-400 dark:text-gray-500">{endpoint.id}</span
+									>
+								</button>
+							{/each}
+						</div>
+					{/if}
 				</div>
 			</div>
 
@@ -855,33 +1052,55 @@
 				</div>
 			</div>
 
-			<button
-				onclick={fetchBoth}
-				disabled={cmpState.loading}
-				class="flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2 text-sm font-medium text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-				title="Run Comparison (Ctrl+Enter)"
-			>
+			<div class="flex items-center gap-2">
+				<button
+					onclick={() => {
+						if (!cmpState.loading) fetchBoth();
+					}}
+					disabled={cmpState.loading}
+					class="flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2 text-sm font-medium text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+					title="Run Comparison (Ctrl+Enter)"
+				>
+					{#if cmpState.loading}
+						<svg
+							class="h-4 w-4 animate-spin text-white"
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+						>
+							<circle
+								class="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								stroke-width="4"
+							></circle>
+							<path
+								class="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+							></path>
+						</svg>
+						Running...
+					{:else}
+						<span>Run Comparison</span>
+						<kbd class="ml-1 rounded bg-green-500 px-1.5 py-0.5 text-xs font-normal">Ctrl+↵</kbd>
+					{/if}
+				</button>
 				{#if cmpState.loading}
-					<svg
-						class="h-4 w-4 animate-spin text-white"
-						xmlns="http://www.w3.org/2000/svg"
-						fill="none"
-						viewBox="0 0 24 24"
+					<button
+						onclick={stopFetch}
+						class="flex items-center gap-1.5 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-50 dark:border-red-800 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-900/20"
+						title="Stop fetching"
 					>
-						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
-						></circle>
-						<path
-							class="opacity-75"
-							fill="currentColor"
-							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-						></path>
-					</svg>
-					Running...
-				{:else}
-					<span>Run Comparison</span>
-					<kbd class="ml-1 rounded bg-green-500 px-1.5 py-0.5 text-xs font-normal">Ctrl+↵</kbd>
+						<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+							<path d="M5 4h10a1 1 0 011 1v10a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />
+						</svg>
+						Stop
+					</button>
 				{/if}
-			</button>
+			</div>
 		</div>
 	</div>
 </div>

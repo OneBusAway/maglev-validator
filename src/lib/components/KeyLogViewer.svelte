@@ -8,6 +8,7 @@
 	import { deepEqualIgnoreOrder, findIdValue } from '$lib/utils/jsonCompare';
 
 	import JsonViewer from '$lib/components/JsonViewer.svelte';
+	import TraceChart from '$lib/components/TraceChart.svelte';
 
 	let loggedEndpoints = $state<string[]>([]);
 
@@ -28,11 +29,15 @@
 		arrayDetailLog = null;
 	}
 
-	let traceKeyPath = $state('');
-	let showChart = $state(false);
-	let chartTimeRange = $state<'30m' | '1h' | '2h' | '6h' | '24h' | 'all'>('all');
+	let chartLoading = $state(false);
 	let limitInput = $state(loggerState.limit);
 	let chartLogs = $state<KeyLogEntry[]>([]);
+
+	// chart state lives on the singleton loggerState so it survives remounts.
+	// Read via these derived aliases; write via loggerState.xxx in handlers.
+	let traceKeyPath = $derived(loggerState.traceKeyPath);
+	let showChart = $derived(loggerState.showChart);
+	let chartTimeRange = $derived(loggerState.chartTimeRange);
 
 	const matchCache = $derived.by(() => {
 		const map = new SvelteMap<number, boolean>();
@@ -548,6 +553,10 @@
 		const capturedEndpoint = loggerState.selectedEndpoint;
 		const capturedKey = traceKeyPath;
 		const capturedIdFilter = loggerState.idFilter;
+		// Only show the full-height spinner on the very first load (no data yet).
+		// Background refreshes update silently to avoid hide-and-appear flicker.
+		const isFirstLoad = chartLogs.length === 0;
+		if (isFirstLoad) chartLoading = true;
 		try {
 			let url = `/api/keylog?endpoint=${encodeURIComponent(capturedEndpoint)}&keyPath=${encodeURIComponent(capturedKey)}`;
 			const isLive = loggerState.timeRange === 'live';
@@ -571,9 +580,17 @@
 			const res = await fetch(url);
 			if (capturedEndpoint !== loggerState.selectedEndpoint || capturedKey !== traceKeyPath) return;
 			const data = await res.json();
-			chartLogs = data.logs || [];
+			const newLogs: KeyLogEntry[] = data.logs || [];
+			// Skip reassignment when data is unchanged to avoid chart flicker on every poll.
+			const same =
+				newLogs.length === chartLogs.length &&
+				(newLogs.length === 0 ||
+					newLogs[newLogs.length - 1]?.id === chartLogs[chartLogs.length - 1]?.id);
+			if (!same) chartLogs = newLogs;
 		} catch (e) {
 			console.error('Failed to fetch chart logs:', e);
+		} finally {
+			chartLoading = false;
 		}
 	}
 
@@ -584,9 +601,11 @@
 		void chartTimeRange;
 		void loggerState.idFilter;
 		if (showChart && traceKeyPath && loggerState.selectedEndpoint) {
-			fetchChartLogs();
+			untrack(() => fetchChartLogs());
 		} else {
-			chartLogs = [];
+			untrack(() => {
+				chartLogs = [];
+			});
 		}
 	});
 
@@ -1002,7 +1021,7 @@
 							Trace:
 						</div>
 						<select
-							bind:value={traceKeyPath}
+							bind:value={loggerState.traceKeyPath}
 							class="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
 						>
 							<option value="">Select key...</option>
@@ -1012,7 +1031,10 @@
 						</select>
 						<button
 							onclick={() => {
-								if (traceKeyPath) showChart = !showChart;
+								if (loggerState.traceKeyPath) {
+									loggerState.showChart = !loggerState.showChart;
+									loggerState.chartSelectedLine = null;
+								}
 							}}
 							disabled={!traceKeyPath}
 							class="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all {showChart &&
@@ -1073,19 +1095,7 @@
 	</div>
 
 	<!-- Chart -->
-	{#if showChart && traceKeyPath && chartData.entries.length > 1}
-		{@const pad = { top: 20, right: 16, bottom: 28, left: 48 }}
-		{@const cw = 400}
-		{@const ch = 220}
-		{@const iw = cw - pad.left - pad.right}
-		{@const ih = ch - pad.top - pad.bottom}
-		{@const scaleY = (v: number) => pad.top + ih - ((v - chartData.minVal) / chartData.range) * ih}
-		{@const scaleX = (ei: number) =>
-			pad.left + (ei / Math.max(chartData.entries.length - 1, 1)) * iw}
-		{@const yTicks = Array.from({ length: 5 }, (_, i) => {
-			const v = chartData.minVal + (chartData.range * i) / 4;
-			return { value: v, y: scaleY(v) };
-		})}
+	{#if showChart && traceKeyPath}
 		<div
 			class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800"
 		>
@@ -1101,7 +1111,13 @@
 						{#each ['30m', '1h', '2h', '6h', '24h', 'all'] as range (range)}
 							<button
 								onclick={() =>
-									(chartTimeRange = range as '30m' | '1h' | '2h' | '6h' | '24h' | 'all')}
+									(loggerState.chartTimeRange = range as
+										| '30m'
+										| '1h'
+										| '2h'
+										| '6h'
+										| '24h'
+										| 'all')}
 								class="rounded-md px-2.5 py-1.5 text-xs font-medium transition-all {chartTimeRange ===
 								range
 									? 'bg-white text-green-700 shadow-sm dark:bg-green-900/30 dark:text-green-300'
@@ -1111,165 +1127,98 @@
 							</button>
 						{/each}
 					</div>
-					<span class="text-xs text-gray-500">({chartData.entries.length} pts)</span>
+					<span class="text-xs text-gray-500">
+						{#if chartLoading}
+							<span class="flex items-center gap-1">
+								<svg class="h-3 w-3 animate-spin text-gray-400" viewBox="0 0 24 24" fill="none">
+									<circle
+										class="opacity-25"
+										cx="12"
+										cy="12"
+										r="10"
+										stroke="currentColor"
+										stroke-width="4"
+									/>
+									<path
+										class="opacity-75"
+										fill="currentColor"
+										d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+									/>
+								</svg>
+								Loading…
+							</span>
+						{:else}
+							({chartData.entries.length} pts)
+						{/if}
+					</span>
 				</div>
 			</div>
-			{#if chartData.hasNumeric}
-				<div class="grid grid-cols-2 gap-6">
-					<div>
-						<h4
-							class="mb-2 text-xs font-bold tracking-wide text-green-600 uppercase dark:text-green-400"
-						>
-							Server 1
-						</h4>
-						<svg viewBox="0 0 {cw} {ch}" class="w-full">
-							{#each yTicks as tick (tick.value)}
-								<line
-									x1={pad.left}
-									x2={cw - pad.right}
-									y1={tick.y}
-									y2={tick.y}
-									stroke="currentColor"
-									class="text-gray-200 dark:text-gray-700"
-									stroke-width="1"
-								/>
-							{/each}
-							{#each yTicks as tick (tick.value)}
-								<text
-									x={pad.left - 4}
-									y={tick.y + 3}
-									text-anchor="end"
-									class="fill-gray-500 text-[9px] dark:fill-gray-400"
-								>
-									{tick.value.toFixed(1)}
-								</text>
-							{/each}
-							<clipPath id="clip-s1">
-								<rect x={pad.left} y={pad.top} width={iw} height={ih} />
-							</clipPath>
-							<g clip-path="url(#clip-s1)">
-								{#each chartData.s1.series as s, si (si)}
-									<polyline
-										points={s.points.map((p) => `${scaleX(p.x)},${scaleY(p.y)}`).join(' ')}
-										fill="none"
-										stroke={S1_COLORS[si % S1_COLORS.length]}
-										stroke-width="2"
-										stroke-linejoin="round"
-										stroke-linecap="round"
-									/>
-								{/each}
-							</g>
-							{#if chartData.s1.series.length > 1}
-								<text
-									x={pad.left + 4}
-									y={pad.top - 4}
-									class="fill-gray-400 text-[8px] dark:fill-gray-500"
-								>
-									{chartData.s1.series.length} lines
-								</text>
-							{/if}
-							{#if chartData.s1.series.length > 1}
-								<g transform="translate({pad.left}, {ch - 16})">
-									{#each chartData.s1.series.slice(0, 6) as s, si (si)}
-										<line
-											x1={si * 50}
-											y1={0}
-											x2={si * 50 + 14}
-											y2={0}
-											stroke={S1_COLORS[si % S1_COLORS.length]}
-											stroke-width="2"
-										/>
-										<text
-											x={si * 50 + 16}
-											y={3}
-											class="fill-gray-500 text-[8px] dark:fill-gray-400"
-										>
-											{s.label}
-										</text>
-									{/each}
-								</g>
-							{/if}
-						</svg>
-					</div>
-					<div>
-						<h4
-							class="mb-2 text-xs font-bold tracking-wide text-orange-600 uppercase dark:text-orange-400"
-						>
-							Server 2
-						</h4>
-						<svg viewBox="0 0 {cw} {ch}" class="w-full">
-							{#each yTicks as tick (tick.value)}
-								<line
-									x1={pad.left}
-									x2={cw - pad.right}
-									y1={tick.y}
-									y2={tick.y}
-									stroke="currentColor"
-									class="text-gray-200 dark:text-gray-700"
-									stroke-width="1"
-								/>
-							{/each}
-							{#each yTicks as tick (tick.value)}
-								<text
-									x={pad.left - 4}
-									y={tick.y + 3}
-									text-anchor="end"
-									class="fill-gray-500 text-[9px] dark:fill-gray-400"
-								>
-									{tick.value.toFixed(1)}
-								</text>
-							{/each}
-							<clipPath id="clip-s2">
-								<rect x={pad.left} y={pad.top} width={iw} height={ih} />
-							</clipPath>
-							<g clip-path="url(#clip-s2)">
-								{#each chartData.s2.series as s, si (si)}
-									<polyline
-										points={s.points.map((p) => `${scaleX(p.x)},${scaleY(p.y)}`).join(' ')}
-										fill="none"
-										stroke={S2_COLORS[si % S2_COLORS.length]}
-										stroke-width="2"
-										stroke-linejoin="round"
-										stroke-linecap="round"
-									/>
-								{/each}
-							</g>
-							{#if chartData.s2.series.length > 1}
-								<text
-									x={pad.left + 4}
-									y={pad.top - 4}
-									class="fill-gray-400 text-[8px] dark:fill-gray-500"
-								>
-									{chartData.s2.series.length} lines
-								</text>
-							{/if}
-							{#if chartData.s2.series.length > 1}
-								<g transform="translate({pad.left}, {ch - 16})">
-									{#each chartData.s2.series.slice(0, 6) as s, si (si)}
-										<line
-											x1={si * 50}
-											y1={0}
-											x2={si * 50 + 14}
-											y2={0}
-											stroke={S2_COLORS[si % S2_COLORS.length]}
-											stroke-width="2"
-										/>
-										<text
-											x={si * 50 + 16}
-											y={3}
-											class="fill-gray-500 text-[8px] dark:fill-gray-400"
-										>
-											{s.label}
-										</text>
-									{/each}
-								</g>
-							{/if}
-						</svg>
-					</div>
+			{#if chartLoading}
+				<div
+					class="flex flex-col items-center justify-center gap-3 py-16 text-sm text-gray-400 dark:text-gray-500"
+				>
+					<svg
+						class="h-7 w-7 animate-spin text-green-500 dark:text-green-400"
+						viewBox="0 0 24 24"
+						fill="none"
+					>
+						<circle
+							class="opacity-25"
+							cx="12"
+							cy="12"
+							r="10"
+							stroke="currentColor"
+							stroke-width="4"
+						/>
+						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+					</svg>
+					<span>Loading trace data…</span>
 				</div>
-			{:else}
+			{:else if chartData.entries.length <= 1}
+				<div
+					class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-gray-400 dark:text-gray-500"
+				>
+					<svg
+						class="h-8 w-8 opacity-40"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						><path stroke-linecap="round" stroke-linejoin="round" d="M3 12h3l3-8 4 16 3-8h5" /></svg
+					>
+					<span>No data points for this key in the selected range.</span>
+					<span class="text-xs">Try a wider time window or switch the key.</span>
+				</div>
+			{:else if !chartData.hasNumeric}
 				<div class="flex items-center justify-center py-8 text-sm text-gray-400 dark:text-gray-500">
 					Values are not numeric — chart cannot be rendered
+				</div>
+			{:else}
+				<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+					<TraceChart
+						series={chartData.s1.series}
+						entries={chartData.entries}
+						colors={S1_COLORS}
+						minVal={chartData.minVal}
+						maxVal={chartData.maxVal}
+						range={chartData.range}
+						title="Server 1"
+						accentClass="text-green-600 dark:text-green-400"
+						bind:selectedLine={loggerState.chartSelectedLine}
+						onrefresh={fetchChartLogs}
+					/>
+					<TraceChart
+						series={chartData.s2.series}
+						entries={chartData.entries}
+						colors={S2_COLORS}
+						minVal={chartData.minVal}
+						maxVal={chartData.maxVal}
+						range={chartData.range}
+						title="Server 2"
+						accentClass="text-orange-600 dark:text-orange-400"
+						bind:selectedLine={loggerState.chartSelectedLine}
+						onrefresh={fetchChartLogs}
+					/>
 				</div>
 			{/if}
 		</div>

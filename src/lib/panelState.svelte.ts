@@ -264,6 +264,13 @@ export class LoggerState {
 
 	keyPaths = $state<string[]>([]);
 	selectedKeyPaths = $state(new SvelteSet<string>());
+
+	// Chart state lives here (module singleton) so it survives KeyLogViewer
+	// remounts when switching tabs or toggling split view.
+	traceKeyPath = $state('');
+	showChart = $state(false);
+	chartSelectedLine = $state<number | null>(null);
+	chartTimeRange = $state<'30m' | '1h' | '2h' | '6h' | '24h' | 'all'>('all');
 }
 
 export interface GtfsRtSnapshotEntry {
@@ -286,3 +293,59 @@ export const protobufState = new ProtobufState();
 export const gtfsStaticState = new GtfsStaticState();
 export const loggerState = new LoggerState();
 export const gtfsRtLogState = new GtfsRtLogState();
+
+// ---- Persistence: continuously save key comparator fields to localStorage so
+// they survive server restarts / page reloads. Loaded eagerly at module init. ----
+if (typeof localStorage !== 'undefined') {
+	const defaults = {
+		server1Base: 'http://localhost:4000/api/where/',
+		server2Base: 'https://unitrans-api.server.onebusawaycloud.com/api/where/'
+	};
+	if (localStorage.server1Base) comparatorState.server1Base = localStorage.server1Base;
+	else comparatorState.server1Base = defaults.server1Base;
+	if (localStorage.server2Base) comparatorState.server2Base = localStorage.server2Base;
+	else comparatorState.server2Base = defaults.server2Base;
+	if (localStorage.comparatorSelectedEndpoint) {
+		comparatorState.selectedEndpoint = localStorage.comparatorSelectedEndpoint;
+	}
+	if (localStorage.comparatorParams) {
+		try {
+			const saved = JSON.parse(localStorage.comparatorParams);
+			if (saved && typeof saved === 'object') comparatorState.params = saved;
+		} catch {
+			// ignore
+		}
+	}
+	if (localStorage.comparatorEndpointParams) {
+		try {
+			const saved = JSON.parse(localStorage.comparatorEndpointParams);
+			if (saved && typeof saved === 'object') comparatorState.endpointParams = saved;
+		} catch {
+			// ignore
+		}
+	}
+
+	$effect.root(() => {
+		$effect(() => {
+			const v = comparatorState.server1Base;
+			if (typeof localStorage !== 'undefined') localStorage.server1Base = v;
+		});
+		$effect(() => {
+			const v = comparatorState.server2Base;
+			if (typeof localStorage !== 'undefined') localStorage.server2Base = v;
+		});
+		$effect(() => {
+			const v = comparatorState.selectedEndpoint;
+			if (typeof localStorage !== 'undefined') localStorage.comparatorSelectedEndpoint = String(v);
+		});
+		$effect(() => {
+			const v = comparatorState.params;
+			if (typeof localStorage !== 'undefined') localStorage.comparatorParams = JSON.stringify(v);
+		});
+		$effect(() => {
+			const v = comparatorState.endpointParams;
+			if (typeof localStorage !== 'undefined')
+				localStorage.comparatorEndpointParams = JSON.stringify(v);
+		});
+	});
+}

@@ -37,7 +37,6 @@
 	// Read via these derived aliases; write via loggerState.xxx in handlers.
 	let traceKeyPath = $derived(loggerState.traceKeyPath);
 	let showChart = $derived(loggerState.showChart);
-	let chartSelectedLine = $derived(loggerState.chartSelectedLine);
 	let chartTimeRange = $derived(loggerState.chartTimeRange);
 
 	const matchCache = $derived.by(() => {

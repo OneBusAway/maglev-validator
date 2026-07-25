@@ -11,9 +11,20 @@
 	-moz-osx-font-smoothing: grayscale;
 }
 
+html {
+	background-color: #f9fafb; /* gray-50 */
+}
+
+html.dark {
+	background-color: #030712; /* gray-950 */
+}
+
 body {
 	margin: 0;
 	padding: 0;
+	min-height: 100%;
+	background-color: inherit;
+	overscroll-behavior: none;
 }
 
 ::-webkit-scrollbar {

@@ -350,6 +350,10 @@ if (typeof localStorage !== 'undefined') {
 	if (localStorage.comparatorServer2IdOverride) {
 		comparatorState.server2IdOverride = localStorage.comparatorServer2IdOverride;
 	}
+	if (localStorage.comparatorResponseHeight) {
+		const h = Number(localStorage.comparatorResponseHeight);
+		if (Number.isFinite(h) && h >= RESPONSE_MIN_HEIGHT) comparatorState.responseHeight = h;
+	}
 
 	$effect.root(() => {
 		$effect(() => {

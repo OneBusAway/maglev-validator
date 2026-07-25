@@ -86,10 +86,10 @@
 	}
 </script>
 
-<div class="h-full bg-white font-sans text-sm dark:bg-gray-900">
+<div class="h-full min-h-full bg-white font-sans text-sm dark:bg-gray-950">
 	{#if data !== undefined}
 		<div
-			class="flex items-center justify-end gap-2 border-b border-gray-200 bg-white px-4 py-2 dark:border-gray-700 dark:bg-gray-900"
+			class="sticky top-0 z-10 flex items-center justify-end gap-2 border-b border-gray-200 bg-white px-4 py-2 dark:border-gray-800 dark:bg-gray-950"
 		>
 			<button
 				onclick={copyJson}

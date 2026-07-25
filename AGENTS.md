@@ -40,7 +40,6 @@ src/
       JsonTree.svelte             # Recursive tree rendering
       ProtobufPanel.svelte        # GTFS-Realtime decoder UI
       GtfsStaticViewer.svelte     # GTFS Static browser / SQL editor
-
       KeyLogViewer.svelte         # Watched-key history
       GtfsRtLogViewer.svelte      # GTFS-RT snapshot history
       ToolsPanel.svelte           # Developer utilities modal

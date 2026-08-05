@@ -36,9 +36,9 @@
 		}
 	}
 
-	const hasInPathParam = $derived(
-		endpoints.find((e) => e.id === cmpState.selectedEndpoint)?.params.some((p) => p.inPath) ?? false
-	);
+	const selectedEndpointMeta = $derived(endpoints.find((e) => e.id === cmpState.selectedEndpoint));
+	const hasInPathParam = $derived(selectedEndpointMeta?.params.some((p) => p.inPath) ?? false);
+	const inPathParam = $derived(selectedEndpointMeta?.params.find((p) => p.inPath));
 
 	let endpointInput = $state('');
 	let showEndpointSuggestions = $state(false);
@@ -529,6 +529,7 @@
 		}
 
 		const idParamName = endpoint.params.find((p) => p.inPath)?.name;
+		const server2IdOverride = cmpState.server2IdOverride.trim();
 
 		const parsedBatchIds = batchIdsInput
 			.split('\n')
@@ -565,9 +566,12 @@
 		>();
 
 		const fetchPair = async (id: string) => {
-			const params = idParamName ? { ...cmpState.params, [idParamName]: id } : cmpState.params;
-			const url1 = buildUrl(cmpState.server1Base, endpoint, params);
-			const url2 = buildUrl(cmpState.server2Base, endpoint, params);
+			const params1 = idParamName ? { ...cmpState.params, [idParamName]: id } : cmpState.params;
+			// Optional different path ID for server 2 (e.g. unitrans_LMU_4091 vs LMU_4091)
+			const id2 = !isBatchMode && server2IdOverride ? server2IdOverride : id;
+			const params2 = idParamName ? { ...cmpState.params, [idParamName]: id2 } : cmpState.params;
+			const url1 = buildUrl(cmpState.server1Base, endpoint, params1);
+			const url2 = buildUrl(cmpState.server2Base, endpoint, params2);
 
 			if (globalSignal.aborted) {
 				return { id, result: { error: 'Cancelled' } as const };
@@ -741,9 +745,11 @@
 		let path = endpoint.path;
 		let queryParams: string[] = [];
 
+		const inPathParam = endpoint.params.find((p) => p.inPath);
+
 		Object.entries(params).forEach(([key, value]) => {
-			if (endpoint.params.find((p) => p.name === key && p.inPath)) {
-				path = path.replace(`{${key}}`, value);
+			if (inPathParam && key === inPathParam.name) {
+				path = path.replace(`{${inPathParam.name}}`, value);
 			} else if (value !== '' && value !== undefined && value !== null) {
 				queryParams.push(`${key}=${encodeURIComponent(value)}`);
 			}
@@ -776,298 +782,620 @@
 	}
 </script>
 
-<div
-	class="mb-6 rounded-xl border border-gray-200 bg-white shadow-sm transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
->
-	<div class="space-y-6 p-6">
-		<div class="grid grid-cols-2 gap-6">
-			<div>
-				<label
-					for="server1-url"
-					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
-					>Server 1 URL</label
+<div class="flex h-full min-h-0 flex-col">
+	<div
+		class="mb-4 shrink-0 rounded-xl border border-gray-200 bg-white shadow-sm transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
+	>
+		{#if cmpState.inputsCollapsed}
+			<div class="flex flex-wrap items-center gap-3 px-4 py-2.5">
+				<button
+					type="button"
+					onclick={() => (cmpState.inputsCollapsed = false)}
+					class="flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-all hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-green-700 dark:hover:bg-green-900/30 dark:hover:text-green-400"
+					title="Show configuration"
+					aria-expanded="false"
 				>
-				<input
-					id="server1-url"
-					type="text"
-					bind:value={cmpState.server1Base}
-					list="server1-url-history"
-					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-green-500/40"
-				/>
-				<datalist id="server1-url-history">
-					{#each server1UrlHistory as url (url)}
-						<option value={url}></option>
-					{/each}
-				</datalist>
-			</div>
-			<div>
-				<label
-					for="server2-url"
-					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
-					>Server 2 URL</label
+					<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M19 9l-7 7-7-7"
+						/>
+					</svg>
+					Config
+				</button>
+				<div class="hidden h-4 w-px bg-gray-200 sm:block dark:bg-gray-700"></div>
+				<span
+					class="max-w-[10rem] truncate rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-gray-900 dark:text-gray-300"
+					title={selectedEndpointMeta?.name || cmpState.selectedEndpoint}
 				>
-				<input
-					id="server2-url"
-					type="text"
-					bind:value={cmpState.server2Base}
-					list="server2-url-history"
-					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-green-500/40"
-				/>
-				<datalist id="server2-url-history">
-					{#each server2UrlHistory as url (url)}
-						<option value={url}></option>
-					{/each}
-				</datalist>
-			</div>
-		</div>
-
-		<div class="grid grid-cols-12 gap-6">
-			<div class="col-span-3">
-				<label
-					for="api-endpoint-input"
-					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
-					>API Endpoint</label
+					{selectedEndpointMeta?.name || cmpState.selectedEndpoint}
+				</span>
+				<span
+					class="hidden max-w-[14rem] truncate font-mono text-xs text-gray-400 lg:inline"
+					title={cmpState.server1Base}
 				>
-				<div class="relative">
-					<input
-						id="api-endpoint-input"
-						type="text"
-						value={endpointInput}
-						oninput={onEndpointInput}
-						onfocus={onEndpointFocus}
-						onblur={onEndpointBlur}
-						onkeydown={onEndpointKeydown}
-						placeholder="Type to search endpoints..."
-						autocomplete="off"
-						class="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:placeholder:text-gray-600"
-					/>
-					{#if showEndpointSuggestions && filteredEndpoints.length > 0}
-						<div
-							class="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+					{cmpState.server1Base.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+				</span>
+				<span class="hidden text-xs text-gray-300 lg:inline dark:text-gray-600">vs</span>
+				<span
+					class="hidden max-w-[14rem] truncate font-mono text-xs text-gray-400 lg:inline"
+					title={cmpState.server2Base}
+				>
+					{cmpState.server2Base.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+				</span>
+				{#if cmpState.autoRefresh}
+					<span
+						class="flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400"
+					>
+						<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500"></span>
+						{cmpState.refreshInterval}s
+					</span>
+				{/if}
+				<div class="ml-auto flex items-center gap-2">
+					<button
+						onclick={() => {
+							if (!cmpState.loading) fetchBoth();
+						}}
+						disabled={cmpState.loading}
+						class="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+						title="Run Comparison (Ctrl+Enter)"
+					>
+						{#if cmpState.loading}
+							<svg class="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+								<circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								></circle>
+								<path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+								></path>
+							</svg>
+							Running
+						{:else}
+							Run
+							<kbd class="rounded bg-green-500 px-1 py-0.5 text-[10px] font-normal">Ctrl+↵</kbd>
+						{/if}
+					</button>
+					{#if cmpState.loading}
+						<button
+							onclick={stopFetch}
+							class="rounded-lg border border-red-300 px-2.5 py-1.5 text-xs font-medium text-red-600 transition-all hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+							title="Stop fetching"
 						>
-							{#each filteredEndpoints as endpoint, i (endpoint.id)}
-								<button
-									type="button"
-									onmousedown={() => selectEndpoint(endpoint.id)}
-									class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors hover:bg-green-50 dark:hover:bg-green-900/20 {endpoint.id ===
-									cmpState.selectedEndpoint
-										? 'bg-green-50 font-medium text-green-700 dark:bg-green-900/20 dark:text-green-300'
-										: i === endpointHighlightIndex
-											? 'bg-green-100 dark:bg-green-900/30'
-											: 'text-gray-700 dark:text-gray-300'}"
-								>
-									<span>{endpoint.name}</span>
-									<span class="ml-auto text-xs text-gray-400 dark:text-gray-500">{endpoint.id}</span
-									>
-								</button>
-							{/each}
-						</div>
+							Stop
+						</button>
 					{/if}
 				</div>
 			</div>
-
-			{#each endpoints.find((e) => e.id === cmpState.selectedEndpoint)?.params || [] as param (param.name)}
-				{@const history = getInputHistory(cmpState.selectedEndpoint, param.name)}
-				<div class="col-span-3">
-					<label
-						for={'param-' + param.name}
-						class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
-					>
-						{param.label}
-						{#if param.required}<span class="text-red-500"> * </span>{/if}
-					</label>
-					<input
-						id={'param-' + param.name}
-						type="text"
-						value={cmpState.params[param.name] || ''}
-						oninput={(e) => handleParamChange(param.name, e.currentTarget.value)}
-						placeholder={param.placeholder || ''}
-						list={'param-history-' + param.name}
-						class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-green-500/40"
-					/>
-					{#if history.length > 0}
-						<datalist id={'param-history-' + param.name}>
-							{#each history as value (value)}
-								<option {value}></option>
+		{:else}
+			<div
+				class="flex items-center justify-between border-b border-gray-100 px-4 py-2.5 dark:border-gray-700"
+			>
+				<span class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+					>Configuration</span
+				>
+				<button
+					type="button"
+					onclick={() => (cmpState.inputsCollapsed = true)}
+					class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-all hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-green-700 dark:hover:bg-green-900/30 dark:hover:text-green-400"
+					title="Hide configuration to free space for responses"
+					aria-expanded="true"
+				>
+					<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M5 15l7-7 7 7"
+						/>
+					</svg>
+					Collapse
+				</button>
+			</div>
+			<div class="space-y-6 p-6">
+				<div class="grid grid-cols-2 gap-6">
+					<div>
+						<label
+							for="server1-url"
+							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							>Server 1 URL</label
+						>
+						<input
+							id="server1-url"
+							type="text"
+							bind:value={cmpState.server1Base}
+							list="server1-url-history"
+							class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-green-500/40"
+						/>
+						<datalist id="server1-url-history">
+							{#each server1UrlHistory as url (url)}
+								<option value={url}></option>
 							{/each}
 						</datalist>
-					{/if}
-				</div>
-			{/each}
-
-			{#if hasInPathParam}
-				<div class="col-span-3">
-					<label
-						for="batch-ids"
-						class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
-					>
-						Batch IDs
-						<span class="text-xs font-normal text-gray-400 normal-case"
-							>(one per line for multi-ID comparison)</span
+					</div>
+					<div>
+						<label
+							for="server2-url"
+							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							>Server 2 URL</label
 						>
-					</label>
-					<textarea
-						id="batch-ids"
-						value={batchIdsInput}
-						oninput={(e) => {
-							batchIdsInput = (e.target as HTMLTextAreaElement).value;
-							saveBatchIds();
-						}}
-						placeholder="1_12345&#10;1_67890&#10;1_11111"
-						rows="3"
-						class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600"
-					></textarea>
+						<input
+							id="server2-url"
+							type="text"
+							bind:value={cmpState.server2Base}
+							list="server2-url-history"
+							class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-green-500/40"
+						/>
+						<datalist id="server2-url-history">
+							{#each server2UrlHistory as url (url)}
+								<option value={url}></option>
+							{/each}
+						</datalist>
+					</div>
 				</div>
-			{/if}
 
-			<div class="col-span-2">
-				<label
-					for="json-path-filter"
-					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
-					>JSON Path Filter</label
-				>
-				<input
-					id="json-path-filter"
-					type="text"
-					bind:value={cmpState.focusPath}
-					placeholder="e.g. data.entry.status"
-					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-green-500/40"
-				/>
-			</div>
-
-			<div class="col-span-2">
-				<label
-					for="ignore-keys-trigger"
-					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
-					>Ignored Keys</label
-				>
-				<button
-					id="ignore-keys-trigger"
-					onclick={() => (cmpState.showIgnoreModal = true)}
-					class="group flex w-full items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-left text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-green-500/40"
-				>
-					<span class="truncate">
-						{ignoredKeys.length ? `${ignoredKeys.length} keys ignored` : 'Select keys...'}
-					</span>
-					<span class="text-gray-400 transition-colors group-hover:text-green-500">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							class="h-4 w-4"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
+				<div class="grid grid-cols-12 gap-6">
+					<div class="col-span-3">
+						<label
+							for="api-endpoint-input"
+							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							>API Endpoint</label
 						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M19 9l-7 7-7-7"
+						<div class="relative">
+							<input
+								id="api-endpoint-input"
+								type="text"
+								value={endpointInput}
+								oninput={onEndpointInput}
+								onfocus={onEndpointFocus}
+								onblur={onEndpointBlur}
+								onkeydown={onEndpointKeydown}
+								placeholder="Type to search endpoints..."
+								autocomplete="off"
+								class="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:placeholder:text-gray-600"
 							/>
-						</svg>
-					</span>
-				</button>
-			</div>
+							{#if showEndpointSuggestions && filteredEndpoints.length > 0}
+								<div
+									class="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+								>
+									{#each filteredEndpoints as endpoint, i (endpoint.id)}
+										<button
+											type="button"
+											onmousedown={() => selectEndpoint(endpoint.id)}
+											class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors hover:bg-green-50 dark:hover:bg-green-900/20 {endpoint.id ===
+											cmpState.selectedEndpoint
+												? 'bg-green-50 font-medium text-green-700 dark:bg-green-900/20 dark:text-green-300'
+												: i === endpointHighlightIndex
+													? 'bg-green-100 dark:bg-green-900/30'
+													: 'text-gray-700 dark:text-gray-300'}"
+										>
+											<span>{endpoint.name}</span>
+											<span class="ml-auto text-xs text-gray-400 dark:text-gray-500"
+												>{endpoint.id}</span
+											>
+										</button>
+									{/each}
+								</div>
+							{/if}
+						</div>
+					</div>
 
-			<div class="col-span-2">
-				<label
-					for="watch-keys-trigger"
-					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
-					>Watch Keys <span class="text-green-500">(Log)</span></label
-				>
-				<button
-					id="watch-keys-trigger"
-					onclick={() => (cmpState.showWatchModal = true)}
-					class="group flex w-full items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-left text-sm text-green-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-green-900/30 dark:bg-green-900/20 dark:text-green-300 dark:focus:ring-green-500/40"
-				>
-					<span class="truncate">
-						{#if cmpState.lastLoggedTime}
-							<span class="animate-pulse font-medium text-green-600 dark:text-green-400"
-								>Logged!</span
+					{#each selectedEndpointMeta?.params || [] as param (param.name)}
+						{@const history = getInputHistory(cmpState.selectedEndpoint, param.name)}
+						<div class="col-span-3">
+							<label
+								for={'param-' + param.name}
+								class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
 							>
-						{:else if isLogging}
-							<span class="font-medium text-green-600 dark:text-green-400">Logging...</span>
-						{:else}
-							{watchedKeys.length ? `${watchedKeys.length} keys watched` : 'Select keys...'}
-						{/if}
-					</span>
-					<span
-						class="text-green-400 transition-colors group-hover:text-green-600 dark:group-hover:text-green-200"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							class="h-4 w-4"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+								{param.label}
+								{#if param.required}<span class="text-red-500"> * </span>{/if}
+							</label>
+							<input
+								id={'param-' + param.name}
+								type="text"
+								value={cmpState.params[param.name] || ''}
+								oninput={(e) => handleParamChange(param.name, e.currentTarget.value)}
+								placeholder={param.placeholder || ''}
+								list={'param-history-' + param.name}
+								class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-green-500/40"
 							/>
-						</svg>
-					</span>
-				</button>
+							{#if history.length > 0}
+								<datalist id={'param-history-' + param.name}>
+									{#each history as value (value)}
+										<option {value}></option>
+									{/each}
+								</datalist>
+							{/if}
+						</div>
+					{/each}
+
+					{#if hasInPathParam}
+						<div class="col-span-3">
+							<label
+								for="batch-ids"
+								class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							>
+								Batch IDs
+								<span class="text-xs font-normal text-gray-400 normal-case"
+									>(one per line for multi-ID comparison)</span
+								>
+							</label>
+							<textarea
+								id="batch-ids"
+								value={batchIdsInput}
+								oninput={(e) => {
+									batchIdsInput = (e.target as HTMLTextAreaElement).value;
+									saveBatchIds();
+								}}
+								placeholder="1_12345&#10;1_67890&#10;1_11111"
+								rows="3"
+								class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600"
+							></textarea>
+						</div>
+
+						<div class="col-span-3">
+							<label
+								for="server2-id-override"
+								class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							>
+								Server 2 ID
+								<span class="text-xs font-normal text-gray-400 normal-case"
+									>(optional — different path ID for Server 2 only)</span
+								>
+							</label>
+							<input
+								id="server2-id-override"
+								type="text"
+								bind:value={cmpState.server2IdOverride}
+								placeholder={inPathParam?.placeholder || 'e.g. LMU_4091'}
+								class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600"
+							/>
+						</div>
+					{/if}
+
+					<div class="col-span-2">
+						<label
+							for="json-path-filter"
+							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							>JSON Path Filter</label
+						>
+						<input
+							id="json-path-filter"
+							type="text"
+							bind:value={cmpState.focusPath}
+							placeholder="e.g. data.entry.status"
+							class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-green-500/40"
+						/>
+					</div>
+
+					<div class="col-span-2">
+						<label
+							for="ignore-keys-trigger"
+							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							>Ignored Keys</label
+						>
+						<button
+							id="ignore-keys-trigger"
+							onclick={() => (cmpState.showIgnoreModal = true)}
+							class="group flex w-full items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-left text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-green-500/40"
+						>
+							<span class="truncate">
+								{ignoredKeys.length ? `${ignoredKeys.length} keys ignored` : 'Select keys...'}
+							</span>
+							<span class="text-gray-400 transition-colors group-hover:text-green-500">
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									class="h-4 w-4"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M19 9l-7 7-7-7"
+									/>
+								</svg>
+							</span>
+						</button>
+					</div>
+
+					<div class="col-span-2">
+						<label
+							for="watch-keys-trigger"
+							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							>Watch Keys <span class="text-green-500">(Log)</span></label
+						>
+						<button
+							id="watch-keys-trigger"
+							onclick={() => (cmpState.showWatchModal = true)}
+							class="group flex w-full items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-left text-sm text-green-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-green-900/30 dark:bg-green-900/20 dark:text-green-300 dark:focus:ring-green-500/40"
+						>
+							<span class="truncate">
+								{#if cmpState.lastLoggedTime}
+									<span class="animate-pulse font-medium text-green-600 dark:text-green-400"
+										>Logged!</span
+									>
+								{:else if isLogging}
+									<span class="font-medium text-green-600 dark:text-green-400">Logging...</span>
+								{:else}
+									{watchedKeys.length ? `${watchedKeys.length} keys watched` : 'Select keys...'}
+								{/if}
+							</span>
+							<span
+								class="text-green-400 transition-colors group-hover:text-green-600 dark:group-hover:text-green-200"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									class="h-4 w-4"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+									/>
+								</svg>
+							</span>
+						</button>
+					</div>
+				</div>
+
+				<div
+					class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700"
+				>
+					<div class="flex items-center gap-4">
+						<label class="flex cursor-pointer items-center gap-2 select-none">
+							<input
+								type="checkbox"
+								bind:checked={cmpState.autoRefresh}
+								class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
+							/>
+							<span class="text-sm font-medium text-gray-600 dark:text-gray-400">Auto-refresh</span>
+						</label>
+						{#if cmpState.autoRefresh}
+							<div class="flex items-center gap-2">
+								<input
+									type="number"
+									bind:value={cmpState.refreshInterval}
+									min="1"
+									max="60"
+									class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+								/>
+								<span class="text-xs text-gray-400">sec</span>
+							</div>
+						{/if}
+
+						<div class="ml-4 flex items-center gap-2">
+							<label class="text-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+								>Tolerance ±%</label
+							>
+							<input
+								type="number"
+								bind:value={cmpState.numericTolerancePercent}
+								min="0"
+								max="100"
+								step="0.5"
+								class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+							/>
+						</div>
+					</div>
+
+					<div class="flex items-center gap-2">
+						<button
+							onclick={() => {
+								if (!cmpState.loading) fetchBoth();
+							}}
+							disabled={cmpState.loading}
+							class="flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2 text-sm font-medium text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+							title="Run Comparison (Ctrl+Enter)"
+						>
+							{#if cmpState.loading}
+								<svg
+									class="h-4 w-4 animate-spin text-white"
+									xmlns="http://www.w3.org/2000/svg"
+									fill="none"
+									viewBox="0 0 24 24"
+								>
+									<circle
+										class="opacity-25"
+										cx="12"
+										cy="12"
+										r="10"
+										stroke="currentColor"
+										stroke-width="4"
+									></circle>
+									<path
+										class="opacity-75"
+										fill="currentColor"
+										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+									></path>
+								</svg>
+								Running...
+							{:else}
+								<span>Run Comparison</span>
+								<kbd class="ml-1 rounded bg-green-500 px-1.5 py-0.5 text-xs font-normal">Ctrl+↵</kbd
+								>
+							{/if}
+						</button>
+						{#if cmpState.loading}
+							<button
+								onclick={stopFetch}
+								class="flex items-center gap-1.5 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-50 dark:border-red-800 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-900/20"
+								title="Stop fetching"
+							>
+								<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+									<path d="M5 4h10a1 1 0 011 1v10a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />
+								</svg>
+								Stop
+							</button>
+						{/if}
+					</div>
+				</div>
+			</div>
+		{/if}
+	</div>
+
+	{#if cmpState.error}
+		<div
+			class="mb-6 flex items-start gap-4 rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900/20 dark:bg-red-900/10"
+		>
+			<div
+				class="rounded-lg border border-red-100 bg-white p-2 font-bold text-red-500 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-400"
+			>
+				!
+			</div>
+			<div>
+				<h3 class="mb-1 font-semibold text-red-900 dark:text-red-200">Request Failed</h3>
+				<p class="text-sm text-red-700 dark:text-red-300">{cmpState.error}</p>
+			</div>
+		</div>
+	{/if}
+
+	{#if cmpState.status1 !== null || cmpState.status2 !== null}
+		<div class="mb-4 flex items-center justify-between">
+			<div class="flex items-center gap-4">
+				<h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Response Comparison</h2>
+				{#if cmpState.batchIds.length > 1}
+					<div class="flex items-center gap-2">
+						<select
+							class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+							value={cmpState.selectedBatchId}
+							onchange={(e) => selectBatchId(e.currentTarget.value)}
+						>
+							{#each cmpState.batchIds as id (id)}
+								<option value={id}
+									>{id}{cmpState.batchResults.get(id)?.error ? ' (failed)' : ''}</option
+								>
+							{/each}
+						</select>
+						<span class="text-xs text-gray-400">
+							{cmpState.selectedBatchId &&
+							cmpState.batchResults.get(cmpState.selectedBatchId)?.currentUrl1
+								? '1 URL shown'
+								: ''}
+						</span>
+					</div>
+				{/if}
+			</div>
+			<div class="flex items-center gap-6 text-sm font-medium">
+				<span class="mr-4 flex items-center gap-2 text-gray-600 dark:text-gray-400">
+					<span class="h-3 w-3 rounded bg-red-500"></span> Different
+				</span>
+				<span class="mr-4 flex items-center gap-2 text-gray-600 dark:text-gray-400">
+					<span class="h-3 w-3 rounded bg-orange-400"></span> Missing
+				</span>
+				<span class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+					<span class="h-3 w-3 rounded bg-green-500"></span> Extra
+				</span>
 			</div>
 		</div>
 
-		<div
-			class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700"
-		>
-			<div class="flex items-center gap-4">
-				<label class="flex cursor-pointer items-center gap-2 select-none">
-					<input
-						type="checkbox"
-						bind:checked={cmpState.autoRefresh}
-						class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
-					/>
-					<span class="text-sm font-medium text-gray-600 dark:text-gray-400">Auto-refresh</span>
-				</label>
-				{#if cmpState.autoRefresh}
-					<div class="flex items-center gap-2">
-						<input
-							type="number"
-							bind:value={cmpState.refreshInterval}
-							min="1"
-							max="60"
-							class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-						/>
-						<span class="text-xs text-gray-400">sec</span>
+		{#if cmpState.currentUrl1 || cmpState.currentUrl2}
+			<div
+				class="mb-4 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50"
+			>
+				<div class="text-xs font-medium text-gray-500 dark:text-gray-400">Fetched URLs:</div>
+				{#if cmpState.currentUrl1}
+					<div class="flex items-start gap-2">
+						<span
+							class="shrink-0 rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+							>1</span
+						>
+						{#if cmpState.status1 !== null}
+							<span
+								class="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium {cmpState.status1 >= 400
+									? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+									: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'}"
+								>{cmpState.status1}</span
+							>
+						{/if}
+						<code class="text-xs break-all text-gray-700 dark:text-gray-300"
+							>{cmpState.currentUrl1}</code
+						>
 					</div>
 				{/if}
-
-				<div class="ml-4 flex items-center gap-2">
-					<label class="text-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
-						>Tolerance ±%</label
-					>
-					<input
-						type="number"
-						bind:value={cmpState.numericTolerancePercent}
-						min="0"
-						max="100"
-						step="0.5"
-						class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-					/>
-				</div>
-			</div>
-
-			<div class="flex items-center gap-2">
-				<button
-					onclick={() => {
-						if (!cmpState.loading) fetchBoth();
-					}}
-					disabled={cmpState.loading}
-					class="flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2 text-sm font-medium text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-					title="Run Comparison (Ctrl+Enter)"
-				>
-					{#if cmpState.loading}
-						<svg
-							class="h-4 w-4 animate-spin text-white"
-							xmlns="http://www.w3.org/2000/svg"
-							fill="none"
-							viewBox="0 0 24 24"
+				{#if cmpState.currentUrl2}
+					<div class="flex items-start gap-2">
+						<span
+							class="shrink-0 rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/50 dark:text-purple-300"
+							>2</span
 						>
+						{#if cmpState.status2 !== null}
+							<span
+								class="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium {cmpState.status2 >= 400
+									? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+									: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'}"
+								>{cmpState.status2}</span
+							>
+						{/if}
+						<code class="text-xs break-all text-gray-700 dark:text-gray-300"
+							>{cmpState.currentUrl2}</code
+						>
+					</div>
+				{/if}
+			</div>
+		{/if}
+
+		{#if diffStats}
+			<div
+				class="mb-4 flex items-center gap-4 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800/50"
+			>
+				{#if diffStats.mismatches === 0}
+					<span class="flex items-center gap-1.5 font-medium text-green-700 dark:text-green-400">
+						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2.5"
+								d="M5 13l4 4L19 7"
+							/>
+						</svg>
+						All {diffStats.total} fields match
+					</span>
+				{:else}
+					<span class="flex items-center gap-1.5 font-medium text-red-600 dark:text-red-400">
+						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2.5"
+								d="M6 18L18 6M6 6l12 12"
+							/>
+						</svg>
+						{diffStats.mismatches} mismatch{diffStats.mismatches !== 1 ? 'es' : ''}
+					</span>
+					<span class="text-gray-500 dark:text-gray-400">
+						{diffStats.matches} / {diffStats.total} match
+					</span>
+				{/if}
+				{#if ignoredKeys.length > 0}
+					<span class="ml-auto text-xs text-gray-400 dark:text-gray-500">
+						({ignoredKeys.length} key{ignoredKeys.length !== 1 ? 's' : ''} ignored)
+					</span>
+				{/if}
+			</div>
+		{/if}
+
+		<div class="relative flex min-h-0 flex-1 flex-col">
+			{#if isProcessingData}
+				<div
+					class="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm dark:bg-gray-900/80"
+				>
+					<div class="flex flex-col items-center gap-3">
+						<svg class="h-8 w-8 animate-spin text-green-600" fill="none" viewBox="0 0 24 24">
 							<circle
 								class="opacity-25"
 								cx="12"
@@ -1082,223 +1410,45 @@
 								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 							></path>
 						</svg>
-						Running...
-					{:else}
-						<span>Run Comparison</span>
-						<kbd class="ml-1 rounded bg-green-500 px-1.5 py-0.5 text-xs font-normal">Ctrl+↵</kbd>
-					{/if}
-				</button>
-				{#if cmpState.loading}
-					<button
-						onclick={stopFetch}
-						class="flex items-center gap-1.5 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-50 dark:border-red-800 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-900/20"
-						title="Stop fetching"
-					>
-						<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-							<path d="M5 4h10a1 1 0 011 1v10a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />
-						</svg>
-						Stop
-					</button>
-				{/if}
-			</div>
-		</div>
-	</div>
-</div>
-
-{#if cmpState.error}
-	<div
-		class="mb-6 flex items-start gap-4 rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900/20 dark:bg-red-900/10"
-	>
-		<div
-			class="rounded-lg border border-red-100 bg-white p-2 font-bold text-red-500 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-400"
-		>
-			!
-		</div>
-		<div>
-			<h3 class="mb-1 font-semibold text-red-900 dark:text-red-200">Request Failed</h3>
-			<p class="text-sm text-red-700 dark:text-red-300">{cmpState.error}</p>
-		</div>
-	</div>
-{/if}
-
-{#if cmpState.status1 !== null || cmpState.status2 !== null}
-	<div class="mb-4 flex items-center justify-between">
-		<div class="flex items-center gap-4">
-			<h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Response Comparison</h2>
-			{#if cmpState.batchIds.length > 1}
-				<div class="flex items-center gap-2">
-					<select
-						class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-						value={cmpState.selectedBatchId}
-						onchange={(e) => selectBatchId(e.currentTarget.value)}
-					>
-						{#each cmpState.batchIds as id (id)}
-							<option value={id}
-								>{id}{cmpState.batchResults.get(id)?.error ? ' (failed)' : ''}</option
-							>
-						{/each}
-					</select>
-					<span class="text-xs text-gray-400">
-						{cmpState.selectedBatchId &&
-						cmpState.batchResults.get(cmpState.selectedBatchId)?.currentUrl1
-							? '1 URL shown'
-							: ''}
-					</span>
-				</div>
-			{/if}
-		</div>
-		<div class="flex items-center gap-6 text-sm font-medium">
-			<span class="mr-4 flex items-center gap-2 text-gray-600 dark:text-gray-400">
-				<span class="h-3 w-3 rounded bg-red-500"></span> Different
-			</span>
-			<span class="mr-4 flex items-center gap-2 text-gray-600 dark:text-gray-400">
-				<span class="h-3 w-3 rounded bg-orange-400"></span> Missing
-			</span>
-			<span class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-				<span class="h-3 w-3 rounded bg-green-500"></span> Extra
-			</span>
-		</div>
-	</div>
-
-	{#if cmpState.currentUrl1 || cmpState.currentUrl2}
-		<div
-			class="mb-4 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50"
-		>
-			<div class="text-xs font-medium text-gray-500 dark:text-gray-400">Fetched URLs:</div>
-			{#if cmpState.currentUrl1}
-				<div class="flex items-start gap-2">
-					<span
-						class="shrink-0 rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-						>1</span
-					>
-					{#if cmpState.status1 !== null}
-						<span
-							class="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium {cmpState.status1 >= 400
-								? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
-								: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'}"
-							>{cmpState.status1}</span
+						<span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+							>{processingMessage}</span
 						>
-					{/if}
-					<code class="text-xs break-all text-gray-700 dark:text-gray-300"
-						>{cmpState.currentUrl1}</code
-					>
+					</div>
 				</div>
 			{/if}
-			{#if cmpState.currentUrl2}
-				<div class="flex items-start gap-2">
-					<span
-						class="shrink-0 rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/50 dark:text-purple-300"
-						>2</span
-					>
-					{#if cmpState.status2 !== null}
-						<span
-							class="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium {cmpState.status2 >= 400
-								? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
-								: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'}"
-							>{cmpState.status2}</span
-						>
-					{/if}
-					<code class="text-xs break-all text-gray-700 dark:text-gray-300"
-						>{cmpState.currentUrl2}</code
-					>
-				</div>
-			{/if}
+			<DiffViewer
+				response1={cmpState.response1}
+				response2={cmpState.response2}
+				focusPath={cmpState.focusPath}
+				{ignoredKeys}
+				numericTolerancePercent={cmpState.numericTolerancePercent}
+			/>
 		</div>
-	{/if}
-
-	{#if diffStats}
+	{:else if !cmpState.loading}
 		<div
-			class="mb-4 flex items-center gap-4 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800/50"
+			class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-16 text-center transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
 		>
-			{#if diffStats.mismatches === 0}
-				<span class="flex items-center gap-1.5 font-medium text-green-700 dark:text-green-400">
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2.5"
-							d="M5 13l4 4L19 7"
-						/>
-					</svg>
-					All {diffStats.total} fields match
-				</span>
-			{:else}
-				<span class="flex items-center gap-1.5 font-medium text-red-600 dark:text-red-400">
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2.5"
-							d="M6 18L18 6M6 6l12 12"
-						/>
-					</svg>
-					{diffStats.mismatches} mismatch{diffStats.mismatches !== 1 ? 'es' : ''}
-				</span>
-				<span class="text-gray-500 dark:text-gray-400">
-					{diffStats.matches} / {diffStats.total} match
-				</span>
-			{/if}
-			{#if ignoredKeys.length > 0}
-				<span class="ml-auto text-xs text-gray-400 dark:text-gray-500">
-					({ignoredKeys.length} key{ignoredKeys.length !== 1 ? 's' : ''} ignored)
-				</span>
-			{/if}
-		</div>
-	{/if}
-
-	<div class="relative">
-		{#if isProcessingData}
 			<div
-				class="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm dark:bg-gray-900/80"
+				class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-900"
 			>
-				<div class="flex flex-col items-center gap-3">
-					<svg class="h-8 w-8 animate-spin text-green-600" fill="none" viewBox="0 0 24 24">
-						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
-						></circle>
-						<path
-							class="opacity-75"
-							fill="currentColor"
-							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-						></path>
-					</svg>
-					<span class="text-sm font-medium text-gray-700 dark:text-gray-300"
-						>{processingMessage}</span
-					>
-				</div>
+				<svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+					><path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+					></path></svg
+				>
 			</div>
-		{/if}
-		<DiffViewer
-			response1={cmpState.response1}
-			response2={cmpState.response2}
-			focusPath={cmpState.focusPath}
-			{ignoredKeys}
-			numericTolerancePercent={cmpState.numericTolerancePercent}
-		/>
-	</div>
-{:else if !cmpState.loading}
-	<div
-		class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-16 text-center transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
-	>
-		<div
-			class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-900"
-		>
-			<svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-				><path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-				></path></svg
-			>
+			<h3 class="mb-2 text-xl font-semibold text-gray-800 dark:text-white">Ready to Compare</h3>
+			<p class="max-w-md text-gray-500">
+				Configure your endpoints above, then click <strong class="text-green-600"
+					>Run Comparison</strong
+				> to analyze the API response differences.
+			</p>
 		</div>
-		<h3 class="mb-2 text-xl font-semibold text-gray-800 dark:text-white">Ready to Compare</h3>
-		<p class="max-w-md text-gray-500">
-			Configure your endpoints above, then click <strong class="text-green-600"
-				>Run Comparison</strong
-			> to analyze the API response differences.
-		</p>
-	</div>
-{/if}
+	{/if}
+</div>
 
 {#if cmpState.showIgnoreModal}
 	<div

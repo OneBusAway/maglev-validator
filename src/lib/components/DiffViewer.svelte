@@ -3,6 +3,14 @@
 	import { getByPath } from '$lib/utils/jsonCompare';
 	import { deepSearchJSON } from '$lib/utils/search';
 	import { SvelteSet, SvelteMap } from 'svelte/reactivity';
+	import {
+		comparatorState as cmpState,
+		lockBodyScroll,
+		unlockBodyScroll,
+		RESPONSE_DEFAULT_HEIGHT,
+		RESPONSE_MIN_HEIGHT
+	} from '$lib/panelState.svelte';
+	import { browser } from '$app/environment';
 
 	interface Props {
 		response1: unknown;
@@ -19,6 +27,91 @@
 		ignoredKeys = [],
 		numericTolerancePercent = 0
 	}: Props = $props();
+
+	let isFullscreen = $state(false);
+	let isResizing = $state(false);
+	let resizeStartY = 0;
+	let resizeStartHeight = 0;
+
+	const currentHeight = $derived(
+		cmpState.responseHeight > 0 ? cmpState.responseHeight : RESPONSE_DEFAULT_HEIGHT
+	);
+
+	const maxHeight = $derived(
+		browser ? Math.max(window.innerHeight - 120, RESPONSE_MIN_HEIGHT) : RESPONSE_DEFAULT_HEIGHT * 2
+	);
+
+	const paneHeightStyle = $derived(isFullscreen ? undefined : `height: ${currentHeight}px`);
+
+	function toggleFullscreen() {
+		isFullscreen = !isFullscreen;
+	}
+
+	function onFullscreenKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape' && isFullscreen) {
+			isFullscreen = false;
+		}
+	}
+
+	$effect(() => {
+		if (!browser || !isFullscreen) return;
+		lockBodyScroll();
+		window.addEventListener('keydown', onFullscreenKeydown);
+		return () => {
+			unlockBodyScroll();
+			window.removeEventListener('keydown', onFullscreenKeydown);
+		};
+	});
+
+	function clampHeight(h: number) {
+		const maxH = browser ? Math.max(window.innerHeight - 120, RESPONSE_MIN_HEIGHT) : h;
+		return Math.min(maxH, Math.max(RESPONSE_MIN_HEIGHT, h));
+	}
+
+	function startResize(e: PointerEvent) {
+		if (isFullscreen) return;
+		e.preventDefault();
+		isResizing = true;
+		resizeStartY = e.clientY;
+		resizeStartHeight = currentHeight;
+		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+	}
+
+	function onResizeMove(e: PointerEvent) {
+		if (!isResizing) return;
+		cmpState.responseHeight = clampHeight(resizeStartHeight + (e.clientY - resizeStartY));
+	}
+
+	function endResize(e: PointerEvent) {
+		if (!isResizing) return;
+		isResizing = false;
+		try {
+			(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+		} catch {
+			// ignore
+		}
+	}
+
+	function onResizeKeydown(e: KeyboardEvent) {
+		if (isFullscreen) return;
+		const step = e.shiftKey ? 40 : 16;
+		if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			cmpState.responseHeight = clampHeight(currentHeight - step);
+		} else if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			cmpState.responseHeight = clampHeight(currentHeight + step);
+		} else if (e.key === 'Home') {
+			e.preventDefault();
+			cmpState.responseHeight = RESPONSE_MIN_HEIGHT;
+		} else if (e.key === 'End') {
+			e.preventDefault();
+			cmpState.responseHeight = clampHeight(maxHeight);
+		} else if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			cmpState.responseHeight = RESPONSE_DEFAULT_HEIGHT;
+		}
+	}
 
 	const trimmedPath = $derived(focusPath.trim());
 	const focused1 = $derived(trimmedPath ? getByPath(response1, trimmedPath) : response1);
@@ -131,16 +224,19 @@
 		}
 
 		function findArray(data: unknown, targetPath: string): unknown[] | null {
-			if (!data) return null;
+			if (!data || typeof data !== 'object') return null;
 
 			if (targetPath === '' || targetPath === 'auto') {
+				const record = data as Record<string, unknown>;
 				const keys = ['list', 'data', 'items', 'results', 'elements', 'entities'];
 				for (const key of keys) {
-					if (data[key] && Array.isArray(data[key]) && data[key].length > 0) {
-						const firstItem = data[key][0];
+					const candidate = record[key];
+					if (Array.isArray(candidate) && candidate.length > 0) {
+						const firstItem = candidate[0];
 						if (firstItem && typeof firstItem === 'object') {
-							for (const idField of fieldsToUse) {
-								if (firstItem[idField] !== undefined) return data[key];
+							const firstRecord = firstItem as Record<string, unknown>;
+							for (const idKey of fieldsToUse) {
+								if (firstRecord[idKey] !== undefined) return candidate;
 							}
 						}
 					}
@@ -151,8 +247,9 @@
 					if (Array.isArray(obj) && obj.length > 0) {
 						const firstItem = obj[0];
 						if (firstItem && typeof firstItem === 'object') {
-							for (const idField of fieldsToUse) {
-								if (firstItem[idField] !== undefined) return obj;
+							const firstRecord = firstItem as Record<string, unknown>;
+							for (const idKey of fieldsToUse) {
+								if (firstRecord[idKey] !== undefined) return obj;
 							}
 						}
 						return null;
@@ -340,325 +437,415 @@
 	}
 </script>
 
-<div class="mb-4 flex items-center gap-4">
-	<div class="relative max-w-md flex-1">
-		<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-			{#if isSearching}
-				<svg
-					class="h-4 w-4 animate-spin text-green-500"
-					xmlns="http://www.w3.org/2000/svg"
-					fill="none"
-					viewBox="0 0 24 24"
-				>
-					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
-					></circle>
-					<path
-						class="opacity-75"
-						fill="currentColor"
-						d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-					></path>
-				</svg>
-			{:else}
-				<svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-					></path>
-				</svg>
-			{/if}
-		</div>
-		<input
-			type="text"
-			bind:value={localSearchQuery}
-			oninput={handleSearchInput}
-			placeholder="Search (min 2 chars)..."
-			class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pr-10 pl-10 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:placeholder:text-gray-500"
-		/>
-		{#if localSearchQuery}
-			<button
-				onclick={clearSearch}
-				class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-				title="Clear search"
+<div
+	class="flex flex-col {isFullscreen
+		? 'fixed inset-0 z-[90] bg-gray-50 p-4 dark:bg-gray-950'
+		: ''}"
+>
+	{#if isFullscreen}
+		<div class="mb-3 flex shrink-0 items-center justify-between">
+			<span class="text-sm font-semibold text-gray-800 dark:text-gray-100">Response Comparison</span
 			>
-				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<button
+				type="button"
+				onclick={toggleFullscreen}
+				class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+				title="Exit fullscreen (Esc)"
+			>
+				<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
 						stroke-linecap="round"
 						stroke-linejoin="round"
 						stroke-width="2"
 						d="M6 18L18 6M6 6l12 12"
-					></path>
+					/>
 				</svg>
+				Exit fullscreen
+				<kbd class="rounded bg-gray-200 px-1 py-0.5 text-[10px] dark:bg-gray-700">Esc</kbd>
 			</button>
-		{/if}
-	</div>
+		</div>
+	{/if}
 
-	<button
-		onclick={() => (syncScroll = !syncScroll)}
-		class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {syncScroll
-			? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
-			: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'}"
-		title="{syncScroll ? 'Disable' : 'Enable'} synchronized scrolling"
-	>
-		<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-			<path
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				stroke-width="2"
-				d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-			></path>
-		</svg>
-		Sync Scroll
-	</button>
+	<div class="mb-3 flex shrink-0 flex-wrap items-center gap-2">
+		<div class="relative max-w-md min-w-[12rem] flex-1">
+			<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+				{#if isSearching}
+					<svg
+						class="h-4 w-4 animate-spin text-green-500"
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+					>
+						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+						></circle>
+						<path
+							class="opacity-75"
+							fill="currentColor"
+							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+						></path>
+					</svg>
+				{:else}
+					<svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+						></path>
+					</svg>
+				{/if}
+			</div>
+			<input
+				type="text"
+				bind:value={localSearchQuery}
+				oninput={handleSearchInput}
+				placeholder="Search (min 2 chars)..."
+				class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pr-10 pl-10 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:placeholder:text-gray-500"
+			/>
+			{#if localSearchQuery}
+				<button
+					onclick={clearSearch}
+					class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+					title="Clear search"
+				>
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						></path>
+					</svg>
+				</button>
+			{/if}
+		</div>
 
-	<button
-		onclick={() => (syncSelect = !syncSelect)}
-		class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {syncSelect
-			? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
-			: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'}"
-		title="{syncSelect ? 'Disable' : 'Enable'} synchronized expand/collapse"
-	>
-		<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-			<path
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				stroke-width="2"
-				d="M4 6h16M4 12h16m-7 6h7"
-			></path>
-		</svg>
-		Sync Select
-	</button>
-
-	<div class="relative">
 		<button
-			onclick={() => (showSortModal = !showSortModal)}
-			class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {sortEnabled
+			onclick={() => (syncScroll = !syncScroll)}
+			class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {syncScroll
 				? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
 				: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'}"
-			title="Sort arrays by ID to align matching items"
+			title="{syncScroll ? 'Disable' : 'Enable'} synchronized scrolling"
 		>
 			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path
 					stroke-linecap="round"
 					stroke-linejoin="round"
 					stroke-width="2"
-					d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
+					d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
 				></path>
 			</svg>
-			{sortEnabled ? 'Reset Sort' : 'Sort Arrays'}
+			<span class="hidden sm:inline">Sync Scroll</span>
 		</button>
 
-		{#if showSortModal}
-			<div
-				class="absolute top-full right-0 z-50 mt-2 w-80 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-gray-700 dark:bg-gray-800"
+		<button
+			onclick={() => (syncSelect = !syncSelect)}
+			class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {syncSelect
+				? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
+				: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'}"
+			title="{syncSelect ? 'Disable' : 'Enable'} synchronized expand/collapse"
+		>
+			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M4 6h16M4 12h16m-7 6h7"
+				></path>
+			</svg>
+			<span class="hidden sm:inline">Sync Select</span>
+		</button>
+
+		<div class="relative">
+			<button
+				onclick={() => (showSortModal = !showSortModal)}
+				class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {sortEnabled
+					? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
+					: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'}"
+				title="Sort arrays by ID to align matching items"
 			>
-				<div class="mb-4 border-b border-gray-100 pb-3 dark:border-gray-700">
-					<h3 class="text-sm font-semibold text-gray-800 dark:text-white">Sort Arrays by ID</h3>
-					<p class="mt-0.5 text-xs text-gray-500">
-						Align arrays from both servers by matching IDs for accurate comparison
-					</p>
-				</div>
+				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
+					></path>
+				</svg>
+				<span class="hidden sm:inline">{sortEnabled ? 'Reset Sort' : 'Sort Arrays'}</span>
+			</button>
 
-				{#if detectedArrays.length === 0}
-					<div class="py-4 text-center">
-						<div class="mb-2 flex justify-center">
-							<svg
-								class="h-8 w-8 text-gray-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-								></path>
-							</svg>
-						</div>
-						<p class="text-sm text-gray-500">No sortable arrays detected</p>
+			{#if showSortModal}
+				<div
+					class="absolute top-full right-0 z-50 mt-2 w-80 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-gray-700 dark:bg-gray-800"
+				>
+					<div class="mb-4 border-b border-gray-100 pb-3 dark:border-gray-700">
+						<h3 class="text-sm font-semibold text-gray-800 dark:text-white">Sort Arrays by ID</h3>
+						<p class="mt-0.5 text-xs text-gray-500">
+							Align arrays from both servers by matching IDs for accurate comparison
+						</p>
 					</div>
-				{:else}
-					<div class="space-y-4">
-						<div>
-							<label class="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">
-								Select Array to Sort
-							</label>
-							<select
-								bind:value={selectedArrayPath}
-								class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-							>
-								<option value="auto">Auto-detect best array</option>
-								{#each detectedArrays as arr (arr.path)}
-									<option value={arr.path}>
-										{arr.pathLabel} ({arr.count} items{#if arr.detectedIdField}
-											- {arr.detectedIdField}{/if})
-									</option>
-								{/each}
-							</select>
-						</div>
 
-						<div>
-							<label class="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">
-								Sort by ID Field
-							</label>
-							<div
-								class="max-h-48 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700"
-							>
-								{#each ID_FIELDS as field (field.value)}
-									<label
-										class="flex cursor-pointer items-start gap-2 border-b border-gray-100 px-3 py-2 last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 {selectedIdField ===
-										field.value
-											? 'bg-green-50 dark:bg-green-900/20'
-											: ''}"
-									>
-										<input
-											type="radio"
-											name="idField"
-											value={field.value}
-											bind:group={selectedIdField}
-											class="mt-0.5 h-3.5 w-3.5 accent-green-600"
-										/>
-										<div class="flex-1">
-											<span class="text-sm font-medium text-gray-700 dark:text-gray-200"
-												>{field.label}</span
-											>
-											<span class="ml-1.5 text-xs text-gray-400">{field.desc}</span>
-										</div>
-									</label>
-								{/each}
+					{#if detectedArrays.length === 0}
+						<div class="py-4 text-center">
+							<div class="mb-2 flex justify-center">
+								<svg
+									class="h-8 w-8 text-gray-400"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+									></path>
+								</svg>
+							</div>
+							<p class="text-sm text-gray-500">No sortable arrays detected</p>
+						</div>
+					{:else}
+						<div class="space-y-4">
+							<div>
+								<label class="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">
+									Select Array to Sort
+								</label>
+								<select
+									bind:value={selectedArrayPath}
+									class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+								>
+									<option value="auto">Auto-detect best array</option>
+									{#each detectedArrays as arr (arr.path)}
+										<option value={arr.path}>
+											{arr.pathLabel} ({arr.count} items{#if arr.detectedIdField}
+												- {arr.detectedIdField}{/if})
+										</option>
+									{/each}
+								</select>
+							</div>
+
+							<div>
+								<label class="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">
+									Sort by ID Field
+								</label>
+								<div
+									class="max-h-48 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700"
+								>
+									{#each ID_FIELDS as field (field.value)}
+										<label
+											class="flex cursor-pointer items-start gap-2 border-b border-gray-100 px-3 py-2 last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 {selectedIdField ===
+											field.value
+												? 'bg-green-50 dark:bg-green-900/20'
+												: ''}"
+										>
+											<input
+												type="radio"
+												name="idField"
+												value={field.value}
+												bind:group={selectedIdField}
+												class="mt-0.5 h-3.5 w-3.5 accent-green-600"
+											/>
+											<div class="flex-1">
+												<span class="text-sm font-medium text-gray-700 dark:text-gray-200"
+													>{field.label}</span
+												>
+												<span class="ml-1.5 text-xs text-gray-400">{field.desc}</span>
+											</div>
+										</label>
+									{/each}
+								</div>
+							</div>
+
+							<div class="flex gap-2 pt-2">
+								<button
+									onclick={() => (showSortModal = false)}
+									class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700"
+								>
+									Cancel
+								</button>
+								<button
+									onclick={doSort}
+									disabled={sortLoading}
+									class="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+								>
+									{#if sortLoading}
+										<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+											<circle
+												class="opacity-25"
+												cx="12"
+												cy="12"
+												r="10"
+												stroke="currentColor"
+												stroke-width="4"
+											></circle>
+											<path
+												class="opacity-75"
+												fill="currentColor"
+												d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+											></path>
+										</svg>
+									{/if}
+									Sort Now
+								</button>
 							</div>
 						</div>
+					{/if}
+				</div>
+			{/if}
+		</div>
 
-						<div class="flex gap-2 pt-2">
-							<button
-								onclick={() => (showSortModal = false)}
-								class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700"
-							>
-								Cancel
-							</button>
-							<button
-								onclick={doSort}
-								disabled={sortLoading}
-								class="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
-							>
-								{#if sortLoading}
-									<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-										<circle
-											class="opacity-25"
-											cx="12"
-											cy="12"
-											r="10"
-											stroke="currentColor"
-											stroke-width="4"
-										></circle>
-										<path
-											class="opacity-75"
-											fill="currentColor"
-											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-										></path>
-									</svg>
-								{/if}
-								Sort Now
-							</button>
-						</div>
-					</div>
+		<button
+			type="button"
+			onclick={toggleFullscreen}
+			class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {isFullscreen
+				? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
+				: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'}"
+			title={isFullscreen ? 'Exit fullscreen (Esc)' : 'Fullscreen response view'}
+		>
+			{#if isFullscreen}
+				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"
+					/>
+				</svg>
+			{:else}
+				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+					/>
+				</svg>
+			{/if}
+			<span class="hidden sm:inline">{isFullscreen ? 'Exit' : 'Fullscreen'}</span>
+		</button>
+
+		{#if debouncedSearchQuery}
+			<div class="flex items-center gap-3 text-sm">
+				{#if totalMatches > 0}
+					<span class="flex items-center gap-1.5 text-yellow-700 dark:text-yellow-400">
+						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+							></path>
+						</svg>
+						<span class="font-medium">{totalMatches} matches</span>
+						<span class="text-gray-400"
+							>({searchResults1.length} left, {searchResults2.length} right)</span
+						>
+					</span>
+				{:else}
+					<span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+							></path>
+						</svg>
+						<span>No matches found</span>
+					</span>
 				{/if}
 			</div>
 		{/if}
 	</div>
 
-	{#if debouncedSearchQuery}
-		<div class="flex items-center gap-3 text-sm">
-			{#if totalMatches > 0}
-				<span class="flex items-center gap-1.5 text-yellow-700 dark:text-yellow-400">
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-						></path>
-					</svg>
-					<span class="font-medium">{totalMatches} matches</span>
-					<span class="text-gray-400"
-						>({searchResults1.length} left, {searchResults2.length} right)</span
-					>
-				</span>
-			{:else}
-				<span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-						></path>
-					</svg>
-					<span>No matches found</span>
-				</span>
-			{/if}
+	{#if showSortModal}
+		<button
+			class="fixed inset-0 z-40 cursor-default"
+			onclick={() => (showSortModal = false)}
+			aria-label="Close modal"
+		></button>
+	{/if}
+
+	<div
+		class="grid min-h-0 flex-1 grid-cols-2 grid-rows-[auto_1fr] gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200 dark:border-gray-800 dark:bg-gray-800"
+		style={paneHeightStyle}
+	>
+		<div
+			class="bg-gray-50 px-4 py-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:bg-gray-900 dark:text-gray-400"
+		>
+			Server 1 Response
+		</div>
+		<div
+			class="border-l border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400"
+		>
+			Server 2 Response
+		</div>
+
+		<div
+			bind:this={scrollContainer1}
+			onscroll={() => handleScroll('left')}
+			class="min-h-0 overflow-auto bg-white dark:bg-gray-950"
+		>
+			<JsonViewer
+				data={sorted1 ?? focused1}
+				otherData={sorted2 ?? focused2}
+				{focusPath}
+				{ignoredKeys}
+				mode="server1"
+				searchQuery={debouncedSearchQuery}
+				matchingPaths={matchingPaths1}
+				{syncedExpandedPaths}
+				onToggle={syncSelect ? handleToggle : undefined}
+				{numericTolerancePercent}
+			/>
+		</div>
+		<div
+			bind:this={scrollContainer2}
+			onscroll={() => handleScroll('right')}
+			class="min-h-0 overflow-auto border-l border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950"
+		>
+			<JsonViewer
+				data={sorted2 ?? focused2}
+				otherData={sorted1 ?? focused1}
+				{focusPath}
+				{ignoredKeys}
+				mode="server2"
+				searchQuery={debouncedSearchQuery}
+				matchingPaths={matchingPaths2}
+				{syncedExpandedPaths}
+				onToggle={syncSelect ? handleToggle : undefined}
+				{numericTolerancePercent}
+			/>
+		</div>
+	</div>
+
+	{#if !isFullscreen}
+		<div
+			role="separator"
+			aria-orientation="horizontal"
+			aria-label="Resize response panel"
+			aria-valuenow={currentHeight}
+			aria-valuemin={RESPONSE_MIN_HEIGHT}
+			aria-valuemax={maxHeight}
+			tabindex="0"
+			class="group mt-1 flex h-3 cursor-row-resize items-center justify-center rounded-b-md transition-colors hover:bg-green-50 dark:hover:bg-green-900/20 {isResizing
+				? 'bg-green-50 dark:bg-green-900/20'
+				: ''}"
+			onpointerdown={startResize}
+			onpointermove={onResizeMove}
+			onpointerup={endResize}
+			onpointercancel={endResize}
+			onkeydown={onResizeKeydown}
+			ondblclick={() => {
+				cmpState.responseHeight = RESPONSE_DEFAULT_HEIGHT;
+			}}
+		>
+			<div
+				class="h-1 w-10 rounded-full bg-gray-300 transition-colors group-hover:bg-green-500 dark:bg-gray-600 dark:group-hover:bg-green-500 {isResizing
+					? 'bg-green-500'
+					: ''}"
+			></div>
 		</div>
 	{/if}
-</div>
-
-{#if showSortModal}
-	<button
-		class="fixed inset-0 z-40 cursor-default"
-		onclick={() => (showSortModal = false)}
-		aria-label="Close modal"
-	></button>
-{/if}
-
-<div
-	class="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200 dark:border-gray-700 dark:bg-gray-700"
->
-	<div
-		class="bg-gray-50 px-4 py-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:bg-gray-800 dark:text-gray-400"
-	>
-		Server 1 Response
-	</div>
-	<div
-		class="border-l border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
-	>
-		Server 2 Response
-	</div>
-
-	<div
-		bind:this={scrollContainer1}
-		onscroll={() => handleScroll('left')}
-		class="max-h-[800px] overflow-auto bg-white dark:bg-gray-900"
-	>
-		<JsonViewer
-			data={sorted1 ?? focused1}
-			otherData={sorted2 ?? focused2}
-			{focusPath}
-			{ignoredKeys}
-			mode="server1"
-			searchQuery={debouncedSearchQuery}
-			matchingPaths={matchingPaths1}
-			{syncedExpandedPaths}
-			onToggle={syncSelect ? handleToggle : undefined}
-			{numericTolerancePercent}
-		/>
-	</div>
-	<div
-		bind:this={scrollContainer2}
-		onscroll={() => handleScroll('right')}
-		class="max-h-[800px] overflow-auto border-l border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
-	>
-		<JsonViewer
-			data={sorted2 ?? focused2}
-			otherData={focused1}
-			{focusPath}
-			{ignoredKeys}
-			mode="server2"
-			searchQuery={debouncedSearchQuery}
-			matchingPaths={matchingPaths2}
-			{syncedExpandedPaths}
-			onToggle={syncSelect ? handleToggle : undefined}
-			{numericTolerancePercent}
-		/>
-	</div>
 </div>

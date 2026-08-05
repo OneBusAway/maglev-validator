@@ -1,6 +1,23 @@
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { endpoints } from '$lib/endpoints';
 
+export const RESPONSE_MIN_HEIGHT = 280;
+export const RESPONSE_DEFAULT_HEIGHT = 640;
+
+let bodyScrollLockCount = 0;
+
+export function lockBodyScroll() {
+	bodyScrollLockCount += 1;
+	if (typeof document !== 'undefined') document.body.style.overflow = 'hidden';
+}
+
+export function unlockBodyScroll() {
+	bodyScrollLockCount = Math.max(0, bodyScrollLockCount - 1);
+	if (bodyScrollLockCount === 0 && typeof document !== 'undefined') {
+		document.body.style.overflow = '';
+	}
+}
+
 export class ComparatorState {
 	server1Base = $state('http://localhost:4000/api/where/');
 	server2Base = $state('https://unitrans-api.server.onebusawaycloud.com/api/where/');
@@ -8,6 +25,7 @@ export class ComparatorState {
 	params: Record<string, string> = $state({});
 	endpointParams: Record<string, Record<string, string>> = $state({});
 	lastEndpoint = $state('');
+	server2IdOverride = $state('');
 
 	response1: unknown = $state(null);
 	response2: unknown = $state(null);
@@ -49,6 +67,8 @@ export class ComparatorState {
 	showFocusSuggestions = $state(false);
 	focusPath = $state('');
 	isExpanded = $state(false);
+	inputsCollapsed = $state(false);
+	responseHeight = $state(0);
 
 	toggleWatchKey(key: string) {
 		const current = new SvelteSet(
@@ -324,6 +344,12 @@ if (typeof localStorage !== 'undefined') {
 			// ignore
 		}
 	}
+	if (localStorage.comparatorInputsCollapsed === 'true') {
+		comparatorState.inputsCollapsed = true;
+	}
+	if (localStorage.comparatorServer2IdOverride) {
+		comparatorState.server2IdOverride = localStorage.comparatorServer2IdOverride;
+	}
 
 	$effect.root(() => {
 		$effect(() => {
@@ -346,6 +372,19 @@ if (typeof localStorage !== 'undefined') {
 			const v = comparatorState.endpointParams;
 			if (typeof localStorage !== 'undefined')
 				localStorage.comparatorEndpointParams = JSON.stringify(v);
+		});
+		$effect(() => {
+			const v = comparatorState.inputsCollapsed;
+			if (typeof localStorage !== 'undefined') localStorage.comparatorInputsCollapsed = String(v);
+		});
+		$effect(() => {
+			const v = comparatorState.responseHeight;
+			if (typeof localStorage !== 'undefined' && v > 0)
+				localStorage.comparatorResponseHeight = String(v);
+		});
+		$effect(() => {
+			const v = comparatorState.server2IdOverride;
+			if (typeof localStorage !== 'undefined') localStorage.comparatorServer2IdOverride = v;
 		});
 	});
 }

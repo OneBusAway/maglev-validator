@@ -438,9 +438,7 @@
 </script>
 
 <div
-	class="flex flex-col {isFullscreen
-		? 'fixed inset-0 z-[90] bg-gray-50 p-4 dark:bg-gray-950'
-		: ''}"
+	class="flex flex-col {isFullscreen ? 'fixed inset-0 z-[90] bg-gray-50 p-4 dark:bg-gray-950' : ''}"
 >
 	{#if isFullscreen}
 		<div class="mb-3 flex shrink-0 items-center justify-between">

@@ -502,6 +502,21 @@ export const endpoints = [
 		]
 	},
 	{
+		id: 'metrics',
+		name: 'Metrics',
+		path: 'metrics.json',
+		params: [
+			{
+				name: 'key',
+				label: 'API Key',
+				required: true,
+				inPath: false,
+				default: 'test',
+				placeholder: 'API Key'
+			}
+		]
+	},
+	{
 		id: 'trip-for-vehicle',
 		name: 'Trip for Vehicle',
 		path: 'trip-for-vehicle/{id}.json',

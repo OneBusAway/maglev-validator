@@ -793,7 +793,7 @@
 					onclick={() => (cmpState.inputsCollapsed = false)}
 					class="flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-all hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-green-700 dark:hover:bg-green-900/30 dark:hover:text-green-400"
 					title="Show configuration"
-					aria-expanded="false"
+					aria-expanded={!cmpState.inputsCollapsed}
 				>
 					<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
@@ -887,7 +887,7 @@
 					onclick={() => (cmpState.inputsCollapsed = true)}
 					class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-all hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-green-700 dark:hover:bg-green-900/30 dark:hover:text-green-400"
 					title="Hide configuration to free space for responses"
-					aria-expanded="true"
+					aria-expanded={!cmpState.inputsCollapsed}
 				>
 					<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path

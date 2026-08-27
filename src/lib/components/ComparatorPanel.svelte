@@ -784,14 +784,14 @@
 
 <div class="flex h-full min-h-0 flex-col">
 	<div
-		class="mb-4 shrink-0 rounded-xl border border-gray-200 bg-white shadow-sm transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
+		class="mb-4 shrink-0 rounded-xl border border-gray-200 bg-white shadow-sm transition-colors duration-300 dark:border-zinc-700 dark:bg-zinc-800"
 	>
 		{#if cmpState.inputsCollapsed}
 			<div class="flex flex-wrap items-center gap-3 px-4 py-2.5">
 				<button
 					type="button"
 					onclick={() => (cmpState.inputsCollapsed = false)}
-					class="flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-all hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-green-700 dark:hover:bg-green-900/30 dark:hover:text-green-400"
+					class="flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-all hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-green-700 dark:hover:bg-green-900/30 dark:hover:text-green-400"
 					title="Show configuration"
 					aria-expanded={!cmpState.inputsCollapsed}
 				>
@@ -805,9 +805,9 @@
 					</svg>
 					Config
 				</button>
-				<div class="hidden h-4 w-px bg-gray-200 sm:block dark:bg-gray-700"></div>
+				<div class="hidden h-4 w-px bg-gray-200 sm:block dark:bg-zinc-700"></div>
 				<span
-					class="max-w-[10rem] truncate rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-gray-900 dark:text-gray-300"
+					class="max-w-[10rem] truncate rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-zinc-900 dark:text-zinc-300"
 					title={selectedEndpointMeta?.name || cmpState.selectedEndpoint}
 				>
 					{selectedEndpointMeta?.name || cmpState.selectedEndpoint}
@@ -818,7 +818,7 @@
 				>
 					{cmpState.server1Base.replace(/^https?:\/\//, '').replace(/\/$/, '')}
 				</span>
-				<span class="hidden text-xs text-gray-300 lg:inline dark:text-gray-600">vs</span>
+				<span class="hidden text-xs text-gray-300 lg:inline dark:text-zinc-600">vs</span>
 				<span
 					class="hidden max-w-[14rem] truncate font-mono text-xs text-gray-400 lg:inline"
 					title={cmpState.server2Base}
@@ -877,15 +877,15 @@
 			</div>
 		{:else}
 			<div
-				class="flex items-center justify-between border-b border-gray-100 px-4 py-2.5 dark:border-gray-700"
+				class="flex items-center justify-between border-b border-gray-100 px-4 py-2.5 dark:border-zinc-700"
 			>
-				<span class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+				<span class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 					>Configuration</span
 				>
 				<button
 					type="button"
 					onclick={() => (cmpState.inputsCollapsed = true)}
-					class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-all hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-green-700 dark:hover:bg-green-900/30 dark:hover:text-green-400"
+					class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-all hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-green-700 dark:hover:bg-green-900/30 dark:hover:text-green-400"
 					title="Hide configuration to free space for responses"
 					aria-expanded={!cmpState.inputsCollapsed}
 				>
@@ -905,7 +905,7 @@
 					<div>
 						<label
 							for="server1-url"
-							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 							>Server 1 URL</label
 						>
 						<input
@@ -913,7 +913,7 @@
 							type="text"
 							bind:value={cmpState.server1Base}
 							list="server1-url-history"
-							class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-green-500/40"
+							class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:focus:ring-green-500/40"
 						/>
 						<datalist id="server1-url-history">
 							{#each server1UrlHistory as url (url)}
@@ -924,7 +924,7 @@
 					<div>
 						<label
 							for="server2-url"
-							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 							>Server 2 URL</label
 						>
 						<input
@@ -932,7 +932,7 @@
 							type="text"
 							bind:value={cmpState.server2Base}
 							list="server2-url-history"
-							class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-green-500/40"
+							class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:focus:ring-green-500/40"
 						/>
 						<datalist id="server2-url-history">
 							{#each server2UrlHistory as url (url)}
@@ -946,7 +946,7 @@
 					<div class="col-span-3">
 						<label
 							for="api-endpoint-input"
-							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 							>API Endpoint</label
 						>
 						<div class="relative">
@@ -960,11 +960,11 @@
 								onkeydown={onEndpointKeydown}
 								placeholder="Type to search endpoints..."
 								autocomplete="off"
-								class="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:placeholder:text-gray-600"
+								class="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:placeholder:text-zinc-600"
 							/>
 							{#if showEndpointSuggestions && filteredEndpoints.length > 0}
 								<div
-									class="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+									class="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
 								>
 									{#each filteredEndpoints as endpoint, i (endpoint.id)}
 										<button
@@ -975,10 +975,10 @@
 												? 'bg-green-50 font-medium text-green-700 dark:bg-green-900/20 dark:text-green-300'
 												: i === endpointHighlightIndex
 													? 'bg-green-100 dark:bg-green-900/30'
-													: 'text-gray-700 dark:text-gray-300'}"
+													: 'text-gray-700 dark:text-zinc-300'}"
 										>
 											<span>{endpoint.name}</span>
-											<span class="ml-auto text-xs text-gray-400 dark:text-gray-500"
+											<span class="ml-auto text-xs text-gray-400 dark:text-zinc-500"
 												>{endpoint.id}</span
 											>
 										</button>
@@ -993,7 +993,7 @@
 						<div class="col-span-3">
 							<label
 								for={'param-' + param.name}
-								class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 							>
 								{param.label}
 								{#if param.required}<span class="text-red-500"> * </span>{/if}
@@ -1005,7 +1005,7 @@
 								oninput={(e) => handleParamChange(param.name, e.currentTarget.value)}
 								placeholder={param.placeholder || ''}
 								list={'param-history-' + param.name}
-								class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-green-500/40"
+								class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:focus:ring-green-500/40"
 							/>
 							{#if history.length > 0}
 								<datalist id={'param-history-' + param.name}>
@@ -1021,7 +1021,7 @@
 						<div class="col-span-3">
 							<label
 								for="batch-ids"
-								class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 							>
 								Batch IDs
 								<span class="text-xs font-normal text-gray-400 normal-case"
@@ -1037,14 +1037,14 @@
 								}}
 								placeholder="1_12345&#10;1_67890&#10;1_11111"
 								rows="3"
-								class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600"
+								class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:placeholder:text-zinc-600"
 							></textarea>
 						</div>
 
 						<div class="col-span-3">
 							<label
 								for="server2-id-override"
-								class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 							>
 								Server 2 ID
 								<span class="text-xs font-normal text-gray-400 normal-case"
@@ -1056,7 +1056,7 @@
 								type="text"
 								bind:value={cmpState.server2IdOverride}
 								placeholder={inPathParam?.placeholder || 'e.g. LMU_4091'}
-								class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600"
+								class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:placeholder:text-zinc-600"
 							/>
 						</div>
 					{/if}
@@ -1064,7 +1064,7 @@
 					<div class="col-span-2">
 						<label
 							for="json-path-filter"
-							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 							>JSON Path Filter</label
 						>
 						<input
@@ -1072,20 +1072,20 @@
 							type="text"
 							bind:value={cmpState.focusPath}
 							placeholder="e.g. data.entry.status"
-							class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-green-500/40"
+							class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:placeholder:text-zinc-600 dark:focus:ring-green-500/40"
 						/>
 					</div>
 
 					<div class="col-span-2">
 						<label
 							for="ignore-keys-trigger"
-							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 							>Ignored Keys</label
 						>
 						<button
 							id="ignore-keys-trigger"
 							onclick={() => (cmpState.showIgnoreModal = true)}
-							class="group flex w-full items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-left text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:ring-green-500/40"
+							class="group flex w-full items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-left text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:focus:ring-green-500/40"
 						>
 							<span class="truncate">
 								{ignoredKeys.length ? `${ignoredKeys.length} keys ignored` : 'Select keys...'}
@@ -1112,7 +1112,7 @@
 					<div class="col-span-2">
 						<label
 							for="watch-keys-trigger"
-							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 							>Watch Keys <span class="text-green-500">(Log)</span></label
 						>
 						<button
@@ -1154,16 +1154,16 @@
 				</div>
 
 				<div
-					class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700"
+					class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-zinc-700"
 				>
 					<div class="flex items-center gap-4">
 						<label class="flex cursor-pointer items-center gap-2 select-none">
 							<input
 								type="checkbox"
 								bind:checked={cmpState.autoRefresh}
-								class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
+								class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-zinc-600 dark:bg-zinc-700"
 							/>
-							<span class="text-sm font-medium text-gray-600 dark:text-gray-400">Auto-refresh</span>
+							<span class="text-sm font-medium text-gray-600 dark:text-zinc-400">Auto-refresh</span>
 						</label>
 						{#if cmpState.autoRefresh}
 							<div class="flex items-center gap-2">
@@ -1172,14 +1172,14 @@
 									bind:value={cmpState.refreshInterval}
 									min="1"
 									max="60"
-									class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+									class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
 								/>
 								<span class="text-xs text-gray-400">sec</span>
 							</div>
 						{/if}
 
 						<div class="ml-4 flex items-center gap-2">
-							<label class="text-xs font-medium whitespace-nowrap text-gray-500 dark:text-gray-400"
+							<label class="text-xs font-medium whitespace-nowrap text-gray-500 dark:text-zinc-400"
 								>Tolerance ±%</label
 							>
 							<input
@@ -1188,7 +1188,7 @@
 								min="0"
 								max="100"
 								step="0.5"
-								class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+								class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
 							/>
 						</div>
 					</div>
@@ -1267,11 +1267,11 @@
 	{#if cmpState.status1 !== null || cmpState.status2 !== null}
 		<div class="mb-4 flex items-center justify-between">
 			<div class="flex items-center gap-4">
-				<h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Response Comparison</h2>
+				<h2 class="text-lg font-semibold text-gray-800 dark:text-zinc-100">Response Comparison</h2>
 				{#if cmpState.batchIds.length > 1}
 					<div class="flex items-center gap-2">
 						<select
-							class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+							class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
 							value={cmpState.selectedBatchId}
 							onchange={(e) => selectBatchId(e.currentTarget.value)}
 						>
@@ -1291,13 +1291,13 @@
 				{/if}
 			</div>
 			<div class="flex items-center gap-6 text-sm font-medium">
-				<span class="mr-4 flex items-center gap-2 text-gray-600 dark:text-gray-400">
+				<span class="mr-4 flex items-center gap-2 text-gray-600 dark:text-zinc-400">
 					<span class="h-3 w-3 rounded bg-red-500"></span> Different
 				</span>
-				<span class="mr-4 flex items-center gap-2 text-gray-600 dark:text-gray-400">
+				<span class="mr-4 flex items-center gap-2 text-gray-600 dark:text-zinc-400">
 					<span class="h-3 w-3 rounded bg-orange-400"></span> Missing
 				</span>
-				<span class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+				<span class="flex items-center gap-2 text-gray-600 dark:text-zinc-400">
 					<span class="h-3 w-3 rounded bg-green-500"></span> Extra
 				</span>
 			</div>
@@ -1305,13 +1305,13 @@
 
 		{#if cmpState.currentUrl1 || cmpState.currentUrl2}
 			<div
-				class="mb-4 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50"
+				class="mb-4 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-zinc-700 dark:bg-zinc-800/50"
 			>
-				<div class="text-xs font-medium text-gray-500 dark:text-gray-400">Fetched URLs:</div>
+				<div class="text-xs font-medium text-gray-500 dark:text-zinc-400">Fetched URLs:</div>
 				{#if cmpState.currentUrl1}
 					<div class="flex items-start gap-2">
 						<span
-							class="shrink-0 rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+							class="shrink-0 rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/50 dark:text-green-300"
 							>1</span
 						>
 						{#if cmpState.status1 !== null}
@@ -1322,7 +1322,7 @@
 								>{cmpState.status1}</span
 							>
 						{/if}
-						<code class="text-xs break-all text-gray-700 dark:text-gray-300"
+						<code class="text-xs break-all text-gray-700 dark:text-zinc-300"
 							>{cmpState.currentUrl1}</code
 						>
 					</div>
@@ -1330,7 +1330,7 @@
 				{#if cmpState.currentUrl2}
 					<div class="flex items-start gap-2">
 						<span
-							class="shrink-0 rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/50 dark:text-purple-300"
+							class="shrink-0 rounded bg-orange-100 px-1.5 py-0.5 text-xs font-medium text-orange-700 dark:bg-orange-900/50 dark:text-orange-300"
 							>2</span
 						>
 						{#if cmpState.status2 !== null}
@@ -1341,7 +1341,7 @@
 								>{cmpState.status2}</span
 							>
 						{/if}
-						<code class="text-xs break-all text-gray-700 dark:text-gray-300"
+						<code class="text-xs break-all text-gray-700 dark:text-zinc-300"
 							>{cmpState.currentUrl2}</code
 						>
 					</div>
@@ -1351,7 +1351,7 @@
 
 		{#if diffStats}
 			<div
-				class="mb-4 flex items-center gap-4 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800/50"
+				class="mb-4 flex items-center gap-4 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800/50"
 			>
 				{#if diffStats.mismatches === 0}
 					<span class="flex items-center gap-1.5 font-medium text-green-700 dark:text-green-400">
@@ -1377,12 +1377,12 @@
 						</svg>
 						{diffStats.mismatches} mismatch{diffStats.mismatches !== 1 ? 'es' : ''}
 					</span>
-					<span class="text-gray-500 dark:text-gray-400">
+					<span class="text-gray-500 dark:text-zinc-400">
 						{diffStats.matches} / {diffStats.total} match
 					</span>
 				{/if}
 				{#if ignoredKeys.length > 0}
-					<span class="ml-auto text-xs text-gray-400 dark:text-gray-500">
+					<span class="ml-auto text-xs text-gray-400 dark:text-zinc-500">
 						({ignoredKeys.length} key{ignoredKeys.length !== 1 ? 's' : ''} ignored)
 					</span>
 				{/if}
@@ -1392,7 +1392,7 @@
 		<div class="relative flex min-h-0 flex-1 flex-col">
 			{#if isProcessingData}
 				<div
-					class="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm dark:bg-gray-900/80"
+					class="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm dark:bg-zinc-900/80"
 				>
 					<div class="flex flex-col items-center gap-3">
 						<svg class="h-8 w-8 animate-spin text-green-600" fill="none" viewBox="0 0 24 24">
@@ -1410,7 +1410,7 @@
 								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 							></path>
 						</svg>
-						<span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+						<span class="text-sm font-medium text-gray-700 dark:text-zinc-300"
 							>{processingMessage}</span
 						>
 					</div>
@@ -1426,10 +1426,10 @@
 		</div>
 	{:else if !cmpState.loading}
 		<div
-			class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-16 text-center transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
+			class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-16 text-center transition-colors duration-300 dark:border-zinc-700 dark:bg-zinc-800"
 		>
 			<div
-				class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-900"
+				class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 dark:bg-zinc-900"
 			>
 				<svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
 					><path
@@ -1457,15 +1457,15 @@
 		aria-modal="true"
 	>
 		<div
-			class="flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl bg-white shadow-2xl dark:bg-gray-800"
+			class="flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl bg-white shadow-2xl dark:bg-zinc-800"
 		>
 			<div
-				class="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700"
+				class="flex items-center justify-between border-b border-gray-100 p-4 dark:border-zinc-700"
 			>
 				<h3 class="text-lg font-semibold text-gray-800 dark:text-white">Ignore Keys</h3>
 				<button
 					onclick={() => (cmpState.showIgnoreModal = false)}
-					class="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
+					class="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-zinc-200"
 					aria-label="Close"
 				>
 					<svg
@@ -1486,13 +1486,13 @@
 			</div>
 
 			<div
-				class="border-b border-gray-100 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50"
+				class="border-b border-gray-100 bg-gray-50/50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50"
 			>
 				<input
 					type="text"
 					bind:value={cmpState.ignoreSearch}
 					placeholder="Search keys..."
-					class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+					class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
 				/>
 			</div>
 
@@ -1514,15 +1514,15 @@
 					<div class="grid grid-cols-1 gap-1">
 						{#each filteredKeys as key (key)}
 							<label
-								class="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
+								class="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50 dark:hover:bg-zinc-700/50"
 							>
 								<input
 									type="checkbox"
 									checked={ignoredKeys.includes(key)}
 									onchange={() => toggleIgnoreKey(key)}
-									class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
+									class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-zinc-600 dark:bg-zinc-700"
 								/>
-								<span class="font-mono text-sm font-medium text-gray-700 dark:text-gray-300"
+								<span class="font-mono text-sm font-medium text-gray-700 dark:text-zinc-300"
 									>{key}</span
 								>
 								{#if ignoredKeys.includes(key)}
@@ -1542,7 +1542,7 @@
 			</div>
 
 			<div
-				class="flex justify-between gap-3 rounded-b-xl border-t border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50"
+				class="flex justify-between gap-3 rounded-b-xl border-t border-gray-100 bg-gray-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50"
 			>
 				<button
 					onclick={() => {
@@ -1555,7 +1555,7 @@
 				</button>
 				<button
 					onclick={() => (cmpState.showIgnoreModal = false)}
-					class="px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
+					class="px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-800 dark:text-zinc-300 dark:hover:text-white"
 				>
 					Close
 				</button>
@@ -1571,15 +1571,15 @@
 		aria-modal="true"
 	>
 		<div
-			class="flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl bg-white shadow-2xl dark:bg-gray-800"
+			class="flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl bg-white shadow-2xl dark:bg-zinc-800"
 		>
 			<div
-				class="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700"
+				class="flex items-center justify-between border-b border-gray-100 p-4 dark:border-zinc-700"
 			>
 				<h3 class="text-lg font-semibold text-gray-800 dark:text-white">Watch Keys for Logging</h3>
 				<button
 					onclick={() => (cmpState.showWatchModal = false)}
-					class="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
+					class="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-zinc-200"
 					aria-label="Close"
 				>
 					<svg
@@ -1600,13 +1600,13 @@
 			</div>
 
 			<div
-				class="border-b border-gray-100 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50"
+				class="border-b border-gray-100 bg-gray-50/50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50"
 			>
 				<input
 					type="text"
 					bind:value={cmpState.watchSearch}
 					placeholder="Search keys..."
-					class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+					class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
 				/>
 			</div>
 
@@ -1628,15 +1628,15 @@
 					<div class="grid grid-cols-1 gap-1">
 						{#each filteredKeys as key (key)}
 							<label
-								class="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
+								class="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50 dark:hover:bg-zinc-700/50"
 							>
 								<input
 									type="checkbox"
 									checked={watchedKeys.includes(key)}
 									onchange={() => cmpState.toggleWatchKey(key)}
-									class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
+									class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-zinc-600 dark:bg-zinc-700"
 								/>
-								<span class="font-mono text-sm font-medium text-gray-700 dark:text-gray-300"
+								<span class="font-mono text-sm font-medium text-gray-700 dark:text-zinc-300"
 									>{key}</span
 								>
 								{#if watchedKeys.includes(key)}
@@ -1656,7 +1656,7 @@
 			</div>
 
 			<div
-				class="flex justify-between gap-3 rounded-b-xl border-t border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50"
+				class="flex justify-between gap-3 rounded-b-xl border-t border-gray-100 bg-gray-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50"
 			>
 				<button
 					onclick={() => {
@@ -1669,7 +1669,7 @@
 				</button>
 				<button
 					onclick={() => (cmpState.showWatchModal = false)}
-					class="px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
+					class="px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-800 dark:text-zinc-300 dark:hover:text-white"
 				>
 					Close
 				</button>

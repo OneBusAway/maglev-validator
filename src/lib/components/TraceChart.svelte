@@ -340,9 +340,9 @@
 	<div class="flex items-start justify-between gap-3">
 		<div class="flex items-center gap-2">
 			<span class="inline-block h-2 w-2 rounded-full {accentClass} bg-current"></span>
-			<h4 class="text-sm font-semibold text-gray-800 dark:text-gray-100">{title}</h4>
+			<h4 class="text-sm font-semibold text-gray-800 dark:text-zinc-100">{title}</h4>
 			<span
-				class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+				class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-500 dark:bg-zinc-800 dark:text-zinc-400"
 			>
 				{activeSeries.length}/{series.length}
 			</span>
@@ -353,7 +353,7 @@
 				onclick={() => zoomButton(1.6)}
 				title="Zoom in"
 				aria-label="Zoom in"
-				class="grid h-7 w-7 place-items-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:bg-gray-50 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+				class="grid h-7 w-7 place-items-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:bg-gray-50 hover:text-gray-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
 			>
 				<svg
 					class="h-3.5 w-3.5"
@@ -369,7 +369,7 @@
 				onclick={() => zoomButton(1 / 1.6)}
 				title="Zoom out"
 				aria-label="Zoom out"
-				class="grid h-7 w-7 place-items-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:bg-gray-50 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+				class="grid h-7 w-7 place-items-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:bg-gray-50 hover:text-gray-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
 			>
 				<svg
 					class="h-3.5 w-3.5"
@@ -386,7 +386,7 @@
 					onclick={resetView}
 					title="Reset zoom"
 					aria-label="Reset zoom"
-					class="grid h-7 w-7 place-items-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:bg-gray-50 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+					class="grid h-7 w-7 place-items-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:bg-gray-50 hover:text-gray-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
 				>
 					<svg
 						class="h-3.5 w-3.5"
@@ -405,7 +405,7 @@
 					onclick={() => onrefresh()}
 					title="Refresh chart data"
 					aria-label="Refresh chart data"
-					class="grid h-7 w-7 place-items-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:bg-gray-50 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+					class="grid h-7 w-7 place-items-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:bg-gray-50 hover:text-gray-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
 				>
 					<svg
 						class="h-3.5 w-3.5"
@@ -464,14 +464,14 @@
 					y1={tick.y}
 					y2={tick.y}
 					stroke="currentColor"
-					class="text-gray-100 dark:text-gray-800"
+					class="text-gray-100 dark:text-zinc-800"
 					stroke-width="1"
 				/>
 				<text
 					x={pad.left - 6}
 					y={tick.y + 3}
 					text-anchor="end"
-					class="fill-gray-400 text-[9px] tabular-nums dark:fill-gray-500"
+					class="fill-gray-400 text-[9px] tabular-nums dark:fill-zinc-500"
 				>
 					{fmt(tick.value)}
 				</text>
@@ -483,7 +483,7 @@
 					x={tick.x}
 					y={ch - pad.bottom + 14}
 					text-anchor="middle"
-					class="fill-gray-400 text-[8px] tabular-nums dark:fill-gray-500"
+					class="fill-gray-400 text-[8px] tabular-nums dark:fill-zinc-500"
 				>
 					{tick.label}
 				</text>
@@ -547,7 +547,7 @@
 		<!-- floating tooltip card (no transition:fly — instant follow like trading apps) -->
 		{#if crosshairPx !== null && hoverData.length > 0}
 			<div
-				class="pointer-events-none absolute top-0 z-20 min-w-[150px] rounded-xl border border-gray-200/80 bg-white/95 px-3 py-2 text-xs shadow-xl backdrop-blur-sm dark:border-gray-700/80 dark:bg-gray-900/95"
+				class="pointer-events-none absolute top-0 z-20 min-w-[150px] rounded-xl border border-gray-200/80 bg-white/95 px-3 py-2 text-xs shadow-xl backdrop-blur-sm dark:border-zinc-700/80 dark:bg-zinc-900/95"
 				style="left: {tooltipLeftPct}%; {tooltipLeft
 					? 'transform: translateX(-110%)'
 					: 'transform: translateX(14px)'}"
@@ -556,9 +556,9 @@
 					<div class="flex items-center gap-2 py-0.5">
 						<span class="h-2 w-2 rounded-full" style="background-color: {colors[i % colors.length]}"
 						></span>
-						<span class="font-mono text-[10px] text-gray-500 dark:text-gray-400">{s.label}</span>
+						<span class="font-mono text-[10px] text-gray-500 dark:text-zinc-400">{s.label}</span>
 						<span class="ml-auto text-right">
-							<span class="font-semibold text-gray-800 tabular-nums dark:text-gray-100">
+							<span class="font-semibold text-gray-800 tabular-nums dark:text-zinc-100">
 								{hoverData[ai]?.value !== null && hoverData[ai]?.value !== undefined
 									? fmt(hoverData[ai].value)
 									: '—'}
@@ -585,7 +585,7 @@
 			<button
 				type="button"
 				onclick={showAll}
-				class="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[10px] font-medium text-gray-600 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+				class="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[10px] font-medium text-gray-600 shadow-sm transition hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
 			>
 				Show all
 			</button>
@@ -597,10 +597,10 @@
 				title={selectedLine === i ? 'Click to show all lines' : 'Click to view only this line'}
 				class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium transition
 					{selectedLine === null
-					? 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800'
+					? 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800'
 					: selectedLine === i
 						? 'border-transparent text-white shadow-sm'
-						: 'border-gray-200/60 bg-gray-50 text-gray-400 dark:border-gray-800 dark:bg-gray-900/50 dark:text-gray-600'}"
+						: 'border-gray-200/60 bg-gray-50 text-gray-400 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-600'}"
 				style={selectedLine === i ? `background-color: ${colors[i % colors.length]}` : ''}
 			>
 				<span class="h-2 w-2 rounded-full" style="background-color: {colors[i % colors.length]}"
@@ -610,7 +610,7 @@
 		{/each}
 	</div>
 	{#if series.length > 1}
-		<div class="text-[9px] text-gray-400 dark:text-gray-500">
+		<div class="text-[9px] text-gray-400 dark:text-zinc-500">
 			Tap a line to view it alone · scroll to zoom · drag to pan
 		</div>
 	{/if}

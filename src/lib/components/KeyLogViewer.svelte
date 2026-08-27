@@ -750,18 +750,18 @@
 
 <div class="space-y-6">
 	<div
-		class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
+		class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-colors duration-300 dark:border-zinc-700 dark:bg-zinc-800"
 	>
 		<div class="mb-4 flex items-center justify-between">
 			<div>
 				<h2 class="text-lg font-semibold text-gray-900 dark:text-white">Key Logger History</h2>
-				<p class="text-sm text-gray-500 dark:text-gray-400">
+				<p class="text-sm text-gray-500 dark:text-zinc-400">
 					Track how selected key values change over time across both servers
 				</p>
 			</div>
-			<div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+			<div class="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
 				<span
-					class="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+					class="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700 dark:bg-zinc-800 dark:text-zinc-300"
 				>
 					{loggerState.totalCount} total
 				</span>
@@ -781,7 +781,7 @@
 								class="h-2.5 w-1.5 rounded-sm {i <
 								Math.round((globalMatchStats.matchPct / 100) * 10)
 									? 'bg-green-500 dark:bg-green-400'
-									: 'bg-gray-200 dark:bg-gray-700'}"
+									: 'bg-gray-200 dark:bg-zinc-700'}"
 							></span>
 						{/each}
 					</span>
@@ -791,7 +791,7 @@
 				{#if Object.keys(columnWidths).length > 0}
 					<button
 						onclick={resetColumnWidths}
-						class="rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+						class="rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
 					>
 						Reset columns
 					</button>
@@ -803,14 +803,14 @@
 			<div class="col-span-3">
 				<label
 					for="endpoint-select"
-					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 				>
 					Endpoint
 				</label>
 				<select
 					id="endpoint-select"
 					bind:value={loggerState.selectedEndpoint}
-					class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+					class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
 				>
 					<option value="">Select endpoint...</option>
 					{#each configuredEndpoints as endpoint (endpoint.id)}
@@ -825,7 +825,7 @@
 			<div class="col-span-3">
 				<label
 					for="keypath-select"
-					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 				>
 					Key Paths
 				</label>
@@ -839,7 +839,7 @@
 							(e.target as HTMLSelectElement).value = '';
 						}}
 						disabled={!loggerState.selectedEndpoint}
-						class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+						class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
 					>
 						<option value="" disabled selected>Add key path...</option>
 						{#each loggerState.keyPaths as kp (kp)}
@@ -874,13 +874,13 @@
 							{/each}
 							<button
 								onclick={() => loggerState.selectedKeyPaths.clear()}
-								class="text-[11px] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+								class="text-[11px] text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200"
 							>
 								Clear
 							</button>
 						</div>
 					{:else}
-						<div class="text-[11px] text-gray-400 dark:text-gray-500">
+						<div class="text-[11px] text-gray-400 dark:text-zinc-500">
 							No filter — showing all keys
 						</div>
 					{/if}
@@ -890,7 +890,7 @@
 			<div class="col-span-2">
 				<label
 					for="limit-input"
-					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 				>
 					Rows
 				</label>
@@ -900,25 +900,25 @@
 					bind:value={limitInput}
 					min="10"
 					max="1000"
-					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+					class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
 				/>
 			</div>
 
 			<div class="col-span-2">
 				<div
-					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 				>
 					Filter
 				</div>
 				<div
-					class="flex w-full items-center rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-900"
+					class="flex w-full items-center rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-zinc-700 dark:bg-zinc-900"
 				>
 					<button
 						onclick={() => (loggerState.filterMode = 'all')}
 						class="flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all {loggerState.filterMode ===
 						'all'
-							? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
-							: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
+							? 'bg-white text-gray-900 shadow-sm dark:bg-zinc-700 dark:text-white'
+							: 'text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200'}"
 					>
 						All
 					</button>
@@ -927,7 +927,7 @@
 						class="flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all {loggerState.filterMode ===
 						'match'
 							? 'bg-white text-green-700 shadow-sm dark:bg-green-900/30 dark:text-green-400'
-							: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
+							: 'text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200'}"
 					>
 						Match
 					</button>
@@ -936,7 +936,7 @@
 						class="flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all {loggerState.filterMode ===
 						'mismatch'
 							? 'bg-white text-red-700 shadow-sm dark:bg-red-900/30 dark:text-red-400'
-							: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
+							: 'text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200'}"
 					>
 						Diff
 					</button>
@@ -961,7 +961,7 @@
 			<div class="col-span-2">
 				<label
 					for="id-filter-select"
-					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+					class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 				>
 					ID Filter
 				</label>
@@ -971,7 +971,7 @@
 					onchange={(e) => {
 						loggerState.idFilter = (e.target as HTMLSelectElement).value;
 					}}
-					class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+					class="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
 				>
 					<option value="">All IDs</option>
 					{#each availableIds as id (id)}
@@ -989,17 +989,17 @@
 			</div>
 
 			<div
-				class="col-span-12 flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700"
+				class="col-span-12 flex items-center justify-between border-t border-gray-100 pt-4 dark:border-zinc-700"
 			>
 				<div class="flex items-center gap-4">
 					<div class="flex items-center gap-2">
 						<div
-							class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 						>
 							Time Range:
 						</div>
 						<div
-							class="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-900"
+							class="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-zinc-700 dark:bg-zinc-900"
 						>
 							{#each ['live', '1h', '24h', 'all'] as range (range)}
 								<button
@@ -1007,7 +1007,7 @@
 									class="rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-all {loggerState.timeRange ===
 									range
 										? 'bg-white text-green-700 shadow-sm dark:bg-green-900/30 dark:text-green-300'
-										: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
+										: 'text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200'}"
 								>
 									{range === '1h' ? 'Last 1h' : range === '24h' ? 'Last 24h' : range}
 								</button>
@@ -1016,13 +1016,13 @@
 					</div>
 					<div class="flex items-center gap-2">
 						<div
-							class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 						>
 							Trace:
 						</div>
 						<select
 							bind:value={loggerState.traceKeyPath}
-							class="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+							class="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
 						>
 							<option value="">Select key...</option>
 							{#each [...new Set(loggerState.logs.map((l) => l.key_path))] as kp (kp)}
@@ -1040,7 +1040,7 @@
 							class="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all {showChart &&
 							traceKeyPath
 								? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-								: 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}"
+								: 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'}"
 						>
 							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path
@@ -1057,7 +1057,7 @@
 				<div class="flex items-center gap-3">
 					<button
 						onclick={exportCSV}
-						class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-all hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+						class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-all hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
 					>
 						<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
 							><path
@@ -1071,7 +1071,7 @@
 					</button>
 					<button
 						onclick={() => fetchLogs()}
-						class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-all hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+						class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-all hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
 						title="Refresh"
 					>
 						<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1085,7 +1085,7 @@
 					</button>
 					<button
 						onclick={clearLogs}
-						class="flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 transition-all hover:bg-red-50 dark:border-red-900/30 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20"
+						class="flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 transition-all hover:bg-red-50 dark:border-red-900/30 dark:bg-zinc-800 dark:text-red-400 dark:hover:bg-red-900/20"
 					>
 						Clear
 					</button>
@@ -1097,16 +1097,16 @@
 	<!-- Chart -->
 	{#if showChart && traceKeyPath}
 		<div
-			class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+			class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800"
 		>
 			<div class="mb-3 flex flex-wrap items-center gap-3">
-				<h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+				<h3 class="text-sm font-semibold text-gray-700 dark:text-zinc-300">
 					Trace: <span class="font-mono text-green-600 dark:text-green-400">{traceKeyPath}</span>
 				</h3>
 				<div class="ml-auto flex items-center gap-2">
-					<span class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Time:</span>
+					<span class="text-[11px] font-medium text-gray-500 dark:text-zinc-400">Time:</span>
 					<div
-						class="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-0.5 dark:border-gray-700 dark:bg-gray-900"
+						class="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-0.5 dark:border-zinc-700 dark:bg-zinc-900"
 					>
 						{#each ['30m', '1h', '2h', '6h', '24h', 'all'] as range (range)}
 							<button
@@ -1121,7 +1121,7 @@
 								class="rounded-md px-2.5 py-1.5 text-xs font-medium transition-all {chartTimeRange ===
 								range
 									? 'bg-white text-green-700 shadow-sm dark:bg-green-900/30 dark:text-green-300'
-									: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
+									: 'text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200'}"
 							>
 								{range === 'all' ? 'All' : range}
 							</button>
@@ -1155,7 +1155,7 @@
 			</div>
 			{#if chartLoading}
 				<div
-					class="flex flex-col items-center justify-center gap-3 py-16 text-sm text-gray-400 dark:text-gray-500"
+					class="flex flex-col items-center justify-center gap-3 py-16 text-sm text-gray-400 dark:text-zinc-500"
 				>
 					<svg
 						class="h-7 w-7 animate-spin text-green-500 dark:text-green-400"
@@ -1176,7 +1176,7 @@
 				</div>
 			{:else if chartData.entries.length <= 1}
 				<div
-					class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-gray-400 dark:text-gray-500"
+					class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-gray-400 dark:text-zinc-500"
 				>
 					<svg
 						class="h-8 w-8 opacity-40"
@@ -1190,7 +1190,7 @@
 					<span class="text-xs">Try a wider time window or switch the key.</span>
 				</div>
 			{:else if !chartData.hasNumeric}
-				<div class="flex items-center justify-center py-8 text-sm text-gray-400 dark:text-gray-500">
+				<div class="flex items-center justify-center py-8 text-sm text-gray-400 dark:text-zinc-500">
 					Values are not numeric — chart cannot be rendered
 				</div>
 			{:else}
@@ -1227,10 +1227,10 @@
 	<!-- Logs Table -->
 	{#if !loggerState.selectedEndpoint}
 		<div
-			class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-16 text-center transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
+			class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-16 text-center transition-colors duration-300 dark:border-zinc-700 dark:bg-zinc-800"
 		>
 			<div
-				class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-900"
+				class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 dark:bg-zinc-900"
 			>
 				<svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
@@ -1253,7 +1253,7 @@
 		</div>
 	{:else if loggerState.loading}
 		<div
-			class="flex items-center justify-center rounded-xl border border-gray-200 bg-white p-16 dark:border-gray-700 dark:bg-gray-800"
+			class="flex items-center justify-center rounded-xl border border-gray-200 bg-white p-16 dark:border-zinc-700 dark:bg-zinc-800"
 		>
 			<svg class="h-8 w-8 animate-spin text-green-600" fill="none" viewBox="0 0 24 24">
 				<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
@@ -1267,101 +1267,101 @@
 		</div>
 	{:else if loggerState.logs.length === 0}
 		<div
-			class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-16 text-center dark:border-gray-700 dark:bg-gray-800"
+			class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-16 text-center dark:border-zinc-700 dark:bg-zinc-800"
 		>
 			<p class="text-gray-500">No logs found for this endpoint.</p>
 		</div>
 	{:else}
 		<div
-			class="max-h-[65vh] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
+			class="max-h-[65vh] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-800"
 		>
 			<div class="overflow-x-auto">
 				<table class="w-full" style="table-layout: fixed;">
 					<thead>
 						<tr
-							class="border-b border-gray-100 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50"
+							class="border-b border-gray-100 bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900/50"
 						>
 							<th
-								class="relative px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								class="relative px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 								style={columnWidths.timestamp ? `width: ${columnWidths.timestamp}px` : ''}
 							>
 								<span class="flex items-center gap-1"> Timestamp </span>
 								<button
 									aria-label="Resize timestamp column"
-									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-gray-600/20 dark:hover:bg-green-500/40"
+									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-zinc-600/20 dark:hover:bg-green-500/40"
 									onmousedown={(e) => startResize(e, 'timestamp')}
 								>
-									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-gray-600"></div>
+									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-zinc-600"></div>
 								</button>
 							</th>
 							<th
-								class="relative px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								class="relative px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 								style={columnWidths.keypath ? `width: ${columnWidths.keypath}px` : ''}
 							>
 								Key Path
 								<button
 									aria-label="Resize key path column"
-									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-gray-600/20 dark:hover:bg-green-500/40"
+									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-zinc-600/20 dark:hover:bg-green-500/40"
 									onmousedown={(e) => startResize(e, 'keypath')}
 								>
-									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-gray-600"></div>
+									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-zinc-600"></div>
 								</button>
 							</th>
 							<th
-								class="relative px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								class="relative px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 								style={columnWidths.idvalue ? `width: ${columnWidths.idvalue}px` : ''}
 							>
 								ID Value
 								<button
 									aria-label="Resize ID value column"
-									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-gray-600/20 dark:hover:bg-green-500/40"
+									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-zinc-600/20 dark:hover:bg-green-500/40"
 									onmousedown={(e) => startResize(e, 'idvalue')}
 								>
-									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-gray-600"></div>
+									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-zinc-600"></div>
 								</button>
 							</th>
 							<th
-								class="relative px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								class="relative px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 								style={columnWidths.server1 ? `width: ${columnWidths.server1}px` : ''}
 							>
 								Server 1
 								<button
 									aria-label="Resize server 1 column"
-									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-gray-600/20 dark:hover:bg-green-500/40"
+									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-zinc-600/20 dark:hover:bg-green-500/40"
 									onmousedown={(e) => startResize(e, 'server1')}
 								>
-									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-gray-600"></div>
+									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-zinc-600"></div>
 								</button>
 							</th>
 							<th
-								class="relative px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								class="relative px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 								style={columnWidths.server2 ? `width: ${columnWidths.server2}px` : ''}
 							>
 								Server 2
 								<button
 									aria-label="Resize server 2 column"
-									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-gray-600/20 dark:hover:bg-green-500/40"
+									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-zinc-600/20 dark:hover:bg-green-500/40"
 									onmousedown={(e) => startResize(e, 'server2')}
 								>
-									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-gray-600"></div>
+									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-zinc-600"></div>
 								</button>
 							</th>
 							<th
-								class="relative px-4 py-3 text-center text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+								class="relative px-4 py-3 text-center text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 								style={columnWidths.match ? `width: ${columnWidths.match}px` : ''}
 							>
 								Match
 								<button
 									aria-label="Resize match column"
-									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-gray-600/20 dark:hover:bg-green-500/40"
+									class="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize bg-gray-300/20 transition-colors select-none hover:bg-green-500/40 active:bg-green-500/60 dark:bg-zinc-600/20 dark:hover:bg-green-500/40"
 									onmousedown={(e) => startResize(e, 'match')}
 								>
-									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-gray-600"></div>
+									<div class="mx-auto h-full w-px bg-gray-300 dark:bg-zinc-600"></div>
 								</button>
 							</th>
 						</tr>
 					</thead>
-					<tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+					<tbody class="divide-y divide-gray-100 dark:divide-zinc-700">
 						{#each filteredLogs as log (log.id)}
 							{@const match = matchCache.get(log.id) ?? false}
 							{@const isArray =
@@ -1372,24 +1372,24 @@
 								class="cursor-pointer transition-colors hover:bg-green-50/50 dark:hover:bg-green-900/10"
 							>
 								<td
-									class="truncate px-4 py-3 text-sm whitespace-nowrap text-gray-600 dark:text-gray-400"
+									class="truncate px-4 py-3 text-sm whitespace-nowrap text-gray-600 dark:text-zinc-400"
 								>
 									{formatTimestamp(log.timestamp)}
 								</td>
 								<td
-									class="truncate px-4 py-3 font-mono text-sm text-gray-900 dark:text-gray-200"
+									class="truncate px-4 py-3 font-mono text-sm text-gray-900 dark:text-zinc-200"
 									title={log.key_path}
 								>
 									{lastPathSegment(log.key_path)}
 								</td>
 								<td
-									class="truncate px-4 py-3 font-mono text-sm text-gray-500 dark:text-gray-500"
+									class="truncate px-4 py-3 font-mono text-sm text-gray-500 dark:text-zinc-500"
 									title={log.id_value ?? ''}
 								>
 									{log.id_value || '-'}
 								</td>
 								<td
-									class="overflow-hidden px-4 py-3 font-mono text-sm text-gray-700 dark:text-gray-300"
+									class="overflow-hidden px-4 py-3 font-mono text-sm text-gray-700 dark:text-zinc-300"
 								>
 									{#if isArray}
 										<button
@@ -1460,7 +1460,7 @@
 									{/if}
 								</td>
 								<td
-									class="overflow-hidden px-4 py-3 font-mono text-sm text-gray-700 dark:text-gray-300"
+									class="overflow-hidden px-4 py-3 font-mono text-sm text-gray-700 dark:text-zinc-300"
 								>
 									{#if isArray}
 										<button
@@ -1582,9 +1582,9 @@
 
 		{#if totalPages > 1 && loggerState.timeRange !== 'live'}
 			<div
-				class="flex items-center justify-between border-t border-gray-100 bg-gray-50/60 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/30"
+				class="flex items-center justify-between border-t border-gray-100 bg-gray-50/60 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900/30"
 			>
-				<div class="text-xs text-gray-500 dark:text-gray-400">
+				<div class="text-xs text-gray-500 dark:text-zinc-400">
 					Page {currentPage} of {totalPages} ({loggerState.totalCount} total)
 				</div>
 				<div class="flex items-center gap-1">
@@ -1592,8 +1592,8 @@
 						disabled={currentPage <= 1}
 						onclick={() => goToPage(1)}
 						class="rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors {currentPage <= 1
-							? 'text-gray-300 dark:text-gray-600'
-							: 'text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'}"
+							? 'text-gray-300 dark:text-zinc-600'
+							: 'text-gray-600 hover:bg-gray-200 dark:text-zinc-400 dark:hover:bg-zinc-700'}"
 						title="First page"
 					>
 						«
@@ -1602,8 +1602,8 @@
 						disabled={currentPage <= 1}
 						onclick={() => goToPage(currentPage - 1)}
 						class="rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors {currentPage <= 1
-							? 'text-gray-300 dark:text-gray-600'
-							: 'text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'}"
+							? 'text-gray-300 dark:text-zinc-600'
+							: 'text-gray-600 hover:bg-gray-200 dark:text-zinc-400 dark:hover:bg-zinc-700'}"
 						title="Previous page"
 					>
 						‹
@@ -1622,7 +1622,7 @@
 							class="min-w-[28px] rounded-lg px-2 py-1.5 text-xs font-medium transition-colors {pageNum ===
 							currentPage
 								? 'bg-green-600 text-white'
-								: 'text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'}"
+								: 'text-gray-600 hover:bg-gray-200 dark:text-zinc-400 dark:hover:bg-zinc-700'}"
 						>
 							{pageNum}
 						</button>
@@ -1632,8 +1632,8 @@
 						onclick={() => goToPage(currentPage + 1)}
 						class="rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors {currentPage >=
 						totalPages
-							? 'text-gray-300 dark:text-gray-600'
-							: 'text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'}"
+							? 'text-gray-300 dark:text-zinc-600'
+							: 'text-gray-600 hover:bg-gray-200 dark:text-zinc-400 dark:hover:bg-zinc-700'}"
 						title="Next page"
 					>
 						›
@@ -1643,8 +1643,8 @@
 						onclick={() => goToPage(totalPages)}
 						class="rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors {currentPage >=
 						totalPages
-							? 'text-gray-300 dark:text-gray-600'
-							: 'text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'}"
+							? 'text-gray-300 dark:text-zinc-600'
+							: 'text-gray-600 hover:bg-gray-200 dark:text-zinc-400 dark:hover:bg-zinc-700'}"
 						title="Last page"
 					>
 						»
@@ -1662,10 +1662,10 @@
 		aria-modal="true"
 	>
 		<div
-			class="flex h-[80vh] w-full max-w-6xl flex-col rounded-xl bg-white shadow-2xl dark:bg-gray-800"
+			class="flex h-[80vh] w-full max-w-6xl flex-col rounded-xl bg-white shadow-2xl dark:bg-zinc-800"
 		>
 			<div
-				class="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700"
+				class="flex items-center justify-between border-b border-gray-100 p-4 dark:border-zinc-700"
 			>
 				<div>
 					<h3 class="text-lg font-semibold text-gray-800 dark:text-white">
@@ -1673,14 +1673,14 @@
 							>{selectedLogEntry.key_path}</span
 						>
 					</h3>
-					<p class="text-xs text-gray-500 dark:text-gray-400">
+					<p class="text-xs text-gray-500 dark:text-zinc-400">
 						{formatTimestamp(selectedLogEntry.timestamp)} • {selectedLogEntry.endpoint}
 					</p>
 				</div>
 				<button
 					aria-label="Close"
 					onclick={() => (showDetailModal = false)}
-					class="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
+					class="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-zinc-200"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -1699,12 +1699,12 @@
 				</button>
 			</div>
 
-			<div class="grid flex-1 grid-cols-2 gap-4 overflow-hidden bg-gray-50 p-4 dark:bg-gray-900/50">
+			<div class="grid flex-1 grid-cols-2 gap-4 overflow-hidden bg-gray-50 p-4 dark:bg-zinc-900/50">
 				<div
-					class="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
+					class="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
 				>
 					<div
-						class="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+						class="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
 					>
 						<span>Server 1 {selectedRequestLog ? '(Full Response)' : '(Logged Value)'}</span>
 						{#if isLoadingDetail}
@@ -1732,10 +1732,10 @@
 					</div>
 				</div>
 				<div
-					class="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
+					class="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
 				>
 					<div
-						class="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+						class="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
 					>
 						<span>Server 2 {selectedRequestLog ? '(Full Response)' : '(Logged Value)'}</span>
 					</div>
@@ -1762,7 +1762,7 @@
 			</div>
 
 			<div
-				class="flex justify-end gap-3 rounded-b-xl border-t border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50"
+				class="flex justify-end gap-3 rounded-b-xl border-t border-gray-100 bg-gray-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50"
 			>
 				<button
 					aria-label="Close modal"
@@ -1804,10 +1804,10 @@
 		aria-modal="true"
 	>
 		<div
-			class="flex h-[80vh] w-full max-w-4xl flex-col rounded-xl bg-white shadow-2xl dark:bg-gray-800"
+			class="flex h-[80vh] w-full max-w-4xl flex-col rounded-xl bg-white shadow-2xl dark:bg-zinc-800"
 		>
 			<div
-				class="flex items-start justify-between gap-4 border-b border-gray-100 p-4 dark:border-gray-700"
+				class="flex items-start justify-between gap-4 border-b border-gray-100 p-4 dark:border-zinc-700"
 			>
 				<div class="min-w-0">
 					<h3 class="text-lg font-semibold text-gray-800 dark:text-white">
@@ -1832,13 +1832,13 @@
 								<span
 									class="h-3 w-2 rounded-sm {i < filledBars
 										? 'bg-green-500 dark:bg-green-400'
-										: 'bg-gray-200 dark:bg-gray-700'}"
+										: 'bg-gray-200 dark:bg-zinc-700'}"
 								></span>
 							{/each}
 						</span>
 					</div>
 					<div
-						class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400"
+						class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-zinc-400"
 					>
 						<span>{formatTimestamp(arrayDetailLog.timestamp)}</span>
 						<span>Server 1: {s1.length}</span>
@@ -1856,7 +1856,7 @@
 				<button
 					aria-label="Close"
 					onclick={closeArrayDetail}
-					class="shrink-0 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
+					class="shrink-0 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-zinc-200"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -1876,20 +1876,20 @@
 			</div>
 
 			<div
-				class="flex shrink-0 items-center gap-2 border-b border-gray-100 bg-gray-50/60 px-4 py-2 dark:border-gray-700 dark:bg-gray-900/30"
+				class="flex shrink-0 items-center gap-2 border-b border-gray-100 bg-gray-50/60 px-4 py-2 dark:border-zinc-700 dark:bg-zinc-900/30"
 			>
-				<span class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+				<span class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 					>Filter:</span
 				>
 				<div
-					class="flex items-center rounded-lg border border-gray-200 bg-white p-0.5 dark:border-gray-700 dark:bg-gray-800"
+					class="flex items-center rounded-lg border border-gray-200 bg-white p-0.5 dark:border-zinc-700 dark:bg-zinc-800"
 				>
 					<button
 						onclick={() => (arrayDetailFilter = 'all')}
 						class="rounded-md px-3 py-1 text-xs font-medium transition-all {arrayDetailFilter ===
 						'all'
-							? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white'
-							: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
+							? 'bg-gray-100 text-gray-900 dark:bg-zinc-700 dark:text-white'
+							: 'text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200'}"
 					>
 						All ({rows.length})
 					</button>
@@ -1898,7 +1898,7 @@
 						class="rounded-md px-3 py-1 text-xs font-medium transition-all {arrayDetailFilter ===
 						'match'
 							? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-							: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
+							: 'text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200'}"
 					>
 						Match ({matchCount})
 					</button>
@@ -1907,53 +1907,53 @@
 						class="rounded-md px-3 py-1 text-xs font-medium transition-all {arrayDetailFilter ===
 						'mismatch'
 							? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-							: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
+							: 'text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200'}"
 					>
 						Diff ({rows.length - matchCount})
 					</button>
 				</div>
-				<div class="ml-auto text-xs text-gray-500 dark:text-gray-400">
+				<div class="ml-auto text-xs text-gray-500 dark:text-zinc-400">
 					Showing {filteredRows.length} of {rows.length}
 				</div>
 			</div>
 
-			<div class="min-h-0 flex-1 overflow-auto bg-gray-50/50 p-4 dark:bg-gray-900/30">
+			<div class="min-h-0 flex-1 overflow-auto bg-gray-50/50 p-4 dark:bg-zinc-900/30">
 				{#if filteredRows.length === 0}
 					<div class="py-12 text-center text-sm text-gray-400">No elements to display.</div>
 				{:else}
 					<table
-						class="w-full overflow-hidden rounded-lg border border-gray-200 bg-white text-sm dark:border-gray-700 dark:bg-gray-800"
+						class="w-full overflow-hidden rounded-lg border border-gray-200 bg-white text-sm dark:border-zinc-700 dark:bg-zinc-800"
 					>
 						<thead>
 							<tr
-								class="border-b border-gray-100 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50"
+								class="border-b border-gray-100 bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900/50"
 							>
 								<th
-									class="w-24 px-3 py-2 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+									class="w-24 px-3 py-2 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 									>ID</th
 								>
 								<th
-									class="px-3 py-2 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+									class="px-3 py-2 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 									>Server 1</th
 								>
 								<th
-									class="px-3 py-2 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+									class="px-3 py-2 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 									>Server 2</th
 								>
 								<th
-									class="w-16 px-3 py-2 text-center text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+									class="w-16 px-3 py-2 text-center text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 									>Match</th
 								>
 							</tr>
 						</thead>
-						<tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+						<tbody class="divide-y divide-gray-100 dark:divide-zinc-700">
 							{#each filteredRows as row, i (i)}
 								<tr class={row.match ? '' : 'bg-red-50/40 dark:bg-red-900/10'}>
-									<td class="px-3 py-2 font-mono text-xs text-gray-500 dark:text-gray-400"
+									<td class="px-3 py-2 font-mono text-xs text-gray-500 dark:text-zinc-400"
 										>{row.id || i}</td
 									>
 									<td
-										class="px-3 py-2 font-mono text-xs break-all text-gray-800 dark:text-gray-200"
+										class="px-3 py-2 font-mono text-xs break-all text-gray-800 dark:text-zinc-200"
 									>
 										{#if row.hasV1}
 											{formatValue(row.v1)}
@@ -1962,7 +1962,7 @@
 										{/if}
 									</td>
 									<td
-										class="px-3 py-2 font-mono text-xs break-all text-gray-800 dark:text-gray-200"
+										class="px-3 py-2 font-mono text-xs break-all text-gray-800 dark:text-zinc-200"
 									>
 										{#if row.hasV2}
 											{formatValue(row.v2)}
@@ -2007,14 +2007,14 @@
 			</div>
 
 			<div
-				class="flex justify-between gap-3 rounded-b-xl border-t border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50"
+				class="flex justify-between gap-3 rounded-b-xl border-t border-gray-100 bg-gray-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50"
 			>
 				<button
 					onclick={() => {
 						if (arrayDetailLog) openDetail(arrayDetailLog);
 						closeArrayDetail();
 					}}
-					class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+					class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
 				>
 					View Full Response →
 				</button>

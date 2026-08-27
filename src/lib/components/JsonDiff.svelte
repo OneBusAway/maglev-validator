@@ -84,7 +84,7 @@
 		class:bg-green-200={status === 'added' && side === 'left'}
 		class:text-green-800={typeof json === 'string'}
 		class:text-blue-700={typeof json === 'number'}
-		class:text-purple-700={typeof json === 'boolean'}
+		class:text-amber-700={typeof json === 'boolean'}
 		class="rounded px-1.5 py-0.5 font-mono text-sm font-medium"
 	>
 		{formatValue(json)}

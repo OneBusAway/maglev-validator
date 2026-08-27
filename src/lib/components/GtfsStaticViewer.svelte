@@ -988,7 +988,7 @@
 </script>
 
 <div
-	class="flex min-h-screen flex-col bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100"
+	class="flex min-h-screen flex-col bg-gray-50 text-gray-900 dark:bg-zinc-900 dark:text-zinc-100"
 >
 	{#if !gtfsState.showGtfsInput}
 		<div class="flex items-center gap-3">
@@ -996,7 +996,7 @@
 				onclick={() => {
 					gtfsState.showGtfsInput = true;
 				}}
-				class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+				class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
 			>
 				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
@@ -1008,13 +1008,13 @@
 				</svg>
 				Load New GTFS Feed
 			</button>
-			<span class="text-sm text-gray-500 dark:text-gray-400">
+			<span class="text-sm text-gray-500 dark:text-zinc-400">
 				{gtfsState.gtfsFiles.length} files loaded
 			</span>
 		</div>
 	{:else}
 		<div
-			class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+			class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
 		>
 			<div class="mb-4 flex items-center justify-between">
 				<h2 class="text-lg font-semibold text-gray-900 dark:text-white">Load GTFS Static Feed</h2>
@@ -1023,7 +1023,7 @@
 						onclick={() => {
 							gtfsState.showGtfsInput = false;
 						}}
-						class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+						class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
 						title="Collapse this section"
 					>
 						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1042,7 +1042,7 @@
 			<div class="mb-4">
 				<label
 					for="gtfs-url-input"
-					class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+					class="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300"
 				>
 					Fetch from URL
 				</label>
@@ -1054,14 +1054,14 @@
 							bind:value={gtfsState.feedUrl}
 							placeholder="https://example.com/gtfs.zip"
 							disabled={gtfsState.loading}
-							class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+							class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:placeholder-zinc-500"
 							onkeydown={(e) => e.key === 'Enter' && !gtfsState.loading && fetchFromUrl()}
 						/>
 						{#if savedUrls.length > 0}
 							<div class="absolute top-1/2 right-2 -translate-y-1/2">
 								<div class="group relative">
 									<button
-										class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+										class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
 										title="Recent URLs"
 									>
 										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1074,18 +1074,18 @@
 										</svg>
 									</button>
 									<div
-										class="absolute top-full right-0 z-10 mt-1 hidden max-h-48 w-80 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg group-hover:block dark:border-gray-700 dark:bg-gray-800"
+										class="absolute top-full right-0 z-10 mt-1 hidden max-h-48 w-80 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg group-hover:block dark:border-zinc-700 dark:bg-zinc-800"
 									>
 										{#each savedUrls as url (url)}
 											<div
-												class="flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700"
+												class="flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-zinc-700"
 											>
 												<button
 													onclick={() => {
 														gtfsState.feedUrl = url;
 														fetchFromUrl();
 													}}
-													class="flex-1 truncate text-left text-sm text-gray-700 dark:text-gray-300"
+													class="flex-1 truncate text-left text-sm text-gray-700 dark:text-zinc-300"
 												>
 													{url}
 												</button>
@@ -1119,7 +1119,7 @@
 					<button
 						onclick={fetchFromUrl}
 						disabled={gtfsState.loading}
-						class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+						class="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						{#if gtfsState.loading}
 							<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -1156,16 +1156,16 @@
 			<div class="mb-4">
 				<label
 					for="gtfs-file-input"
-					class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+					class="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300"
 				>
 					Or upload a file
 				</label>
 				<div
-					class="relative rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition-colors dark:border-gray-700 {gtfsState.loading
+					class="relative rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition-colors dark:border-zinc-700 {gtfsState.loading
 						? 'cursor-not-allowed opacity-50'
 						: ''} {dragOver && !gtfsState.loading
-						? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-						: 'hover:border-gray-400 dark:hover:border-gray-600'}"
+						? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+						: 'hover:border-gray-400 dark:hover:border-zinc-600'}"
 					ondrop={gtfsState.loading ? undefined : handleDrop}
 					ondragover={gtfsState.loading ? undefined : handleDragOver}
 					ondragleave={gtfsState.loading ? undefined : handleDragLeave}
@@ -1196,11 +1196,11 @@
 							d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
 						/>
 					</svg>
-					<p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-						<span class="font-medium text-blue-600 dark:text-blue-400">Click to upload</span> or drag
+					<p class="mt-2 text-sm text-gray-600 dark:text-zinc-400">
+						<span class="font-medium text-green-600 dark:text-green-400">Click to upload</span> or drag
 						and drop
 					</p>
-					<p class="mt-1 text-xs text-gray-500 dark:text-gray-500">GTFS zip file</p>
+					<p class="mt-1 text-xs text-gray-500 dark:text-zinc-500">GTFS zip file</p>
 				</div>
 			</div>
 
@@ -1224,11 +1224,11 @@
 
 			{#if gtfsState.loading}
 				<div
-					class="flex flex-col items-center justify-center gap-4 rounded-lg bg-blue-50 p-6 dark:bg-blue-900/20"
+					class="flex flex-col items-center justify-center gap-4 rounded-lg bg-green-50 p-6 dark:bg-green-900/20"
 				>
 					<div class="flex items-center gap-3">
 						<svg
-							class="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400"
+							class="h-6 w-6 animate-spin text-green-600 dark:text-green-400"
 							fill="none"
 							viewBox="0 0 24 24"
 						>
@@ -1246,20 +1246,20 @@
 								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 							></path>
 						</svg>
-						<span class="text-sm font-medium text-blue-700 dark:text-blue-300">
+						<span class="text-sm font-medium text-green-700 dark:text-green-300">
 							{gtfsState.uploadProgress || 'Loading GTFS feed...'}
 						</span>
 					</div>
 
 					{#if gtfsState.uploadProgressPercent > 0}
 						<div class="w-full max-w-md">
-							<div class="mb-1 flex justify-between text-xs text-gray-600 dark:text-gray-400">
+							<div class="mb-1 flex justify-between text-xs text-gray-600 dark:text-zinc-400">
 								<span>{gtfsState.currentProcessingFile || 'Processing...'}</span>
 								<span>{gtfsState.uploadProgressPercent}%</span>
 							</div>
-							<div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+							<div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-zinc-700">
 								<div
-									class="h-full rounded-full bg-blue-600 transition-all duration-300 ease-out dark:bg-blue-500"
+									class="h-full rounded-full bg-green-600 transition-all duration-300 ease-out dark:bg-green-500"
 									style="width: {gtfsState.uploadProgressPercent}%"
 								></div>
 							</div>
@@ -1271,15 +1271,15 @@
 	{/if}
 
 	{#if gtfsState.gtfsFiles.length > 0}
-		<div class="mb-4 flex border-b border-gray-200 dark:border-gray-700">
+		<div class="mb-4 flex border-b border-gray-200 dark:border-zinc-700">
 			<button
 				onclick={() => {
 					gtfsState.activeTab = 'browser';
 				}}
 				class="relative px-6 py-3 text-sm font-medium transition-colors {gtfsState.activeTab ===
 				'browser'
-					? 'text-blue-600 dark:text-blue-400'
-					: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}"
+					? 'text-green-600 dark:text-green-400'
+					: 'text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-300'}"
 			>
 				<span class="flex items-center gap-2">
 					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1293,7 +1293,8 @@
 					File Browser
 				</span>
 				{#if gtfsState.activeTab === 'browser'}
-					<span class="absolute right-0 bottom-0 left-0 h-0.5 bg-blue-600 dark:bg-blue-400"></span>
+					<span class="absolute right-0 bottom-0 left-0 h-0.5 bg-green-600 dark:bg-green-400"
+					></span>
 				{/if}
 			</button>
 			<button
@@ -1302,8 +1303,8 @@
 				}}
 				class="relative px-6 py-3 text-sm font-medium transition-colors {gtfsState.activeTab ===
 				'sql'
-					? 'text-blue-600 dark:text-blue-400'
-					: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}"
+					? 'text-green-600 dark:text-green-400'
+					: 'text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-300'}"
 			>
 				<span class="flex items-center gap-2">
 					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1317,7 +1318,8 @@
 					SQL Query
 				</span>
 				{#if gtfsState.activeTab === 'sql'}
-					<span class="absolute right-0 bottom-0 left-0 h-0.5 bg-blue-600 dark:bg-blue-400"></span>
+					<span class="absolute right-0 bottom-0 left-0 h-0.5 bg-green-600 dark:bg-green-400"
+					></span>
 				{/if}
 			</button>
 		</div>
@@ -1326,9 +1328,9 @@
 			<div class="grid grid-cols-12 gap-6">
 				<div class="col-span-3">
 					<div
-						class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
+						class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
 					>
-						<div class="border-b border-gray-200 p-4 dark:border-gray-700">
+						<div class="border-b border-gray-200 p-4 dark:border-zinc-700">
 							<h3 class="text-sm font-semibold text-gray-900 dark:text-white">
 								Files ({gtfsState.gtfsFiles.length})
 							</h3>
@@ -1340,8 +1342,8 @@
 									onclick={() => selectFile(file)}
 									class="mb-1 w-full rounded-lg px-3 py-2 text-left transition-colors {gtfsState.selectedFileId ===
 									file.id
-										? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-										: 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}"
+										? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+										: 'text-gray-700 hover:bg-gray-50 dark:text-zinc-300 dark:hover:bg-zinc-800'}"
 								>
 									<div class="flex items-center justify-between">
 										<span class="text-sm font-medium">{file.name}</span>
@@ -1354,7 +1356,7 @@
 										{/if}
 									</div>
 									<div
-										class="mt-0.5 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400"
+										class="mt-0.5 flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400"
 									>
 										<span>{info?.description || 'Custom file'}</span>
 										<span>{file.rowCount.toLocaleString()} rows</span>
@@ -1365,26 +1367,26 @@
 					</div>
 
 					<div
-						class="mt-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+						class="mt-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
 					>
 						<h3 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
 							Feed Statistics
 						</h3>
 						<div class="space-y-2 text-sm">
-							<div class="flex justify-between text-gray-600 dark:text-gray-400">
+							<div class="flex justify-between text-gray-600 dark:text-zinc-400">
 								<span>Total Files</span>
 								<span class="font-medium text-gray-900 dark:text-white"
 									>{gtfsState.gtfsFiles.length}</span
 								>
 							</div>
-							<div class="flex justify-between text-gray-600 dark:text-gray-400">
+							<div class="flex justify-between text-gray-600 dark:text-zinc-400">
 								<span>Total Rows</span>
 								<span class="font-medium text-gray-900 dark:text-white">
 									{gtfsState.gtfsFiles.reduce((sum, f) => sum + f.rowCount, 0).toLocaleString()}
 								</span>
 							</div>
 							{#if gtfsState.gtfsFiles.find((f) => f.name === 'routes.txt')}
-								<div class="flex justify-between text-gray-600 dark:text-gray-400">
+								<div class="flex justify-between text-gray-600 dark:text-zinc-400">
 									<span>Routes</span>
 									<span class="font-medium text-gray-900 dark:text-white">
 										{gtfsState.gtfsFiles
@@ -1394,7 +1396,7 @@
 								</div>
 							{/if}
 							{#if gtfsState.gtfsFiles.find((f) => f.name === 'stops.txt')}
-								<div class="flex justify-between text-gray-600 dark:text-gray-400">
+								<div class="flex justify-between text-gray-600 dark:text-zinc-400">
 									<span>Stops</span>
 									<span class="font-medium text-gray-900 dark:text-white">
 										{gtfsState.gtfsFiles
@@ -1404,7 +1406,7 @@
 								</div>
 							{/if}
 							{#if gtfsState.gtfsFiles.find((f) => f.name === 'trips.txt')}
-								<div class="flex justify-between text-gray-600 dark:text-gray-400">
+								<div class="flex justify-between text-gray-600 dark:text-zinc-400">
 									<span>Trips</span>
 									<span class="font-medium text-gray-900 dark:text-white">
 										{gtfsState.gtfsFiles
@@ -1420,20 +1422,20 @@
 				<div class="col-span-9">
 					{#if gtfsState.selectedFileName}
 						<div
-							class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
+							class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
 						>
 							<div
-								class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 p-4 dark:border-gray-700"
+								class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 p-4 dark:border-zinc-700"
 							>
 								<div class="flex items-center gap-4">
 									<h3 class="text-lg font-semibold text-gray-900 dark:text-white">
 										{gtfsState.selectedFileName}
 									</h3>
-									<span class="text-sm text-gray-500 dark:text-gray-400">
+									<span class="text-sm text-gray-500 dark:text-zinc-400">
 										{gtfsState.rows.length.toLocaleString()} of {gtfsState.totalRows.toLocaleString()}
 										rows
 										{#if gtfsState.isSearching || gtfsState.loadingData}
-											<span class="ml-2 text-blue-500">(loading...)</span>
+											<span class="ml-2 text-green-500">(loading...)</span>
 										{/if}
 									</span>
 								</div>
@@ -1445,11 +1447,11 @@
 											bind:value={gtfsState.searchQuery}
 											oninput={handleSearch}
 											placeholder="Search..."
-											class="w-64 rounded-lg border border-gray-300 bg-white py-2 pr-8 pl-9 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+											class="w-64 rounded-lg border border-gray-300 bg-white py-2 pr-8 pl-9 text-sm text-gray-900 placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:placeholder-zinc-500"
 										/>
 										{#if gtfsState.isSearching || gtfsState.loadingData}
 											<svg
-												class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 animate-spin text-blue-500"
+												class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 animate-spin text-green-500"
 												fill="none"
 												viewBox="0 0 24 24"
 											>
@@ -1506,23 +1508,23 @@
 									</div>
 
 									<label
-										class="flex cursor-pointer items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
+										class="flex cursor-pointer items-center gap-2 text-sm text-gray-600 dark:text-zinc-400"
 									>
 										<input
 											type="checkbox"
 											bind:checked={gtfsState.convertTimes}
-											class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+											class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
 										/>
 										12h Time
 									</label>
 
 									<label
-										class="flex cursor-pointer items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
+										class="flex cursor-pointer items-center gap-2 text-sm text-gray-600 dark:text-zinc-400"
 									>
 										<input
 											type="checkbox"
 											bind:checked={gtfsState.convertDates}
-											class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+											class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
 										/>
 										Format Dates
 									</label>
@@ -1530,7 +1532,7 @@
 									<!-- Export -->
 									<button
 										onclick={exportToCSV}
-										class="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+										class="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
 									>
 										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path
@@ -1548,7 +1550,7 @@
 							<div class="overflow-x-auto">
 								<table class="w-full text-left text-sm">
 									<thead
-										class="sticky top-0 bg-gray-50 text-xs text-gray-700 uppercase dark:bg-gray-800 dark:text-gray-400"
+										class="sticky top-0 bg-gray-50 text-xs text-gray-700 uppercase dark:bg-zinc-800 dark:text-zinc-400"
 									>
 										<tr>
 											{#each gtfsState.headers as column (column)}
@@ -1601,11 +1603,11 @@
 											{/each}
 										</tr>
 									</thead>
-									<tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+									<tbody class="divide-y divide-gray-200 dark:divide-zinc-700">
 										{#each gtfsState.rows as row, idx (idx)}
-											<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+											<tr class="hover:bg-gray-50 dark:hover:bg-zinc-800/50">
 												{#each gtfsState.headers as column (column)}
-													<td class="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+													<td class="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-zinc-100">
 														{formatCellValue(
 															column,
 															String(row[column] ?? ''),
@@ -1621,7 +1623,7 @@
 							</div>
 
 							{#if gtfsState.rows.length === 0 && !gtfsState.loadingData}
-								<div class="p-8 text-center text-gray-500 dark:text-gray-400">
+								<div class="p-8 text-center text-gray-500 dark:text-zinc-400">
 									{#if gtfsState.searchQuery}
 										No results found for "{gtfsState.searchQuery}"
 									{:else}
@@ -1631,9 +1633,9 @@
 							{/if}
 
 							{#if gtfsState.loadingData}
-								<div class="p-8 text-center text-gray-500 dark:text-gray-400">
+								<div class="p-8 text-center text-gray-500 dark:text-zinc-400">
 									<svg
-										class="mx-auto h-8 w-8 animate-spin text-blue-500"
+										class="mx-auto h-8 w-8 animate-spin text-green-500"
 										fill="none"
 										viewBox="0 0 24 24"
 									>
@@ -1657,16 +1659,16 @@
 
 							{#if gtfsState.totalPages > 1}
 								<div
-									class="flex items-center justify-between border-t border-gray-200 px-4 py-3 dark:border-gray-700"
+									class="flex items-center justify-between border-t border-gray-200 px-4 py-3 dark:border-zinc-700"
 								>
 									<div class="flex items-center gap-2">
-										<span class="text-sm text-gray-600 dark:text-gray-400">Rows per page:</span>
+										<span class="text-sm text-gray-600 dark:text-zinc-400">Rows per page:</span>
 										<select
 											bind:value={gtfsState.pageSize}
 											onchange={() => {
 												gtfsState.currentPage = 1;
 											}}
-											class="rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+											class="rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
 										>
 											<option value={25}>25</option>
 											<option value={50}>50</option>
@@ -1676,7 +1678,7 @@
 									</div>
 
 									<div class="flex items-center gap-2">
-										<span class="text-sm text-gray-600 dark:text-gray-400">
+										<span class="text-sm text-gray-600 dark:text-zinc-400">
 											Page {gtfsState.currentPage} of {gtfsState.totalPages}
 										</span>
 										<div class="flex gap-1">
@@ -1685,7 +1687,7 @@
 													gtfsState.currentPage = 1;
 												}}
 												disabled={gtfsState.currentPage === 1}
-												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
+												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-zinc-400 dark:hover:bg-zinc-700"
 												title="First page"
 												aria-label="Go to first page"
 											>
@@ -1703,7 +1705,7 @@
 													gtfsState.currentPage = Math.max(1, gtfsState.currentPage - 1);
 												}}
 												disabled={gtfsState.currentPage === 1}
-												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
+												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-zinc-400 dark:hover:bg-zinc-700"
 												title="Previous page"
 												aria-label="Go to previous page"
 											>
@@ -1724,7 +1726,7 @@
 													);
 												}}
 												disabled={gtfsState.currentPage === gtfsState.totalPages}
-												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
+												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-zinc-400 dark:hover:bg-zinc-700"
 												title="Next page"
 												aria-label="Go to next page"
 											>
@@ -1742,7 +1744,7 @@
 													gtfsState.currentPage = gtfsState.totalPages;
 												}}
 												disabled={gtfsState.currentPage === gtfsState.totalPages}
-												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
+												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-zinc-400 dark:hover:bg-zinc-700"
 												title="Last page"
 												aria-label="Go to last page"
 											>
@@ -1769,25 +1771,25 @@
 			<div class="grid grid-cols-12 gap-6">
 				<div class="col-span-3">
 					<div
-						class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
+						class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
 					>
-						<div class="border-b border-gray-200 p-4 dark:border-gray-700">
+						<div class="border-b border-gray-200 p-4 dark:border-zinc-700">
 							<h3 class="text-sm font-semibold text-gray-900 dark:text-white">Available Tables</h3>
 						</div>
 						<div class="max-h-100 overflow-auto p-2">
 							{#if gtfsState.availableTables.length === 0}
-								<p class="p-3 text-sm text-gray-500 dark:text-gray-400">Loading tables...</p>
+								<p class="p-3 text-sm text-gray-500 dark:text-zinc-400">Loading tables...</p>
 							{:else}
 								{#each gtfsState.availableTables as table (table.name)}
 									<button
 										onclick={() => insertTableName(table.name)}
-										class="mb-1 w-full rounded-lg px-3 py-2 text-left text-gray-700 transition-colors hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
+										class="mb-1 w-full rounded-lg px-3 py-2 text-left text-gray-700 transition-colors hover:bg-gray-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
 									>
 										<div class="flex items-center justify-between">
 											<span class="text-sm font-medium">{table.name}</span>
 											<span class="text-xs text-gray-400">{table.rowCount.toLocaleString()}</span>
 										</div>
-										<div class="mt-1 truncate text-xs text-gray-400 dark:text-gray-500">
+										<div class="mt-1 truncate text-xs text-gray-400 dark:text-zinc-500">
 											{table.columns.slice(0, 4).join(', ')}{table.columns.length > 4 ? '...' : ''}
 										</div>
 									</button>
@@ -1797,10 +1799,10 @@
 					</div>
 
 					<div
-						class="mt-4 rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
+						class="mt-4 rounded-xl border border-gray-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
 					>
 						<div
-							class="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700"
+							class="flex items-center justify-between border-b border-gray-200 p-4 dark:border-zinc-700"
 						>
 							<h3 class="text-sm font-semibold text-gray-900 dark:text-white">Query History</h3>
 							{#if gtfsState.queryHistory.length > 0}
@@ -1815,12 +1817,12 @@
 						</div>
 						<div class="max-h-50 overflow-auto p-2">
 							{#if gtfsState.queryHistory.length === 0}
-								<p class="p-3 text-sm text-gray-500 dark:text-gray-400">No queries yet</p>
+								<p class="p-3 text-sm text-gray-500 dark:text-zinc-400">No queries yet</p>
 							{:else}
 								{#each gtfsState.queryHistory as query (query)}
 									<button
 										onclick={() => loadQueryFromHistory(query)}
-										class="mb-1 w-full truncate rounded-lg px-3 py-2 text-left font-mono text-xs text-gray-600 transition-colors hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
+										class="mb-1 w-full truncate rounded-lg px-3 py-2 text-left font-mono text-xs text-gray-600 transition-colors hover:bg-gray-50 dark:text-zinc-400 dark:hover:bg-zinc-800"
 									>
 										{query}
 									</button>
@@ -1830,7 +1832,7 @@
 					</div>
 
 					<div
-						class="mt-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+						class="mt-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
 					>
 						<div class="mb-3 flex items-center justify-between">
 							<h3 class="text-sm font-semibold text-gray-900 dark:text-white">
@@ -1846,17 +1848,17 @@
 						</div>
 						<div class="max-h-75 space-y-1 overflow-auto">
 							{#if gtfsState.favoriteQueries.length === 0}
-								<p class="py-2 text-xs text-gray-400 dark:text-gray-500">
+								<p class="py-2 text-xs text-gray-400 dark:text-zinc-500">
 									No favorites yet. Click the star icon to save a query.
 								</p>
 							{:else}
 								{#each gtfsState.favoriteQueries as fav (fav.name)}
 									<div
-										class="group flex items-center gap-1 rounded px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800"
+										class="group flex items-center gap-1 rounded px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-zinc-800"
 									>
 										<button
 											onclick={() => loadFavorite(fav.query)}
-											class="flex-1 truncate text-left text-xs text-gray-600 dark:text-gray-400"
+											class="flex-1 truncate text-left text-xs text-gray-600 dark:text-zinc-400"
 											title={fav.query}
 										>
 											{fav.name}
@@ -1889,9 +1891,9 @@
 
 				<div class="col-span-9">
 					<div
-						class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
+						class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
 					>
-						<div class="border-b border-gray-200 p-4 dark:border-gray-700">
+						<div class="border-b border-gray-200 p-4 dark:border-zinc-700">
 							<div class="mb-3 flex items-center justify-between">
 								<h3 class="text-lg font-semibold text-gray-900 dark:text-white">SQL Query</h3>
 								<div class="flex items-center gap-2">
@@ -1919,7 +1921,7 @@
 										<button
 											onclick={addToFavorites}
 											disabled={!gtfsState.sqlQuery.trim()}
-											class="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+											class="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
 											title="Save to favorites"
 										>
 											<svg
@@ -1983,14 +1985,14 @@
 
 						{#if gtfsState.showSaveFavoriteModal}
 							<div
-								class="border-b border-gray-200 bg-yellow-50 p-4 dark:border-gray-700 dark:bg-yellow-900/20"
+								class="border-b border-gray-200 bg-yellow-50 p-4 dark:border-zinc-700 dark:bg-yellow-900/20"
 							>
 								<div class="flex items-center gap-3">
 									<input
 										type="text"
 										bind:value={gtfsState.newFavoriteName}
 										placeholder="Enter a name for this query..."
-										class="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+										class="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
 										onkeydown={(e) => {
 											if (e.key === 'Enter') saveFavorite();
 											if (e.key === 'Escape') gtfsState.showSaveFavoriteModal = false;
@@ -2007,7 +2009,7 @@
 										onclick={() => {
 											gtfsState.showSaveFavoriteModal = false;
 										}}
-										class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+										class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
 									>
 										Cancel
 									</button>
@@ -2017,7 +2019,7 @@
 
 						{#if gtfsState.sqlError}
 							<div
-								class="border-b border-gray-200 bg-red-50 p-4 dark:border-gray-700 dark:bg-red-900/20"
+								class="border-b border-gray-200 bg-red-50 p-4 dark:border-zinc-700 dark:bg-red-900/20"
 							>
 								<div class="flex items-start gap-2 text-red-700 dark:text-red-400">
 									<svg
@@ -2042,9 +2044,9 @@
 						{/if}
 
 						{#if gtfsState.sqlResult}
-							<div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+							<div class="border-b border-gray-200 px-4 py-3 dark:border-zinc-700">
 								<div class="flex flex-wrap items-center justify-between gap-3">
-									<div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+									<div class="flex items-center gap-4 text-sm text-gray-600 dark:text-zinc-400">
 										<span
 											><strong>{filteredSqlRows.length.toLocaleString()}</strong
 											>{gtfsState.sqlResultSearch
@@ -2067,7 +2069,7 @@
 												type="text"
 												bind:value={gtfsState.sqlResultSearch}
 												placeholder="Search results..."
-												class="w-48 rounded-lg border border-gray-300 bg-white py-1.5 pr-8 pl-8 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+												class="w-48 rounded-lg border border-gray-300 bg-white py-1.5 pr-8 pl-8 text-sm text-gray-900 placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:placeholder-zinc-500"
 											/>
 											<svg
 												class="absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-gray-400"
@@ -2109,7 +2111,7 @@
 										<button
 											onclick={exportSqlResultToCSV}
 											disabled={gtfsState.sqlResult.rows.length === 0}
-											class="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+											class="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
 										>
 											<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 												<path
@@ -2128,7 +2130,7 @@
 							<div class="max-h-125 overflow-auto">
 								<table class="w-full text-left text-sm">
 									<thead
-										class="sticky top-0 bg-gray-50 text-xs text-gray-700 uppercase dark:bg-gray-800 dark:text-gray-400"
+										class="sticky top-0 bg-gray-50 text-xs text-gray-700 uppercase dark:bg-zinc-800 dark:text-zinc-400"
 									>
 										<tr>
 											{#each gtfsState.sqlResult.columns as column (column)}
@@ -2136,11 +2138,11 @@
 											{/each}
 										</tr>
 									</thead>
-									<tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+									<tbody class="divide-y divide-gray-200 dark:divide-zinc-700">
 										{#each paginatedSqlRows as row, i (i)}
-											<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+											<tr class="hover:bg-gray-50 dark:hover:bg-zinc-800/50">
 												{#each gtfsState.sqlResult.columns as column (column)}
-													<td class="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+													<td class="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-zinc-100">
 														{row[column] ?? ''}
 													</td>
 												{/each}
@@ -2151,7 +2153,7 @@
 							</div>
 
 							{#if filteredSqlRows.length === 0}
-								<div class="p-8 text-center text-gray-500 dark:text-gray-400">
+								<div class="p-8 text-center text-gray-500 dark:text-zinc-400">
 									{#if gtfsState.sqlResultSearch}
 										No results match "{gtfsState.sqlResultSearch}"
 									{:else}
@@ -2160,16 +2162,16 @@
 								</div>
 							{:else if sqlTotalPages > 1}
 								<div
-									class="flex items-center justify-between border-t border-gray-200 px-4 py-3 dark:border-gray-700"
+									class="flex items-center justify-between border-t border-gray-200 px-4 py-3 dark:border-zinc-700"
 								>
 									<div class="flex items-center gap-2">
-										<span class="text-sm text-gray-600 dark:text-gray-400">Rows per page:</span>
+										<span class="text-sm text-gray-600 dark:text-zinc-400">Rows per page:</span>
 										<select
 											bind:value={gtfsState.sqlResultPageSize}
 											onchange={() => {
 												gtfsState.sqlResultPage = 1;
 											}}
-											class="rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+											class="rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
 										>
 											<option value={25}>25</option>
 											<option value={50}>50</option>
@@ -2179,7 +2181,7 @@
 									</div>
 
 									<div class="flex items-center gap-2">
-										<span class="text-sm text-gray-600 dark:text-gray-400">
+										<span class="text-sm text-gray-600 dark:text-zinc-400">
 											Page {gtfsState.sqlResultPage} of {sqlTotalPages}
 											<span class="text-gray-400"
 												>({filteredSqlRows.length.toLocaleString()} rows)</span
@@ -2191,7 +2193,7 @@
 													gtfsState.sqlResultPage = 1;
 												}}
 												disabled={gtfsState.sqlResultPage === 1}
-												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
+												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-zinc-400 dark:hover:bg-zinc-700"
 												title="First page"
 											>
 												<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2208,7 +2210,7 @@
 													gtfsState.sqlResultPage = Math.max(1, gtfsState.sqlResultPage - 1);
 												}}
 												disabled={gtfsState.sqlResultPage === 1}
-												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
+												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-zinc-400 dark:hover:bg-zinc-700"
 												title="Previous page"
 											>
 												<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2228,7 +2230,7 @@
 													);
 												}}
 												disabled={gtfsState.sqlResultPage === sqlTotalPages}
-												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
+												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-zinc-400 dark:hover:bg-zinc-700"
 												title="Next page"
 											>
 												<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2245,7 +2247,7 @@
 													gtfsState.sqlResultPage = sqlTotalPages;
 												}}
 												disabled={gtfsState.sqlResultPage === sqlTotalPages}
-												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700"
+												class="rounded p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-zinc-400 dark:hover:bg-zinc-700"
 												title="Last page"
 											>
 												<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2262,7 +2264,7 @@
 								</div>
 							{/if}
 						{:else if !gtfsState.sqlError && !gtfsState.sqlLoading}
-							<div class="p-12 text-center text-gray-400 dark:text-gray-500">
+							<div class="p-12 text-center text-gray-400 dark:text-zinc-500">
 								<svg
 									class="mx-auto mb-3 h-12 w-12"
 									fill="none"

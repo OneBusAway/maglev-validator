@@ -264,16 +264,16 @@
 	function getValueColorClass(val: unknown): string {
 		if (typeof val === 'string') return 'text-green-600 dark:text-green-400';
 		if (typeof val === 'number') return 'text-blue-600 dark:text-blue-400';
-		if (typeof val === 'boolean') return 'text-blue-600 dark:text-blue-400 font-bold';
-		if (val === null) return 'text-gray-500 dark:text-gray-400 italic';
-		if (val === undefined) return 'text-gray-500 dark:text-gray-400 italic';
-		return 'text-gray-900 dark:text-gray-100';
+		if (typeof val === 'boolean') return 'text-amber-600 dark:text-amber-400 font-bold';
+		if (val === null) return 'text-gray-500 dark:text-zinc-400 italic';
+		if (val === undefined) return 'text-gray-500 dark:text-zinc-400 italic';
+		return 'text-gray-900 dark:text-zinc-100';
 	}
 
 	function getDiffClass(): string {
 		if (isReference || status === 'same') return '';
 		if (status === 'different')
-			return 'bg-[#f8f8f8] dark:bg-gray-800/50 outline outline-1 outline-[#e0e0e0] dark:outline-gray-700'; // Very subtle gray bg
+			return 'bg-[#f8f8f8] dark:bg-zinc-800/50 outline outline-1 outline-[#e0e0e0] dark:outline-zinc-700'; // Very subtle gray bg
 		return '';
 	}
 
@@ -295,7 +295,7 @@
 <div class="font-sans text-[14px] leading-[1.8] tracking-wide">
 	{#if label !== undefined}
 		<div
-			class="group -mx-1 flex items-center rounded px-1 py-0.5 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 {getDiffClass()} {labelMatchesSearch ||
+			class="group -mx-1 flex items-center rounded px-1 py-0.5 hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 {getDiffClass()} {labelMatchesSearch ||
 			valueMatchesSearch
 				? 'bg-yellow-50/30 ring-2 ring-yellow-400/50 dark:bg-yellow-900/20'
 				: ''} {currentPath && matchingPaths.has(currentPath)
@@ -305,7 +305,7 @@
 			{#if isArray(value) || isObject(value)}
 				<button
 					onclick={toggle}
-					class="mr-2 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-[11px] text-gray-400 transition-all hover:bg-gray-200 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+					class="mr-2 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-[11px] text-gray-400 transition-all hover:bg-gray-200 hover:text-gray-700 dark:text-zinc-500 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
 				>
 					<span class="transition-transform {expanded ? 'rotate-0' : '-rotate-90'}">▼</span>
 				</button>
@@ -319,9 +319,9 @@
 						e.stopPropagation();
 						comparatorState.toggleWatchKey(normalizeKeyPath(currentPath));
 					}}
-					class="mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-700 {isWatched
+					class="mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded opacity-0 transition-all group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-zinc-700 {isWatched
 						? 'text-green-600 opacity-100 dark:text-green-400'
-						: 'text-gray-400 dark:text-gray-500'}"
+						: 'text-gray-400 dark:text-zinc-500'}"
 					title={isWatched ? 'Remove from watched keys' : 'Add to watched keys'}
 				>
 					{#if isWatched}
@@ -363,7 +363,7 @@
 					{/each}
 				{:else}
 					{label}
-				{/if}<span class="text-gray-400 dark:text-gray-600">:</span>
+				{/if}<span class="text-gray-400 dark:text-zinc-600">:</span>
 			</span>
 
 			{#if isPrimitive(value)}
@@ -396,7 +396,7 @@
 				{/if}
 			{:else}
 				<span
-					class="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500 select-text dark:bg-gray-800 dark:text-gray-400"
+					class="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500 select-text dark:bg-zinc-800 dark:text-zinc-400"
 				>
 					{isArray(value)
 						? `Array[${value.length}]`
@@ -455,11 +455,11 @@
 
 	{#if expanded}
 		<div
-			class={label !== undefined ? 'ml-4 border-l-2 border-gray-200 pl-4 dark:border-gray-700' : ''}
+			class={label !== undefined ? 'ml-4 border-l-2 border-gray-200 pl-4 dark:border-zinc-700' : ''}
 		>
 			{#if isArray(value)}
 				{#if isLargeCollection}
-					<div class="mb-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+					<div class="mb-2 flex items-center gap-2 text-xs text-gray-500 dark:text-zinc-400">
 						<span
 							>Showing {Math.min(visibleCount, arrayItems.length)} of {arrayItems.length} items</span
 						>
@@ -491,7 +491,7 @@
 						<button
 							onclick={loadMore}
 							disabled={isLoadingMore}
-							class="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:opacity-50 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+							class="flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-100 disabled:opacity-50 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
 						>
 							{#if isLoadingMore}
 								<svg class="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -517,7 +517,7 @@
 						{#if arrayItems.length - visibleCount > CHUNK_SIZE}
 							<button
 								onclick={loadAll}
-								class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+								class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
 							>
 								Load all ({arrayItems.length - visibleCount} remaining)
 							</button>
@@ -531,7 +531,7 @@
 				{@const visibleEntries = entries.slice(0, visibleCount)}
 				{@const hasMoreEntries = entries.length > visibleCount}
 				{#if entries.length > LARGE_THRESHOLD}
-					<div class="mb-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+					<div class="mb-2 flex items-center gap-2 text-xs text-gray-500 dark:text-zinc-400">
 						<span
 							>Showing {Math.min(visibleCount, entries.length)} of {entries.length} properties</span
 						>
@@ -563,14 +563,14 @@
 					<div class="mt-2 flex items-center gap-2">
 						<button
 							onclick={() => (visibleCount = Math.min(visibleCount + CHUNK_SIZE, entries.length))}
-							class="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+							class="flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-100 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
 						>
 							Load {Math.min(CHUNK_SIZE, entries.length - visibleCount)} more
 						</button>
 						{#if entries.length - visibleCount > CHUNK_SIZE}
 							<button
 								onclick={() => (visibleCount = entries.length)}
-								class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+								class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
 							>
 								Load all ({entries.length - visibleCount} remaining)
 							</button>

@@ -117,10 +117,10 @@
 </svelte:head>
 
 <div
-	class="min-h-screen bg-gray-50 font-['Inter',sans-serif] text-gray-900 transition-colors duration-200 dark:bg-gray-950 dark:text-gray-100"
+	class="min-h-screen bg-gray-50 font-['Inter',sans-serif] text-gray-900 transition-colors duration-200 dark:bg-zinc-950 dark:text-zinc-100"
 >
 	<header
-		class="sticky top-0 z-50 border-b border-gray-200/80 bg-white/80 backdrop-blur-md transition-colors duration-200 dark:border-gray-800 dark:bg-gray-900/80"
+		class="sticky top-0 z-50 border-b border-gray-200/80 bg-white/80 backdrop-blur-md transition-colors duration-200 dark:border-zinc-800 dark:bg-zinc-900/80"
 	>
 		<div class="mx-auto flex h-14 max-w-[1800px] items-center justify-between px-6">
 			<div class="flex items-center gap-3">
@@ -132,14 +132,14 @@
 
 			<div class="absolute left-1/2 -translate-x-1/2">
 				<div
-					class="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-100 p-1 dark:border-gray-800 dark:bg-gray-800"
+					class="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-100 p-1 dark:border-zinc-800 dark:bg-zinc-800"
 				>
 					<button
 						onclick={() => handleTabClick('comparator')}
 						class="flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium transition-all {!isSplitMode &&
 						activeTab === 'comparator'
-							? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
-							: 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}"
+							? 'bg-white text-gray-900 shadow-sm dark:bg-zinc-700 dark:text-white'
+							: 'text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white'}"
 					>
 						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
 							><path
@@ -155,8 +155,8 @@
 						onclick={() => handleTabClick('protobuf')}
 						class="flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium transition-all {!isSplitMode &&
 						activeTab === 'protobuf'
-							? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
-							: 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}"
+							? 'bg-white text-gray-900 shadow-sm dark:bg-zinc-700 dark:text-white'
+							: 'text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white'}"
 					>
 						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
 							><path
@@ -172,8 +172,8 @@
 						onclick={() => handleTabClick('gtfs-static')}
 						class="flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium transition-all {!isSplitMode &&
 						activeTab === 'gtfs-static'
-							? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
-							: 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}"
+							? 'bg-white text-gray-900 shadow-sm dark:bg-zinc-700 dark:text-white'
+							: 'text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white'}"
 					>
 						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
 							><path
@@ -189,8 +189,8 @@
 						onclick={() => handleTabClick('logger')}
 						class="flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium transition-all {!isSplitMode &&
 						activeTab === 'logger'
-							? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
-							: 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'}"
+							? 'bg-white text-gray-900 shadow-sm dark:bg-zinc-700 dark:text-white'
+							: 'text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white'}"
 					>
 						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
 							><path
@@ -210,7 +210,7 @@
 					onclick={toggleSplitMode}
 					class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors {isSplitMode
 						? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-						: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'}"
+						: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'}"
 					title="Toggle Split View"
 				>
 					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -225,7 +225,7 @@
 				</button>
 				<button
 					onclick={() => (isToolsOpen = !isToolsOpen)}
-					class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+					class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
 					title="Developer Tools"
 				>
 					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -239,7 +239,7 @@
 				</button>
 				<button
 					onclick={toggleTheme}
-					class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+					class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
 					title="Toggle theme"
 				>
 					{#if theme === 'light'}
@@ -268,17 +268,17 @@
 
 	{#if showSplitControls}
 		<div
-			class="border-b border-gray-200 bg-gray-50 px-6 py-3 dark:border-gray-800 dark:bg-gray-900/50"
+			class="border-b border-gray-200 bg-gray-50 px-6 py-3 dark:border-zinc-800 dark:bg-zinc-900/50"
 		>
 			<div class="mx-auto flex max-w-[1800px] items-center justify-center gap-4">
 				<div class="flex items-center gap-2">
-					<label class="text-sm font-medium text-gray-700 dark:text-gray-300" for="left-panel"
+					<label class="text-sm font-medium text-gray-700 dark:text-zinc-300" for="left-panel"
 						>Left:</label
 					>
 					<select
 						id="left-panel"
 						bind:value={leftPanel}
-						class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+						class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200"
 					>
 						{#each leftPanelOptions as option (option.value)}
 							<option value={option.value}>{option.label}</option>
@@ -296,13 +296,13 @@
 					</svg>
 				</div>
 				<div class="flex items-center gap-2">
-					<label class="text-sm font-medium text-gray-700 dark:text-gray-300" for="right-panel"
+					<label class="text-sm font-medium text-gray-700 dark:text-zinc-300" for="right-panel"
 						>Right:</label
 					>
 					<select
 						id="right-panel"
 						bind:value={rightPanel}
-						class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+						class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200"
 					>
 						{#each rightPanelOptions as option (option.value)}
 							<option value={option.value}>{option.label}</option>
@@ -381,12 +381,12 @@
 			<div class="h-full {activeTab !== 'logger' ? 'hidden' : ''}">
 				<div class="flex h-full flex-col">
 					<div class="mb-6 flex shrink-0 justify-center">
-						<div class="inline-flex rounded-xl bg-gray-200/50 p-1 dark:bg-gray-800/50">
+						<div class="inline-flex rounded-xl bg-gray-200/50 p-1 dark:bg-zinc-800/50">
 							<button
 								onclick={() => (loggerSubTab = 'api')}
 								class="rounded-lg px-6 py-2 text-sm font-bold transition-all {loggerSubTab === 'api'
-									? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
-									: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
+									? 'bg-white text-green-600 shadow-sm dark:bg-zinc-700 dark:text-green-400'
+									: 'text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200'}"
 							>
 								API Response Logs
 							</button>
@@ -394,8 +394,8 @@
 								onclick={() => (loggerSubTab = 'gtfsrt')}
 								class="rounded-lg px-6 py-2 text-sm font-bold transition-all {loggerSubTab ===
 								'gtfsrt'
-									? 'bg-white text-green-600 shadow-sm dark:bg-gray-700 dark:text-green-400'
-									: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
+									? 'bg-white text-green-600 shadow-sm dark:bg-zinc-700 dark:text-green-400'
+									: 'text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200'}"
 							>
 								GTFS-RT Snapshots
 							</button>

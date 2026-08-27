@@ -180,7 +180,7 @@
 				},
 				'&.cm-focused': {
 					outline: 'none',
-					borderColor: '#3b82f6',
+					borderColor: '#16a34a',
 					boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
 				},
 				'.cm-content': {
@@ -337,7 +337,7 @@
 	}
 
 	:global(.dark) .sql-editor :global(.cm-editor.cm-focused) {
-		border-color: #3b82f6;
+		border-color: #16a34a;
 	}
 
 	:global(.dark) .sql-editor :global(.cm-content) {

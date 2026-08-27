@@ -71,17 +71,17 @@
 
 {#if isOpen}
 	<div
-		class="tools-panel-container fixed right-6 bottom-6 z-[101] flex max-h-[80vh] w-96 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl transition-transform dark:border-gray-700 dark:bg-gray-900"
+		class="tools-panel-container fixed right-6 bottom-6 z-[101] flex max-h-[80vh] w-96 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl transition-transform dark:border-zinc-700 dark:bg-zinc-900"
 		transition:fly={{ y: 20, duration: 300 }}
 	>
 		<!-- Header -->
 		<div
-			class="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-800"
+			class="flex items-center justify-between border-b border-gray-100 p-4 dark:border-zinc-800"
 		>
-			<h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Dev Tools</h2>
+			<h2 class="text-lg font-semibold text-gray-900 dark:text-zinc-100">Dev Tools</h2>
 			<button
 				onclick={() => (isOpen = false)}
-				class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+				class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
 			>
 				<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
@@ -98,7 +98,7 @@
 			<section class="space-y-4">
 				<div class="flex items-center justify-between">
 					<h3
-						class="flex items-center gap-2 text-sm font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400"
+						class="flex items-center gap-2 text-sm font-semibold tracking-wider text-gray-500 uppercase dark:text-zinc-400"
 					>
 						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
@@ -115,11 +115,11 @@
 							type="checkbox"
 							id="auto-open"
 							bind:checked={autoOpen}
-							class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800"
+							class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 dark:border-zinc-600 dark:bg-zinc-700 dark:ring-offset-zinc-800"
 						/>
 						<label
 							for="auto-open"
-							class="cursor-pointer text-xs text-gray-500 select-none dark:text-gray-400"
+							class="cursor-pointer text-xs text-gray-500 select-none dark:text-zinc-400"
 						>
 							Auto-open
 						</label>
@@ -129,7 +129,7 @@
 				<div>
 					<label
 						for="ts-input"
-						class="mb-1.5 block text-xs font-medium text-gray-700 dark:text-gray-300"
+						class="mb-1.5 block text-xs font-medium text-gray-700 dark:text-zinc-300"
 					>
 						Epoch Timestamp (Seconds or Milliseconds)
 					</label>
@@ -138,7 +138,7 @@
 						type="text"
 						bind:value={inputValue}
 						placeholder="e.g. 1770671432"
-						class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+						class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
 					/>
 				</div>
 
@@ -148,14 +148,14 @@
 					>
 						<div class="space-y-3">
 							<div>
-								<div class="text-xs text-gray-500 dark:text-gray-400">Local Time</div>
-								<div class="font-mono text-sm font-semibold text-gray-900 dark:text-gray-100">
+								<div class="text-xs text-gray-500 dark:text-zinc-400">Local Time</div>
+								<div class="font-mono text-sm font-semibold text-gray-900 dark:text-zinc-100">
 									{result.local}
 								</div>
 							</div>
 							<div>
-								<div class="text-xs text-gray-500 dark:text-gray-400">UTC</div>
-								<div class="font-mono text-sm text-gray-700 dark:text-gray-300">{result.utc}</div>
+								<div class="text-xs text-gray-500 dark:text-zinc-400">UTC</div>
+								<div class="font-mono text-sm text-gray-700 dark:text-zinc-300">{result.utc}</div>
 							</div>
 							{#if result.serviceDay}
 								<div>
@@ -167,12 +167,12 @@
 								</div>
 							{/if}
 							<div>
-								<div class="text-xs text-gray-500 dark:text-gray-400">Relative</div>
-								<div class="text-sm text-gray-700 dark:text-gray-300">{result.relative}</div>
+								<div class="text-xs text-gray-500 dark:text-zinc-400">Relative</div>
+								<div class="text-sm text-gray-700 dark:text-zinc-300">{result.relative}</div>
 							</div>
 							<div class="border-t border-green-100 pt-2 dark:border-green-900/30">
 								<span
-									class="inline-flex items-center rounded-full bg-white px-2 py-0.5 text-xs font-medium text-gray-600 shadow-sm dark:bg-gray-800 dark:text-gray-300"
+									class="inline-flex items-center rounded-full bg-white px-2 py-0.5 text-xs font-medium text-gray-600 shadow-sm dark:bg-zinc-800 dark:text-zinc-300"
 								>
 									Detected: {result.isSeconds ? 'Seconds' : 'Milliseconds'}
 								</span>
@@ -188,20 +188,20 @@
 				{/if}
 			</section>
 
-			<section class="space-y-3 border-t border-gray-100 pt-4 dark:border-gray-800">
-				<h3 class="text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
+			<section class="space-y-3 border-t border-gray-100 pt-4 dark:border-zinc-800">
+				<h3 class="text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-zinc-400">
 					Quick Values
 				</h3>
 				<div class="grid grid-cols-2 gap-2">
 					<button
 						onclick={() => (inputValue = Math.floor(Date.now() / 1000).toString())}
-						class="rounded border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+						class="rounded border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
 					>
 						Now (Sec)
 					</button>
 					<button
 						onclick={() => (inputValue = Date.now().toString())}
-						class="rounded border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+						class="rounded border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
 					>
 						Now (Ms)
 					</button>

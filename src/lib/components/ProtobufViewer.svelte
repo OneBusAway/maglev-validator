@@ -313,11 +313,11 @@
 {/if}
 
 <div
-	class="flex h-full min-h-0 flex-col rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
+	class="flex h-full min-h-0 flex-col rounded-xl border border-gray-200 bg-white dark:border-zinc-700 dark:bg-zinc-800"
 >
-	<div class="min-h-0 flex-1 overflow-auto bg-white dark:bg-gray-800" style="min-width: 0;">
+	<div class="min-h-0 flex-1 overflow-auto bg-white dark:bg-zinc-800" style="min-width: 0;">
 		<div
-			class="sticky top-0 z-10 flex items-center justify-between overflow-x-auto border-b border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
+			class="sticky top-0 z-10 flex items-center justify-between overflow-x-auto border-b border-gray-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800"
 		>
 			<div class="flex items-center gap-4">
 				{#each tabs as tab (tab.id)}
@@ -326,7 +326,7 @@
 						class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all {protobufState.activeTab ===
 						tab.id
 							? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-							: 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'}"
+							: 'text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-700'}"
 					>
 						{#if tab.icon === 'trip'}
 							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -390,7 +390,7 @@
 											: 'bg-red-100 text-red-600 dark:bg-red-700 dark:text-red-300'
 										: protobufState.activeTab === tab.id
 											? 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200'
-											: 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-300'}"
+											: 'bg-gray-200 text-gray-600 dark:bg-zinc-600 dark:text-zinc-300'}"
 								title={tab.isLimited
 									? `Showing ${tab.count} of ${tab.total} (limited to prevent memory issues)`
 									: ''}
@@ -453,12 +453,12 @@
 							value={protobufState.searchQuery}
 							oninput={handleSearchInput}
 							placeholder="Search vehicle ID, trip, route..."
-							class="w-64 rounded-lg border border-gray-200 bg-gray-50 py-1.5 pr-8 pl-9 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+							class="w-64 rounded-lg border border-gray-200 bg-gray-50 py-1.5 pr-8 pl-9 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-200 dark:placeholder:text-zinc-500"
 						/>
 						{#if protobufState.searchQuery}
 							<button
 								onclick={clearSearch}
-								class="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+								class="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 hover:text-gray-600 dark:hover:text-zinc-300"
 								title="Clear search"
 							>
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -508,10 +508,10 @@
 					</div>
 				{/if}
 				<div
-					class="max-w-[35ch] min-w-[30ch] truncate text-right text-sm whitespace-nowrap text-gray-500 dark:text-gray-400"
+					class="max-w-[35ch] min-w-[30ch] truncate text-right text-sm whitespace-nowrap text-gray-500 dark:text-zinc-400"
 					title={`Total Entities: ${entityCount}`}
 				>
-					Total Entities: <span class="font-semibold text-gray-700 dark:text-gray-200"
+					Total Entities: <span class="font-semibold text-gray-700 dark:text-zinc-200"
 						>{entityCount}</span
 					>
 				</div>
@@ -519,10 +519,10 @@
 		</div>
 
 		{#if protobufState.debouncedQuery && protobufState.activeTab !== 'rawText' && protobufState.activeTab !== 'header'}
-			<div class="border-b border-gray-200 px-4 py-2 dark:border-gray-700">
+			<div class="border-b border-gray-200 px-4 py-2 dark:border-zinc-700">
 				<div
 					class="flex items-center gap-2 text-sm {searchStats().hasResults
-						? 'text-gray-600 dark:text-gray-400'
+						? 'text-gray-600 dark:text-zinc-400'
 						: 'text-amber-600 dark:text-amber-400'}"
 				>
 					{#if !searchStats().hasResults}
@@ -553,9 +553,9 @@
 			{#if protobufState.activeTab === 'rawText'}
 				<div class="flex flex-col gap-3">
 					<div
-						class="flex flex-wrap items-center gap-2 rounded-lg bg-gray-100 p-2 dark:bg-gray-700"
+						class="flex flex-wrap items-center gap-2 rounded-lg bg-gray-100 p-2 dark:bg-zinc-700"
 					>
-						<span class="text-xs font-medium text-gray-500 dark:text-gray-400">View:</span>
+						<span class="text-xs font-medium text-gray-500 dark:text-zinc-400">View:</span>
 						{#each rawTextTabs as tab (tab.id)}
 							{#if tab.hasContent}
 								<button
@@ -563,7 +563,7 @@
 									class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium shadow-sm transition-colors {activeRawTextTab ===
 									tab.id
 										? 'bg-green-500 text-white dark:bg-green-600'
-										: 'bg-white text-gray-700 hover:bg-green-50 hover:text-green-700 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-green-900/30 dark:hover:text-green-400'}"
+										: 'bg-white text-gray-700 hover:bg-green-50 hover:text-green-700 dark:bg-zinc-600 dark:text-zinc-200 dark:hover:bg-green-900/30 dark:hover:text-green-400'}"
 								>
 									{#if tab.icon === 'trip'}
 										<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -609,7 +609,7 @@
 							onclick={copyRawText}
 							class="absolute top-2 right-2 z-10 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors {copySuccess
 								? 'bg-green-500 text-white dark:bg-green-600'
-								: 'bg-gray-200 text-gray-600 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500'}"
+								: 'bg-gray-200 text-gray-600 hover:bg-gray-300 dark:bg-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-500'}"
 						>
 							{#if copySuccess}
 								<svg
@@ -641,10 +641,10 @@
 						</button>
 						{#if rawTextLoading}
 							<div
-								class="flex flex-col items-center justify-center rounded-lg bg-gray-50 py-12 text-center dark:bg-gray-900"
+								class="flex flex-col items-center justify-center rounded-lg bg-gray-50 py-12 text-center dark:bg-zinc-900"
 							>
 								<div class="mb-4 animate-spin">
-									<svg class="h-8 w-8 text-blue-500" fill="none" viewBox="0 0 24 24">
+									<svg class="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24">
 										<circle
 											class="opacity-25"
 											cx="12"
@@ -660,17 +660,17 @@
 										></path>
 									</svg>
 								</div>
-								<p class="text-gray-500 dark:text-gray-400">Generating raw text...</p>
+								<p class="text-gray-500 dark:text-zinc-400">Generating raw text...</p>
 							</div>
 						{:else if rawTextContent}
 							<pre
-								class="rounded-lg bg-gray-50 p-4 pr-20 font-mono text-xs leading-relaxed wrap-break-word whitespace-pre-wrap text-gray-700 dark:bg-gray-900 dark:text-gray-300">{rawTextContent}</pre>
+								class="rounded-lg bg-gray-50 p-4 pr-20 font-mono text-xs leading-relaxed wrap-break-word whitespace-pre-wrap text-gray-700 dark:bg-zinc-900 dark:text-zinc-300">{rawTextContent}</pre>
 						{:else}
 							<div
-								class="flex flex-col items-center justify-center rounded-lg bg-gray-50 py-12 text-center dark:bg-gray-900"
+								class="flex flex-col items-center justify-center rounded-lg bg-gray-50 py-12 text-center dark:bg-zinc-900"
 							>
 								<div
-									class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700"
+									class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-700"
 								>
 									<svg
 										class="h-8 w-8 text-gray-400"
@@ -685,7 +685,7 @@
 										></path></svg
 									>
 								</div>
-								<p class="text-gray-500 dark:text-gray-400">
+								<p class="text-gray-500 dark:text-zinc-400">
 									No raw text available for this feed type
 								</p>
 							</div>
@@ -699,7 +699,7 @@
 				{#if items.length === 0}
 					<div class="flex flex-col items-center justify-center py-12 text-center">
 						<div
-							class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700"
+							class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-700"
 						>
 							{#if protobufState.activeTab === 'tripUpdates'}
 								<svg
@@ -747,7 +747,7 @@
 								>
 							{/if}
 						</div>
-						<p class="text-gray-500 dark:text-gray-400">
+						<p class="text-gray-500 dark:text-zinc-400">
 							No {protobufState.activeTab === 'tripUpdates'
 								? 'trip updates'
 								: protobufState.activeTab === 'vehiclePositions'
@@ -758,9 +758,9 @@
 				{:else}
 					<div class="space-y-3">
 						{#each items as item, index (index)}
-							<details class="group rounded-lg border border-gray-200 dark:border-gray-600">
+							<details class="group rounded-lg border border-gray-200 dark:border-zinc-600">
 								<summary
-									class="flex cursor-pointer items-center justify-between rounded-lg bg-gray-50 px-4 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-700"
+									class="flex cursor-pointer items-center justify-between rounded-lg bg-gray-50 px-4 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:bg-zinc-700/50 dark:text-zinc-300 dark:hover:bg-zinc-700"
 								>
 									<div class="flex items-center gap-3">
 										<span
@@ -812,7 +812,7 @@
 											{/if}
 											{#if trip?.scheduleRelationship}
 												<span
-													class="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700 dark:bg-blue-900/50 dark:text-blue-400"
+													class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-700 dark:bg-green-900/50 dark:text-green-400"
 												>
 													{trip.scheduleRelationship}
 												</span>
@@ -828,7 +828,7 @@
 											</span>
 											{#if trip?.routeId}
 												<span
-													class="rounded bg-purple-100 px-2 py-0.5 text-xs text-purple-700 dark:bg-purple-900/50 dark:text-purple-400"
+													class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-700 dark:bg-green-900/50 dark:text-green-400"
 												>
 													Route: {trip.routeId}
 												</span>
@@ -874,7 +874,7 @@
 										/>
 									</svg>
 								</summary>
-								<div class="border-t border-gray-200 p-4 dark:border-gray-600">
+								<div class="border-t border-gray-200 p-4 dark:border-zinc-600">
 									<SimpleJsonTree value={item} {globalExpand} />
 								</div>
 							</details>

@@ -794,19 +794,19 @@
 </script>
 
 <div
-	class="mb-6 rounded-xl border border-gray-200 bg-white shadow-sm transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
+	class="mb-6 rounded-xl border border-gray-200 bg-white shadow-sm transition-colors duration-300 dark:border-zinc-700 dark:bg-zinc-800"
 >
 	<div class="space-y-6 p-6">
 		<div
-			class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-900/50"
+			class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 dark:border-zinc-600 dark:bg-zinc-900/50"
 		>
 			<div class="mb-3 flex items-center justify-between">
 				<div class="flex items-center gap-2">
 					<div
-						class="rounded-md border border-gray-200 bg-white p-1.5 dark:border-gray-700 dark:bg-gray-800"
+						class="rounded-md border border-gray-200 bg-white p-1.5 dark:border-zinc-700 dark:bg-zinc-800"
 					>
 						<svg
-							class="h-4 w-4 text-gray-500 dark:text-gray-400"
+							class="h-4 w-4 text-gray-500 dark:text-zinc-400"
 							fill="none"
 							stroke="currentColor"
 							viewBox="0 0 24 24"
@@ -821,11 +821,11 @@
 					</div>
 					<div>
 						<span
-							class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+							class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 						>
 							Maglev Config
 						</span>
-						<p class="text-xs text-gray-400 dark:text-gray-500">
+						<p class="text-xs text-gray-400 dark:text-zinc-500">
 							Upload your
 							<a
 								href="https://github.com/OneBusAway/maglev/blob/main/config.example.json"
@@ -859,7 +859,7 @@
 
 			{#if pbState.configFeeds.length > 0}
 				<div
-					class="mb-2 flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-800/50"
+					class="mb-2 flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800/50"
 				>
 					<div class="flex items-center gap-2">
 						<svg
@@ -875,7 +875,7 @@
 								d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
 							/>
 						</svg>
-						<span class="text-xs text-gray-500 dark:text-gray-400">
+						<span class="text-xs text-gray-500 dark:text-zinc-400">
 							{pbState.configFileName}
 							<span class="mx-1">•</span>
 							{pbState.configFeeds.length} feed{pbState.configFeeds.length !== 1 ? 's' : ''}
@@ -885,7 +885,7 @@
 
 				<div class="mb-3 space-y-1.5">
 					<div class="flex items-center justify-between">
-						<span class="text-sm font-medium text-gray-700 dark:text-gray-200">Feeds</span>
+						<span class="text-sm font-medium text-gray-700 dark:text-zinc-200">Feeds</span>
 						<div class="flex gap-2">
 							<button
 								onclick={selectAllFeeds}
@@ -895,27 +895,27 @@
 							</button>
 							<button
 								onclick={deselectAllFeeds}
-								class="rounded px-2 py-0.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+								class="rounded px-2 py-0.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
 							>
 								None
 							</button>
 						</div>
 					</div>
 					<div
-						class="max-h-48 space-y-0.5 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1.5 dark:border-gray-700 dark:bg-gray-800/50"
+						class="max-h-48 space-y-0.5 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1.5 dark:border-zinc-700 dark:bg-zinc-800/50"
 					>
 						{#each pbState.configFeeds as feed (feed.id)}
 							<label
-								class="flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
+								class="flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800"
 							>
 								<input
 									type="checkbox"
 									checked={pbState.selectedFeedIds[feed.id!] ?? false}
 									onchange={() => toggleFeedSelection(feed.id!)}
-									class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 dark:border-gray-600"
+									class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 dark:border-zinc-600"
 								/>
 								<div class="flex min-w-0 flex-1 items-center gap-2">
-									<span class="truncate font-medium text-gray-800 dark:text-gray-200"
+									<span class="truncate font-medium text-gray-800 dark:text-zinc-200"
 										>{feed.id}</span
 									>
 									{#if feed['agency-ids']?.length}
@@ -933,7 +933,7 @@
 									{/if}
 									{#if feed['vehicle-positions-url']}
 										<span
-											class="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+											class="rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400"
 											title="Has vehicle positions">VP</span
 										>
 									{/if}
@@ -971,10 +971,10 @@
 						<div
 							class="flex flex-col items-center gap-2 rounded-md border-2 border-dashed px-6 py-5 text-center transition-colors {configDragOver
 								? 'border-green-400 bg-green-50 dark:bg-green-900/20'
-								: 'border-gray-300 dark:border-gray-600'}"
+								: 'border-gray-300 dark:border-zinc-600'}"
 						>
 							<svg
-								class="h-8 w-8 text-gray-300 dark:text-gray-600"
+								class="h-8 w-8 text-gray-300 dark:text-zinc-600"
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"
@@ -987,13 +987,13 @@
 								/>
 							</svg>
 							<div>
-								<p class="text-sm font-medium text-gray-600 dark:text-gray-300">
+								<p class="text-sm font-medium text-gray-600 dark:text-zinc-300">
 									Drop your <code
-										class="rounded bg-gray-200 px-1 py-0.5 font-mono text-xs dark:bg-gray-700"
+										class="rounded bg-gray-200 px-1 py-0.5 font-mono text-xs dark:bg-zinc-700"
 										>config.json</code
 									> here
 								</p>
-								<p class="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+								<p class="mt-0.5 text-xs text-gray-400 dark:text-zinc-500">
 									or <span class="font-medium text-green-600 dark:text-green-400"
 										>click to browse</span
 									>
@@ -1001,7 +1001,7 @@
 							</div>
 						</div>
 					</div>
-					<p class="mt-2 text-center text-xs text-gray-400 dark:text-gray-500">
+					<p class="mt-2 text-center text-xs text-gray-400 dark:text-zinc-500">
 						Need an example?
 						<a
 							href="https://github.com/OneBusAway/maglev/blob/main/config.example.json"
@@ -1038,11 +1038,11 @@
 
 		{#if Object.keys(pbState.feedResults).length > 0}
 			<div
-				class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800/50"
+				class="rounded-lg border border-gray-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800/50"
 			>
 				<div class="mb-3 flex items-center justify-between">
 					<span
-						class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+						class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 					>
 						Feed Results & Performance
 					</span>
@@ -1055,7 +1055,7 @@
 				<div class="overflow-x-auto">
 					<table class="w-full text-left text-xs">
 						<thead>
-							<tr class="border-b border-gray-200 dark:border-gray-700">
+							<tr class="border-b border-gray-200 dark:border-zinc-700">
 								<th class="px-2 py-1.5 font-medium text-gray-500">Feed</th>
 								<th class="px-2 py-1.5 font-medium text-gray-500">TU</th>
 								<th class="px-2 py-1.5 font-medium text-gray-500">VP</th>
@@ -1074,28 +1074,28 @@
 								{@const isActive = pbState.activeDisplayFeedId === feed.id}
 								{#if result || isLoading}
 									<tr
-										class="border-b border-gray-100 transition-colors dark:border-gray-800 {isActive
+										class="border-b border-gray-100 transition-colors dark:border-zinc-800 {isActive
 											? 'bg-green-50 dark:bg-green-900/10'
 											: ''}"
 									>
-										<td class="px-2 py-1.5 font-medium text-gray-800 dark:text-gray-200">
+										<td class="px-2 py-1.5 font-medium text-gray-800 dark:text-zinc-200">
 											{feed.id}
 										</td>
-										<td class="px-2 py-1.5 text-gray-600 dark:text-gray-400">
+										<td class="px-2 py-1.5 text-gray-600 dark:text-zinc-400">
 											{result?.totals?.tripUpdates ?? '-'}
 										</td>
-										<td class="px-2 py-1.5 text-gray-600 dark:text-gray-400">
+										<td class="px-2 py-1.5 text-gray-600 dark:text-zinc-400">
 											{result?.totals?.vehiclePositions ?? '-'}
 										</td>
-										<td class="px-2 py-1.5 text-gray-600 dark:text-gray-400">
+										<td class="px-2 py-1.5 text-gray-600 dark:text-zinc-400">
 											{result?.totals?.alerts ?? '-'}
 										</td>
-										<td class="px-2 py-1.5 font-medium text-gray-800 dark:text-gray-200">
+										<td class="px-2 py-1.5 font-medium text-gray-800 dark:text-zinc-200">
 											{result?.entityCount ?? '-'}
 										</td>
-										<td class="px-2 py-1.5 text-gray-600 dark:text-gray-400">
+										<td class="px-2 py-1.5 text-gray-600 dark:text-zinc-400">
 											{#if isLoading}
-												<span class="text-blue-500">fetching...</span>
+												<span class="text-green-500">fetching...</span>
 											{:else if timing}
 												{timing.total.toFixed(0)}ms
 											{/if}
@@ -1132,7 +1132,7 @@
 			<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
 				<div>
 					<label
-						class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+						class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 					>
 						Trip Updates URL
 						<input
@@ -1140,7 +1140,7 @@
 							bind:value={pbState.tripUpdatesUrl}
 							list="trip-updates-history"
 							placeholder="https://example.com/gtfs-rt/trip-updates"
-							class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-green-500/40"
+							class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:placeholder:text-zinc-600 dark:focus:ring-green-500/40"
 						/>
 						<datalist id="trip-updates-history">
 							{#each pbState.tripUpdatesUrlHistory as url (url)}
@@ -1151,7 +1151,7 @@
 				</div>
 				<div>
 					<label
-						class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+						class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 					>
 						Vehicle Positions URL
 						<input
@@ -1159,7 +1159,7 @@
 							bind:value={pbState.vehiclePositionsUrl}
 							list="vehicle-positions-history"
 							placeholder="https://example.com/gtfs-rt/vehicle-positions"
-							class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-green-500/40"
+							class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:placeholder:text-zinc-600 dark:focus:ring-green-500/40"
 						/>
 						<datalist id="vehicle-positions-history">
 							{#each pbState.vehiclePositionsUrlHistory as url (url)}
@@ -1170,7 +1170,7 @@
 				</div>
 				<div>
 					<label
-						class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+						class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 					>
 						Service Alerts URL
 						<input
@@ -1178,7 +1178,7 @@
 							bind:value={pbState.serviceAlertsUrl}
 							list="service-alerts-history"
 							placeholder="https://example.com/gtfs-rt/service-alerts"
-							class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600 dark:focus:ring-green-500/40"
+							class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:placeholder:text-zinc-600 dark:focus:ring-green-500/40"
 						/>
 						<datalist id="service-alerts-history">
 							{#each pbState.serviceAlertsUrlHistory as url (url)}
@@ -1192,7 +1192,7 @@
 			<div>
 				<div class="mb-2 flex items-center justify-between">
 					<span
-						class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+						class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 						>Custom Headers (API Key, etc.)</span
 					>
 					<button
@@ -1210,14 +1210,14 @@
 								value={header.key}
 								oninput={(e) => updateHeader(index, 'key', e.currentTarget.value)}
 								placeholder="Header Name (e.g., x-api-key)"
-								class="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600"
+								class="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:placeholder:text-zinc-600"
 							/>
 							<input
 								type="text"
 								value={header.value}
 								oninput={(e) => updateHeader(index, 'value', e.currentTarget.value)}
 								placeholder="Header Value"
-								class="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:placeholder:text-gray-600"
+								class="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:placeholder:text-zinc-600"
 							/>
 							{#if pbState.headers.length > 1}
 								<button
@@ -1248,16 +1248,16 @@
 		{/if}
 
 		<div
-			class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700"
+			class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-zinc-700"
 		>
 			<div class="flex items-center gap-4">
 				<label class="flex cursor-pointer items-center gap-2 select-none">
 					<input
 						type="checkbox"
 						bind:checked={pbState.autoRefresh}
-						class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
+						class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-zinc-600 dark:bg-zinc-700"
 					/>
-					<span class="text-sm font-medium text-gray-600 dark:text-gray-400">Auto-refresh</span>
+					<span class="text-sm font-medium text-gray-600 dark:text-zinc-400">Auto-refresh</span>
 				</label>
 				{#if pbState.autoRefresh}
 					<div class="flex items-center gap-2">
@@ -1266,20 +1266,20 @@
 							bind:value={pbState.refreshInterval}
 							min="5"
 							max="300"
-							class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+							class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm font-medium text-gray-700 focus:border-green-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
 						/>
 						<span class="text-xs text-gray-400">sec</span>
 					</div>
 				{/if}
-				<div class="h-4 w-px bg-gray-200 dark:bg-gray-700"></div>
+				<div class="h-4 w-px bg-gray-200 dark:bg-zinc-700"></div>
 				<label class="flex cursor-pointer items-center gap-2 select-none">
 					<input
 						type="checkbox"
 						bind:checked={pbState.loggingEnabled}
 						onchange={saveToLocalStorage}
-						class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-gray-600 dark:bg-gray-700"
+						class="h-4 w-4 rounded border-gray-300 bg-white text-green-600 focus:ring-green-500 focus:ring-offset-0 dark:border-zinc-600 dark:bg-zinc-700"
 					/>
-					<span class="text-sm font-medium text-gray-600 dark:text-gray-400">Enable logging</span>
+					<span class="text-sm font-medium text-gray-600 dark:text-zinc-400">Enable logging</span>
 				</label>
 				{#if pbState.lastFetchTime}
 					<span class="text-xs text-gray-400">
@@ -1380,10 +1380,10 @@
 
 {#if pbState.feedData}
 	<div class="mb-4 flex items-center justify-between">
-		<h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">
+		<h2 class="text-lg font-semibold text-gray-800 dark:text-zinc-100">
 			GTFS Realtime Feed Data
 			{#if pbState.activeDisplayFeedId}
-				<span class="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+				<span class="ml-2 text-sm font-normal text-gray-500 dark:text-zinc-400">
 					- {pbState.activeDisplayFeedId}
 				</span>
 			{/if}
@@ -1403,10 +1403,10 @@
 	/>
 {:else if !pbState.loading}
 	<div
-		class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-16 text-center transition-colors duration-300 dark:border-gray-700 dark:bg-gray-800"
+		class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-16 text-center transition-colors duration-300 dark:border-zinc-700 dark:bg-zinc-800"
 	>
 		<div
-			class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-900"
+			class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-100 dark:bg-zinc-900"
 		>
 			<svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path

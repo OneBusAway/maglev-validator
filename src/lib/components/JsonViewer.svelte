@@ -86,14 +86,14 @@
 	}
 </script>
 
-<div class="h-full min-h-full bg-white font-sans text-sm dark:bg-gray-950">
+<div class="h-full min-h-full bg-white font-sans text-sm dark:bg-zinc-950">
 	{#if data !== undefined}
 		<div
-			class="sticky top-0 z-10 flex items-center justify-end gap-2 border-b border-gray-200 bg-white px-4 py-2 dark:border-gray-800 dark:bg-gray-950"
+			class="sticky top-0 z-10 flex items-center justify-end gap-2 border-b border-gray-200 bg-white px-4 py-2 dark:border-zinc-800 dark:bg-zinc-950"
 		>
 			<button
 				onclick={copyJson}
-				class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+				class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
 				title="Copy JSON to clipboard"
 			>
 				{#if copied}

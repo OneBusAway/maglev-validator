@@ -438,16 +438,16 @@
 </script>
 
 <div
-	class="flex flex-col {isFullscreen ? 'fixed inset-0 z-[90] bg-gray-50 p-4 dark:bg-gray-950' : ''}"
+	class="flex flex-col {isFullscreen ? 'fixed inset-0 z-[90] bg-gray-50 p-4 dark:bg-zinc-950' : ''}"
 >
 	{#if isFullscreen}
 		<div class="mb-3 flex shrink-0 items-center justify-between">
-			<span class="text-sm font-semibold text-gray-800 dark:text-gray-100">Response Comparison</span
+			<span class="text-sm font-semibold text-gray-800 dark:text-zinc-100">Response Comparison</span
 			>
 			<button
 				type="button"
 				onclick={toggleFullscreen}
-				class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+				class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 transition-all hover:bg-gray-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
 				title="Exit fullscreen (Esc)"
 			>
 				<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -459,7 +459,7 @@
 					/>
 				</svg>
 				Exit fullscreen
-				<kbd class="rounded bg-gray-200 px-1 py-0.5 text-[10px] dark:bg-gray-700">Esc</kbd>
+				<kbd class="rounded bg-gray-200 px-1 py-0.5 text-[10px] dark:bg-zinc-700">Esc</kbd>
 			</button>
 		</div>
 	{/if}
@@ -498,12 +498,12 @@
 				bind:value={localSearchQuery}
 				oninput={handleSearchInput}
 				placeholder="Search (min 2 chars)..."
-				class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pr-10 pl-10 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:placeholder:text-gray-500"
+				class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pr-10 pl-10 text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:placeholder:text-zinc-500"
 			/>
 			{#if localSearchQuery}
 				<button
 					onclick={clearSearch}
-					class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+					class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-zinc-300"
 					title="Clear search"
 				>
 					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -522,7 +522,7 @@
 			onclick={() => (syncScroll = !syncScroll)}
 			class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {syncScroll
 				? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
-				: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'}"
+				: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}"
 			title="{syncScroll ? 'Disable' : 'Enable'} synchronized scrolling"
 		>
 			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -540,7 +540,7 @@
 			onclick={() => (syncSelect = !syncSelect)}
 			class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {syncSelect
 				? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
-				: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'}"
+				: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}"
 			title="{syncSelect ? 'Disable' : 'Enable'} synchronized expand/collapse"
 		>
 			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -559,7 +559,7 @@
 				onclick={() => (showSortModal = !showSortModal)}
 				class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {sortEnabled
 					? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
-					: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'}"
+					: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}"
 				title="Sort arrays by ID to align matching items"
 			>
 				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -575,9 +575,9 @@
 
 			{#if showSortModal}
 				<div
-					class="absolute top-full right-0 z-50 mt-2 w-80 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-gray-700 dark:bg-gray-800"
+					class="absolute top-full right-0 z-50 mt-2 w-80 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-zinc-700 dark:bg-zinc-800"
 				>
-					<div class="mb-4 border-b border-gray-100 pb-3 dark:border-gray-700">
+					<div class="mb-4 border-b border-gray-100 pb-3 dark:border-zinc-700">
 						<h3 class="text-sm font-semibold text-gray-800 dark:text-white">Sort Arrays by ID</h3>
 						<p class="mt-0.5 text-xs text-gray-500">
 							Align arrays from both servers by matching IDs for accurate comparison
@@ -606,12 +606,12 @@
 					{:else}
 						<div class="space-y-4">
 							<div>
-								<label class="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">
+								<label class="mb-1.5 block text-xs font-medium text-gray-600 dark:text-zinc-400">
 									Select Array to Sort
 								</label>
 								<select
 									bind:value={selectedArrayPath}
-									class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+									class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:border-green-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
 								>
 									<option value="auto">Auto-detect best array</option>
 									{#each detectedArrays as arr (arr.path)}
@@ -624,15 +624,15 @@
 							</div>
 
 							<div>
-								<label class="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">
+								<label class="mb-1.5 block text-xs font-medium text-gray-600 dark:text-zinc-400">
 									Sort by ID Field
 								</label>
 								<div
-									class="max-h-48 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700"
+									class="max-h-48 overflow-y-auto rounded-lg border border-gray-200 dark:border-zinc-700"
 								>
 									{#each ID_FIELDS as field (field.value)}
 										<label
-											class="flex cursor-pointer items-start gap-2 border-b border-gray-100 px-3 py-2 last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 {selectedIdField ===
+											class="flex cursor-pointer items-start gap-2 border-b border-gray-100 px-3 py-2 last:border-b-0 hover:bg-gray-50 dark:border-zinc-700 dark:hover:bg-zinc-700/50 {selectedIdField ===
 											field.value
 												? 'bg-green-50 dark:bg-green-900/20'
 												: ''}"
@@ -645,7 +645,7 @@
 												class="mt-0.5 h-3.5 w-3.5 accent-green-600"
 											/>
 											<div class="flex-1">
-												<span class="text-sm font-medium text-gray-700 dark:text-gray-200"
+												<span class="text-sm font-medium text-gray-700 dark:text-zinc-200"
 													>{field.label}</span
 												>
 												<span class="ml-1.5 text-xs text-gray-400">{field.desc}</span>
@@ -658,7 +658,7 @@
 							<div class="flex gap-2 pt-2">
 								<button
 									onclick={() => (showSortModal = false)}
-									class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700"
+									class="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-700"
 								>
 									Cancel
 								</button>
@@ -698,7 +698,7 @@
 			onclick={toggleFullscreen}
 			class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {isFullscreen
 				? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
-				: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'}"
+				: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}"
 			title={isFullscreen ? 'Exit fullscreen (Esc)' : 'Fullscreen response view'}
 		>
 			{#if isFullscreen}
@@ -741,7 +741,7 @@
 						>
 					</span>
 				{:else}
-					<span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+					<span class="flex items-center gap-1.5 text-gray-500 dark:text-zinc-400">
 						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
 								stroke-linecap="round"
@@ -766,16 +766,16 @@
 	{/if}
 
 	<div
-		class="grid min-h-0 flex-1 grid-cols-2 grid-rows-[auto_1fr] gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200 dark:border-gray-800 dark:bg-gray-800"
+		class="grid min-h-0 flex-1 grid-cols-2 grid-rows-[auto_1fr] gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200 dark:border-zinc-800 dark:bg-zinc-800"
 		style={paneHeightStyle}
 	>
 		<div
-			class="bg-gray-50 px-4 py-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:bg-gray-900 dark:text-gray-400"
+			class="bg-gray-50 px-4 py-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:bg-zinc-900 dark:text-zinc-400"
 		>
 			Server 1 Response
 		</div>
 		<div
-			class="border-l border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400"
+			class="border-l border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400"
 		>
 			Server 2 Response
 		</div>
@@ -783,7 +783,7 @@
 		<div
 			bind:this={scrollContainer1}
 			onscroll={() => handleScroll('left')}
-			class="min-h-0 overflow-auto bg-white dark:bg-gray-950"
+			class="min-h-0 overflow-auto bg-white dark:bg-zinc-950"
 		>
 			<JsonViewer
 				data={sorted1 ?? focused1}
@@ -801,7 +801,7 @@
 		<div
 			bind:this={scrollContainer2}
 			onscroll={() => handleScroll('right')}
-			class="min-h-0 overflow-auto border-l border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950"
+			class="min-h-0 overflow-auto border-l border-gray-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
 		>
 			<JsonViewer
 				data={sorted2 ?? focused2}
@@ -840,7 +840,7 @@
 			}}
 		>
 			<div
-				class="h-1 w-10 rounded-full bg-gray-300 transition-colors group-hover:bg-green-500 dark:bg-gray-600 dark:group-hover:bg-green-500 {isResizing
+				class="h-1 w-10 rounded-full bg-gray-300 transition-colors group-hover:bg-green-500 dark:bg-zinc-600 dark:group-hover:bg-green-500 {isResizing
 					? 'bg-green-500'
 					: ''}"
 			></div>

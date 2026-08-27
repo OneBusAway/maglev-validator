@@ -298,7 +298,11 @@
 				pbState.loadingFeeds = { ...pbState.loadingFeeds, [feedId]: false };
 				pbState.paginationState.hasMore = mergedHasMore;
 
-				if (!pbState.activeDisplayFeedId || !pbState.feedResults[pbState.activeDisplayFeedId]) {
+				if (
+					pbState.activeDisplayFeedId === feedId ||
+					!pbState.activeDisplayFeedId ||
+					!pbState.feedResults[pbState.activeDisplayFeedId]
+				) {
 					switchToFeed(feedId);
 				}
 

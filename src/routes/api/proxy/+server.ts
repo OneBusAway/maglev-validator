@@ -35,9 +35,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		if (url2 == null) {
-			const result1 = await fetch(url1)
-				.then(async (r) => ({ data: await r.json(), status: r.status }))
-				.catch((e) => ({ data: { error: e.message }, status: 0 }));
+			const result1 = await fetchForComparison(url1, api);
 			return json({
 				response1: result1.data,
 				response2: null,

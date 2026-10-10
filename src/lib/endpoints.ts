@@ -181,6 +181,45 @@ export const endpoints = [
 		]
 	},
 	{
+		id: 'stops-for-trip',
+		name: 'Stops for Trip',
+		path: 'stops-for-trip/{id}.json',
+		params: [
+			{
+				name: 'id',
+				label: 'Trip ID',
+				required: true,
+				inPath: true,
+				default: '',
+				placeholder: 'e.g., unitrans_1234'
+			},
+			{
+				name: 'key',
+				label: 'API Key',
+				required: true,
+				inPath: false,
+				default: 'test',
+				placeholder: 'API Key'
+			},
+			{
+				name: 'serviceDate',
+				label: 'Service Date',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'epoch ms — defaults to today'
+			},
+			{
+				name: 'includePolylines',
+				label: 'Include Polylines',
+				required: false,
+				inPath: false,
+				default: 'false',
+				placeholder: 'true/false (optional)'
+			}
+		]
+	},
+	{
 		id: 'arrivals-and-departures-for-stop',
 		name: 'Arrivals and Departures for Stop',
 		path: 'arrivals-and-departures-for-stop/{id}.json',

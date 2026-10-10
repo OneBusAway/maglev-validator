@@ -93,6 +93,7 @@ export class ComparatorState {
 	lastLoggedTime = $state<number | null>(null);
 	refreshTimer: number | undefined = undefined;
 	numericTolerancePercent = $state(0);
+	serverMode = $state<'single' | 'compare'>('compare');
 }
 
 export interface ProtobufFeedData {
@@ -350,6 +351,10 @@ if (typeof localStorage !== 'undefined') {
 	if (localStorage.comparatorServer2IdOverride) {
 		comparatorState.server2IdOverride = localStorage.comparatorServer2IdOverride;
 	}
+	if (localStorage.comparatorServerMode) {
+		const mode = localStorage.comparatorServerMode;
+		if (mode === 'single' || mode === 'compare') comparatorState.serverMode = mode;
+	}
 	if (localStorage.comparatorResponseHeight) {
 		const h = Number(localStorage.comparatorResponseHeight);
 		if (Number.isFinite(h) && h >= RESPONSE_MIN_HEIGHT) comparatorState.responseHeight = h;
@@ -389,6 +394,10 @@ if (typeof localStorage !== 'undefined') {
 		$effect(() => {
 			const v = comparatorState.server2IdOverride;
 			if (typeof localStorage !== 'undefined') localStorage.comparatorServer2IdOverride = v;
+		});
+		$effect(() => {
+			const v = comparatorState.serverMode;
+			if (typeof localStorage !== 'undefined') localStorage.comparatorServerMode = v;
 		});
 	});
 }

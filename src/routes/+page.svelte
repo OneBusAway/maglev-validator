@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { comparatorState } from '$lib/panelState.svelte';
 	import ComparatorPanel from '$lib/components/ComparatorPanel.svelte';
 	import ProtobufPanel from '$lib/components/ProtobufPanel.svelte';
 	import KeyLogViewer from '$lib/components/KeyLogViewer.svelte';
@@ -27,13 +28,16 @@
 	let showSplitControls = $state(false);
 	let splitPaneRef: { resetSplit: () => void } | null = $state(null);
 
-	const panelOptions: { value: TabType; label: string }[] = [
-		{ value: 'comparator', label: 'API Comparator' },
-		{ value: 'protobuf', label: 'GTFS Realtime' },
-		{ value: 'gtfs-static', label: 'GTFS Static' },
-		{ value: 'logger-api', label: 'Logger: API' },
-		{ value: 'logger-gtfsrt', label: 'Logger: GTFS-RT' }
-	];
+	const panelOptions = $derived([
+		{
+			value: 'comparator' as TabType,
+			label: comparatorState.serverMode === 'single' ? 'API Inspector' : 'API Comparator'
+		},
+		{ value: 'protobuf' as TabType, label: 'GTFS Realtime' },
+		{ value: 'gtfs-static' as TabType, label: 'GTFS Static' },
+		{ value: 'logger-api' as TabType, label: 'Logger: API' },
+		{ value: 'logger-gtfsrt' as TabType, label: 'Logger: GTFS-RT' }
+	]);
 
 	let leftPanelOptions = $derived(panelOptions.filter((o) => o.value !== rightPanel));
 	let rightPanelOptions = $derived(panelOptions.filter((o) => o.value !== leftPanel));
@@ -149,7 +153,9 @@
 								d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
 							></path></svg
 						>
-						<span>API Comparator</span>
+						<span
+							>{comparatorState.serverMode === 'single' ? 'API Inspector' : 'API Comparator'}</span
+						>
 					</button>
 					<button
 						onclick={() => handleTabClick('protobuf')}

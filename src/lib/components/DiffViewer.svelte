@@ -404,7 +404,7 @@
 
 	let syncScroll = $state(true);
 	let scrollContainer1: HTMLDivElement;
-	let scrollContainer2: HTMLDivElement;
+	let scrollContainer2 = $state<HTMLDivElement>();
 	let isScrolling = $state(false);
 
 	function handleScroll(source: 'left' | 'right') {
@@ -442,7 +442,8 @@
 >
 	{#if isFullscreen}
 		<div class="mb-3 flex shrink-0 items-center justify-between">
-			<span class="text-sm font-semibold text-gray-800 dark:text-zinc-100">Response Comparison</span
+			<span class="text-sm font-semibold text-gray-800 dark:text-zinc-100"
+				>{cmpState.serverMode === 'compare' ? 'Response Comparison' : 'Response'}</span
 			>
 			<button
 				type="button"
@@ -518,41 +519,43 @@
 			{/if}
 		</div>
 
-		<button
-			onclick={() => (syncScroll = !syncScroll)}
-			class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {syncScroll
-				? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
-				: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}"
-			title="{syncScroll ? 'Disable' : 'Enable'} synchronized scrolling"
-		>
-			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-				></path>
-			</svg>
-			<span class="hidden sm:inline">Sync Scroll</span>
-		</button>
+		{#if cmpState.serverMode === 'compare'}
+			<button
+				onclick={() => (syncScroll = !syncScroll)}
+				class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {syncScroll
+					? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
+					: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}"
+				title="{syncScroll ? 'Disable' : 'Enable'} synchronized scrolling"
+			>
+				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+					></path>
+				</svg>
+				<span class="hidden sm:inline">Sync Scroll</span>
+			</button>
 
-		<button
-			onclick={() => (syncSelect = !syncSelect)}
-			class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {syncSelect
-				? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
-				: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}"
-			title="{syncSelect ? 'Disable' : 'Enable'} synchronized expand/collapse"
-		>
-			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M4 6h16M4 12h16m-7 6h7"
-				></path>
-			</svg>
-			<span class="hidden sm:inline">Sync Select</span>
-		</button>
+			<button
+				onclick={() => (syncSelect = !syncSelect)}
+				class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {syncSelect
+					? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
+					: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}"
+				title="{syncSelect ? 'Disable' : 'Enable'} synchronized expand/collapse"
+			>
+				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M4 6h16M4 12h16m-7 6h7"
+					></path>
+				</svg>
+				<span class="hidden sm:inline">Sync Select</span>
+			</button>
+		{/if}
 
 		<div class="relative">
 			<button
@@ -766,19 +769,23 @@
 	{/if}
 
 	<div
-		class="grid min-h-0 flex-1 grid-cols-2 grid-rows-[auto_1fr] gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200 dark:border-zinc-800 dark:bg-zinc-800"
+		class="grid min-h-0 flex-1 {cmpState.serverMode === 'compare'
+			? 'grid-cols-2'
+			: 'grid-cols-1'} grid-rows-[auto_1fr] gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200 dark:border-zinc-800 dark:bg-zinc-800"
 		style={paneHeightStyle}
 	>
 		<div
 			class="bg-gray-50 px-4 py-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:bg-zinc-900 dark:text-zinc-400"
 		>
-			Server 1 Response
+			{cmpState.serverMode === 'compare' ? 'Server 1 Response' : 'Response'}
 		</div>
-		<div
-			class="border-l border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400"
-		>
-			Server 2 Response
-		</div>
+		{#if cmpState.serverMode === 'compare'}
+			<div
+				class="border-l border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400"
+			>
+				Server 2 Response
+			</div>
+		{/if}
 
 		<div
 			bind:this={scrollContainer1}
@@ -798,24 +805,26 @@
 				{numericTolerancePercent}
 			/>
 		</div>
-		<div
-			bind:this={scrollContainer2}
-			onscroll={() => handleScroll('right')}
-			class="min-h-0 overflow-auto border-l border-gray-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
-		>
-			<JsonViewer
-				data={sorted2 ?? focused2}
-				otherData={sorted1 ?? focused1}
-				{focusPath}
-				{ignoredKeys}
-				mode="server2"
-				searchQuery={debouncedSearchQuery}
-				matchingPaths={matchingPaths2}
-				{syncedExpandedPaths}
-				onToggle={syncSelect ? handleToggle : undefined}
-				{numericTolerancePercent}
-			/>
-		</div>
+		{#if cmpState.serverMode === 'compare'}
+			<div
+				bind:this={scrollContainer2}
+				onscroll={() => handleScroll('right')}
+				class="min-h-0 overflow-auto border-l border-gray-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
+			>
+				<JsonViewer
+					data={sorted2 ?? focused2}
+					otherData={sorted1 ?? focused1}
+					{focusPath}
+					{ignoredKeys}
+					mode="server2"
+					searchQuery={debouncedSearchQuery}
+					matchingPaths={matchingPaths2}
+					{syncedExpandedPaths}
+					onToggle={syncSelect ? handleToggle : undefined}
+					{numericTolerancePercent}
+				/>
+			</div>
+		{/if}
 	</div>
 
 	{#if !isFullscreen}

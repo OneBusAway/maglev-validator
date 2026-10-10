@@ -516,7 +516,10 @@
 			cmpState.loading = false;
 			return;
 		}
-		if (!cmpState.server2Base || !cmpState.server2Base.startsWith('http')) {
+		if (
+			cmpState.serverMode === 'compare' &&
+			(!cmpState.server2Base || !cmpState.server2Base.startsWith('http'))
+		) {
 			cmpState.error = 'Server 2 base URL must be an absolute URL (start with http:// or https://)';
 			cmpState.loading = false;
 			return;
@@ -571,7 +574,10 @@
 			const id2 = !isBatchMode && server2IdOverride ? server2IdOverride : id;
 			const params2 = idParamName ? { ...cmpState.params, [idParamName]: id2 } : cmpState.params;
 			const url1 = buildUrl(cmpState.server1Base, endpoint, params1);
-			const url2 = buildUrl(cmpState.server2Base, endpoint, params2);
+			const url2 =
+				cmpState.serverMode === 'compare'
+					? buildUrl(cmpState.server2Base, endpoint, params2)
+					: null;
 
 			if (globalSignal.aborted) {
 				return { id, result: { error: 'Cancelled' } as const };
@@ -606,7 +612,7 @@
 						status1: data.status1,
 						status2: data.status2,
 						url1,
-						url2
+						url2: url2 ?? ''
 					} as const
 				};
 			} catch (e) {
@@ -679,7 +685,9 @@
 			}
 
 			server1UrlHistory = saveUrlToHistory(cmpState.server1Base, server1UrlHistory);
-			server2UrlHistory = saveUrlToHistory(cmpState.server2Base, server2UrlHistory);
+			if (cmpState.serverMode === 'compare') {
+				server2UrlHistory = saveUrlToHistory(cmpState.server2Base, server2UrlHistory);
+			}
 
 			Object.entries(cmpState.params).forEach(([paramName, value]) => {
 				if (value.trim()) {
@@ -818,13 +826,15 @@
 				>
 					{cmpState.server1Base.replace(/^https?:\/\//, '').replace(/\/$/, '')}
 				</span>
-				<span class="hidden text-xs text-gray-300 lg:inline dark:text-zinc-600">vs</span>
-				<span
-					class="hidden max-w-[14rem] truncate font-mono text-xs text-gray-400 lg:inline"
-					title={cmpState.server2Base}
-				>
-					{cmpState.server2Base.replace(/^https?:\/\//, '').replace(/\/$/, '')}
-				</span>
+				{#if cmpState.serverMode === 'compare'}
+					<span class="hidden text-xs text-gray-300 lg:inline dark:text-zinc-600">vs</span>
+					<span
+						class="hidden max-w-[14rem] truncate font-mono text-xs text-gray-400 lg:inline"
+						title={cmpState.server2Base}
+					>
+						{cmpState.server2Base.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+					</span>
+				{/if}
 				{#if cmpState.autoRefresh}
 					<span
 						class="flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400"
@@ -840,7 +850,7 @@
 						}}
 						disabled={cmpState.loading}
 						class="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-						title="Run Comparison (Ctrl+Enter)"
+						title="{cmpState.serverMode === 'compare' ? 'Run Comparison' : 'Fetch'} (Ctrl+Enter)"
 					>
 						{#if cmpState.loading}
 							<svg class="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -882,6 +892,30 @@
 				<span class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 					>Configuration</span
 				>
+				<div
+					class="flex items-center gap-0.5 rounded-md border border-gray-200 bg-gray-100 p-0.5 dark:border-zinc-700 dark:bg-zinc-900"
+				>
+					<button
+						type="button"
+						onclick={() => (cmpState.serverMode = 'single')}
+						class="rounded px-2.5 py-1 text-xs font-medium transition-all {cmpState.serverMode ===
+						'single'
+							? 'bg-white text-gray-900 shadow-sm dark:bg-zinc-700 dark:text-white'
+							: 'text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200'}"
+					>
+						1 Server
+					</button>
+					<button
+						type="button"
+						onclick={() => (cmpState.serverMode = 'compare')}
+						class="rounded px-2.5 py-1 text-xs font-medium transition-all {cmpState.serverMode ===
+						'compare'
+							? 'bg-white text-gray-900 shadow-sm dark:bg-zinc-700 dark:text-white'
+							: 'text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200'}"
+					>
+						2 Servers
+					</button>
+				</div>
 				<button
 					type="button"
 					onclick={() => (cmpState.inputsCollapsed = true)}
@@ -901,12 +935,12 @@
 				</button>
 			</div>
 			<div class="space-y-6 p-6">
-				<div class="grid grid-cols-2 gap-6">
+				<div class="grid gap-6 {cmpState.serverMode === 'compare' ? 'grid-cols-2' : 'grid-cols-1'}">
 					<div>
 						<label
 							for="server1-url"
 							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
-							>Server 1 URL</label
+							>Server URL</label
 						>
 						<input
 							id="server1-url"
@@ -921,25 +955,27 @@
 							{/each}
 						</datalist>
 					</div>
-					<div>
-						<label
-							for="server2-url"
-							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
-							>Server 2 URL</label
-						>
-						<input
-							id="server2-url"
-							type="text"
-							bind:value={cmpState.server2Base}
-							list="server2-url-history"
-							class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:focus:ring-green-500/40"
-						/>
-						<datalist id="server2-url-history">
-							{#each server2UrlHistory as url (url)}
-								<option value={url}></option>
-							{/each}
-						</datalist>
-					</div>
+					{#if cmpState.serverMode === 'compare'}
+						<div>
+							<label
+								for="server2-url"
+								class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
+								>Server 2 URL</label
+							>
+							<input
+								id="server2-url"
+								type="text"
+								bind:value={cmpState.server2Base}
+								list="server2-url-history"
+								class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:focus:ring-green-500/40"
+							/>
+							<datalist id="server2-url-history">
+								{#each server2UrlHistory as url (url)}
+									<option value={url}></option>
+								{/each}
+							</datalist>
+						</div>
+					{/if}
 				</div>
 
 				<div class="grid grid-cols-12 gap-6">
@@ -1041,24 +1077,26 @@
 							></textarea>
 						</div>
 
-						<div class="col-span-3">
-							<label
-								for="server2-id-override"
-								class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
-							>
-								Server 2 ID
-								<span class="text-xs font-normal text-gray-400 normal-case"
-									>(optional — different path ID for Server 2 only)</span
+						{#if cmpState.serverMode === 'compare'}
+							<div class="col-span-3">
+								<label
+									for="server2-id-override"
+									class="mb-2 flex items-center gap-1 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
 								>
-							</label>
-							<input
-								id="server2-id-override"
-								type="text"
-								bind:value={cmpState.server2IdOverride}
-								placeholder={inPathParam?.placeholder || 'e.g. LMU_4091'}
-								class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:placeholder:text-zinc-600"
-							/>
-						</div>
+									Server 2 ID
+									<span class="text-xs font-normal text-gray-400 normal-case"
+										>(optional — different path ID for Server 2 only)</span
+									>
+								</label>
+								<input
+									id="server2-id-override"
+									type="text"
+									bind:value={cmpState.server2IdOverride}
+									placeholder={inPathParam?.placeholder || 'e.g. LMU_4091'}
+									class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-gray-700 transition-all placeholder:text-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:placeholder:text-zinc-600"
+								/>
+							</div>
+						{/if}
 					{/if}
 
 					<div class="col-span-2">
@@ -1109,48 +1147,50 @@
 						</button>
 					</div>
 
-					<div class="col-span-2">
-						<label
-							for="watch-keys-trigger"
-							class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
-							>Watch Keys <span class="text-green-500">(Log)</span></label
-						>
-						<button
-							id="watch-keys-trigger"
-							onclick={() => (cmpState.showWatchModal = true)}
-							class="group flex w-full items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-left text-sm text-green-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-green-900/30 dark:bg-green-900/20 dark:text-green-300 dark:focus:ring-green-500/40"
-						>
-							<span class="truncate">
-								{#if cmpState.lastLoggedTime}
-									<span class="animate-pulse font-medium text-green-600 dark:text-green-400"
-										>Logged!</span
-									>
-								{:else if isLogging}
-									<span class="font-medium text-green-600 dark:text-green-400">Logging...</span>
-								{:else}
-									{watchedKeys.length ? `${watchedKeys.length} keys watched` : 'Select keys...'}
-								{/if}
-							</span>
-							<span
-								class="text-green-400 transition-colors group-hover:text-green-600 dark:group-hover:text-green-200"
+					{#if cmpState.serverMode === 'compare'}
+						<div class="col-span-2">
+							<label
+								for="watch-keys-trigger"
+								class="mb-2 block text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-zinc-400"
+								>Watch Keys <span class="text-green-500">(Log)</span></label
 							>
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									class="h-4 w-4"
-									fill="none"
-									viewBox="0 0 24 24"
-									stroke="currentColor"
+							<button
+								id="watch-keys-trigger"
+								onclick={() => (cmpState.showWatchModal = true)}
+								class="group flex w-full items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-left text-sm text-green-700 transition-all focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none dark:border-green-900/30 dark:bg-green-900/20 dark:text-green-300 dark:focus:ring-green-500/40"
+							>
+								<span class="truncate">
+									{#if cmpState.lastLoggedTime}
+										<span class="animate-pulse font-medium text-green-600 dark:text-green-400"
+											>Logged!</span
+										>
+									{:else if isLogging}
+										<span class="font-medium text-green-600 dark:text-green-400">Logging...</span>
+									{:else}
+										{watchedKeys.length ? `${watchedKeys.length} keys watched` : 'Select keys...'}
+									{/if}
+								</span>
+								<span
+									class="text-green-400 transition-colors group-hover:text-green-600 dark:group-hover:text-green-200"
 								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-									/>
-								</svg>
-							</span>
-						</button>
-					</div>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										class="h-4 w-4"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+										/>
+									</svg>
+								</span>
+							</button>
+						</div>
+					{/if}
 				</div>
 
 				<div
@@ -1200,7 +1240,7 @@
 							}}
 							disabled={cmpState.loading}
 							class="flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2 text-sm font-medium text-white transition-all hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-							title="Run Comparison (Ctrl+Enter)"
+							title="{cmpState.serverMode === 'compare' ? 'Run Comparison' : 'Fetch'} (Ctrl+Enter)"
 						>
 							{#if cmpState.loading}
 								<svg
@@ -1225,7 +1265,7 @@
 								</svg>
 								Running...
 							{:else}
-								<span>Run Comparison</span>
+								<span>{cmpState.serverMode === 'compare' ? 'Run Comparison' : 'Fetch'}</span>
 								<kbd class="ml-1 rounded bg-green-500 px-1.5 py-0.5 text-xs font-normal">Ctrl+↵</kbd
 								>
 							{/if}
@@ -1267,7 +1307,9 @@
 	{#if cmpState.status1 !== null || cmpState.status2 !== null}
 		<div class="mb-4 flex items-center justify-between">
 			<div class="flex items-center gap-4">
-				<h2 class="text-lg font-semibold text-gray-800 dark:text-zinc-100">Response Comparison</h2>
+				<h2 class="text-lg font-semibold text-gray-800 dark:text-zinc-100">
+					{cmpState.serverMode === 'compare' ? 'Response Comparison' : 'Response'}
+				</h2>
 				{#if cmpState.batchIds.length > 1}
 					<div class="flex items-center gap-2">
 						<select
@@ -1290,17 +1332,19 @@
 					</div>
 				{/if}
 			</div>
-			<div class="flex items-center gap-6 text-sm font-medium">
-				<span class="mr-4 flex items-center gap-2 text-gray-600 dark:text-zinc-400">
-					<span class="h-3 w-3 rounded bg-red-500"></span> Different
-				</span>
-				<span class="mr-4 flex items-center gap-2 text-gray-600 dark:text-zinc-400">
-					<span class="h-3 w-3 rounded bg-orange-400"></span> Missing
-				</span>
-				<span class="flex items-center gap-2 text-gray-600 dark:text-zinc-400">
-					<span class="h-3 w-3 rounded bg-green-500"></span> Extra
-				</span>
-			</div>
+			{#if cmpState.serverMode === 'compare'}
+				<div class="flex items-center gap-6 text-sm font-medium">
+					<span class="mr-4 flex items-center gap-2 text-gray-600 dark:text-zinc-400">
+						<span class="h-3 w-3 rounded bg-red-500"></span> Different
+					</span>
+					<span class="mr-4 flex items-center gap-2 text-gray-600 dark:text-zinc-400">
+						<span class="h-3 w-3 rounded bg-orange-400"></span> Missing
+					</span>
+					<span class="flex items-center gap-2 text-gray-600 dark:text-zinc-400">
+						<span class="h-3 w-3 rounded bg-green-500"></span> Extra
+					</span>
+				</div>
+			{/if}
 		</div>
 
 		{#if cmpState.currentUrl1 || cmpState.currentUrl2}
@@ -1327,7 +1371,7 @@
 						>
 					</div>
 				{/if}
-				{#if cmpState.currentUrl2}
+				{#if cmpState.currentUrl2 && cmpState.serverMode === 'compare'}
 					<div class="flex items-start gap-2">
 						<span
 							class="shrink-0 rounded bg-orange-100 px-1.5 py-0.5 text-xs font-medium text-orange-700 dark:bg-orange-900/50 dark:text-orange-300"
@@ -1440,11 +1484,16 @@
 					></path></svg
 				>
 			</div>
-			<h3 class="mb-2 text-xl font-semibold text-gray-800 dark:text-white">Ready to Compare</h3>
+			<h3 class="mb-2 text-xl font-semibold text-gray-800 dark:text-white">
+				{cmpState.serverMode === 'compare' ? 'Ready to Compare' : 'Ready to Fetch'}
+			</h3>
 			<p class="max-w-md text-gray-500">
 				Configure your endpoints above, then click <strong class="text-green-600"
-					>Run Comparison</strong
-				> to analyze the API response differences.
+					>{cmpState.serverMode === 'compare' ? 'Run Comparison' : 'Fetch'}</strong
+				>
+				{cmpState.serverMode === 'compare'
+					? 'to analyze the API response differences.'
+					: 'to inspect the API response.'}
 			</p>
 		</div>
 	{/if}

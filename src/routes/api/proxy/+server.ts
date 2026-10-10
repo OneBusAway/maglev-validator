@@ -22,6 +22,19 @@ export const POST: RequestHandler = async ({ request }) => {
 				{ status: 400 }
 			);
 		}
+
+		if (url2 == null) {
+			const result1 = await fetch(url1)
+				.then(async (r) => ({ data: await r.json(), status: r.status }))
+				.catch((e) => ({ data: { error: e.message }, status: 0 }));
+			return json({
+				response1: result1.data,
+				response2: null,
+				status1: result1.status,
+				status2: null
+			});
+		}
+
 		if (!isAbsoluteUrl(url2)) {
 			return json(
 				{

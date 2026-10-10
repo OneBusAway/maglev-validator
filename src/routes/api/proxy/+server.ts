@@ -1,4 +1,5 @@
 import { json } from '@sveltejs/kit';
+import { readGtfsRealtimeResponse } from '$lib/server/gtfsRealtimeFeed';
 import type { RequestHandler } from './$types';
 
 function isAbsoluteUrl(url: string): boolean {
@@ -10,9 +11,19 @@ function isAbsoluteUrl(url: string): boolean {
 	}
 }
 
+/** Fetches one URL and reads its body: JSON, or a decoded GTFS-Realtime feed. */
+async function fetchForComparison(url: string, api: string | undefined) {
+	return fetch(url)
+		.then(async (r) => ({
+			data: api === 'gtfs_realtime' ? await readGtfsRealtimeResponse(r) : await r.json(),
+			status: r.status
+		}))
+		.catch((e) => ({ data: { error: e.message }, status: 0 }));
+}
+
 export const POST: RequestHandler = async ({ request }) => {
 	try {
-		const { url1, url2 } = await request.json();
+		const { url1, url2, api } = await request.json();
 
 		if (!isAbsoluteUrl(url1)) {
 			return json(
@@ -45,12 +56,8 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		const [result1, result2] = await Promise.all([
-			fetch(url1)
-				.then(async (r) => ({ data: await r.json(), status: r.status }))
-				.catch((e) => ({ data: { error: e.message }, status: 0 })),
-			fetch(url2)
-				.then(async (r) => ({ data: await r.json(), status: r.status }))
-				.catch((e) => ({ data: { error: e.message }, status: 0 }))
+			fetchForComparison(url1, api),
+			fetchForComparison(url2, api)
 		]);
 
 		return json({

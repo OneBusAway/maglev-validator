@@ -88,6 +88,8 @@ This is Svelte 5. State is declared with `$state`, derived values with `$derived
 
 `endpoints.ts` exports an array of endpoint objects. Each has `id`, `name`, `path`, and `params[]`. Params can be `inPath: true` (replaced in the URL path) or query params. `ComparatorPanel.svelte` builds URLs via `buildUrl()`.
 
+GTFS-Realtime exports set `api: 'gtfs_realtime'`. `apiBaseFor()` swaps the server's `/api/where/` base for `/api/gtfs_realtime/`, and the proxy decodes the protobuf body (`src/lib/server/gtfsRealtimeFeed.ts`) into JSON. Each decoded entity gets a `matchKey` (vehicle ID, trip ID + start date, or alert entity ID) that the diff uses to align entities, because the feeds' own entity IDs differ between servers. OneBusAway headsign extensions are not decoded.
+
 ### Diff / JSON compare
 
 - `DiffViewer.svelte` renders two `JsonViewer` instances.

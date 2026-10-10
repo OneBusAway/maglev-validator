@@ -1,6 +1,8 @@
 export type DiffStatus = 'same' | 'different' | 'missing' | 'added';
 
 const ID_FIELDS = [
+	// Set on decoded GTFS-Realtime entities, whose own IDs differ between servers.
+	'matchKey',
 	'id',
 	'tripId',
 	'activeTripId',

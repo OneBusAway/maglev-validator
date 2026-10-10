@@ -1,4 +1,83 @@
-export const endpoints = [
+export interface EndpointParam {
+	name: string;
+	label: string;
+	required: boolean;
+	inPath: boolean;
+	default: string;
+	placeholder: string;
+}
+
+export interface Endpoint {
+	id: string;
+	name: string;
+	path: string;
+	params: EndpointParam[];
+	/**
+	 * API family the path belongs to. GTFS-Realtime exports live under
+	 * /api/gtfs_realtime/ instead of /api/where/ and return protobuf, which the
+	 * proxy decodes to JSON before diffing. Defaults to 'where'.
+	 */
+	api?: 'where' | 'gtfs_realtime';
+}
+
+/** The GTFS-Realtime export base for a server's /api/where/ base URL. */
+export function apiBaseFor(base: string, endpoint: Endpoint): string {
+	if (endpoint.api !== 'gtfs_realtime') return base;
+	return base.replace(/\/api\/where\/?$/, '/api/gtfs_realtime/');
+}
+
+function gtfsRealtimeAgencyExport(id: string, name: string): Endpoint {
+	return {
+		id,
+		name,
+		path: `${id}/{id}.pb`,
+		api: 'gtfs_realtime',
+		params: [
+			{
+				name: 'id',
+				label: 'Agency ID',
+				required: true,
+				inPath: true,
+				default: 'unitrans',
+				placeholder: 'e.g., 1 (plain agency ID, not a combined ID)'
+			},
+			{
+				name: 'key',
+				label: 'API Key',
+				required: true,
+				inPath: false,
+				default: 'test',
+				placeholder: 'API Key'
+			},
+			{
+				name: 'time',
+				label: 'Time',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'epoch ms or YYYY-MM-DD[_HH-mm-ss]; set the same value on both servers'
+			},
+			{
+				name: 'routeFilterId',
+				label: 'Route Filter ID',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'raw route ID, e.g., 39 (not 1_39)'
+			},
+			{
+				name: 'removeAgencyIds',
+				label: 'Remove Agency IDs',
+				required: false,
+				inPath: false,
+				default: '',
+				placeholder: 'true/false (default: true)'
+			}
+		]
+	};
+}
+
+export const endpoints: Endpoint[] = [
 	{
 		id: 'trip',
 		name: 'Trip',
@@ -1510,5 +1589,8 @@ export const endpoints = [
 				placeholder: 'API Key'
 			}
 		]
-	}
+	},
+	gtfsRealtimeAgencyExport('vehicle-positions-for-agency', 'GTFS-RT Vehicle Positions for Agency'),
+	gtfsRealtimeAgencyExport('trip-updates-for-agency', 'GTFS-RT Trip Updates for Agency'),
+	gtfsRealtimeAgencyExport('alerts-for-agency', 'GTFS-RT Alerts for Agency')
 ];

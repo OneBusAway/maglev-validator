@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { endpoints } from '$lib/endpoints';
+	import { apiBaseFor, endpoints, type Endpoint } from '$lib/endpoints';
 	import DiffViewer from '$lib/components/DiffViewer.svelte';
 	import { onMount, onDestroy, untrack } from 'svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
@@ -595,7 +595,7 @@
 				const res = await fetch('/api/proxy', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ url1, url2 }),
+					body: JSON.stringify({ url1, url2, api: endpoint.api }),
 					signal: combinedController.signal
 				});
 				clearTimeout(timeoutId);
@@ -745,11 +745,7 @@
 		}
 	}
 
-	function buildUrl(
-		base: string,
-		endpoint: (typeof endpoints)[number],
-		params: Record<string, string>
-	): string {
+	function buildUrl(base: string, endpoint: Endpoint, params: Record<string, string>): string {
 		let path = endpoint.path;
 		let queryParams: string[] = [];
 
@@ -763,7 +759,9 @@
 			}
 		});
 
-		return base + path + (queryParams.length ? '?' + queryParams.join('&') : '');
+		return (
+			apiBaseFor(base, endpoint) + path + (queryParams.length ? '?' + queryParams.join('&') : '')
+		);
 	}
 
 	let paramDebounceTimer: number | undefined = undefined;

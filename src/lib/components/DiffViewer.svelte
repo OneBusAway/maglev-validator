@@ -1,4 +1,5 @@
 <script lang="ts">
+	import DiffToolbarGuide from './DiffToolbarGuide.svelte';
 	import JsonViewer from './JsonViewer.svelte';
 	import { getByPath } from '$lib/utils/jsonCompare';
 	import { deepSearchJSON } from '$lib/utils/search';
@@ -555,6 +556,28 @@
 				</svg>
 				<span class="hidden sm:inline">Sync Select</span>
 			</button>
+
+			<button
+				onclick={() => (cmpState.alignArrayRows = !cmpState.alignArrayRows)}
+				class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all {cmpState.alignArrayRows
+					? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400'
+					: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}"
+				title={cmpState.alignArrayRows
+					? "Array items are shown next to their match on the other side. Click to show each server's real order. Diffs ignore order either way; labels show the original index."
+					: "Array items are shown in each server's real order. Click to line up matched items side by side. Diffs ignore order either way."}
+			>
+				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M4 6h6m-6 6h6m-6 6h6m4-12h6m-6 6h6m-6 6h6"
+					></path>
+				</svg>
+				<span class="hidden sm:inline"
+					>{cmpState.alignArrayRows ? 'Matched Order' : 'Real Order'}</span
+				>
+			</button>
 		{/if}
 
 		<div class="relative">
@@ -725,6 +748,8 @@
 			{/if}
 			<span class="hidden sm:inline">{isFullscreen ? 'Exit' : 'Fullscreen'}</span>
 		</button>
+
+		<DiffToolbarGuide />
 
 		{#if debouncedSearchQuery}
 			<div class="flex items-center gap-3 text-sm">

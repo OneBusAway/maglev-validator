@@ -93,6 +93,9 @@ export class ComparatorState {
 	lastLoggedTime = $state<number | null>(null);
 	refreshTimer: number | undefined = undefined;
 	numericTolerancePercent = $state(0);
+	// Show matched array items on the same row on both sides. Off shows each
+	// server's real order; comparison ignores order either way.
+	alignArrayRows = $state(true);
 	serverMode = $state<'single' | 'compare'>('compare');
 }
 
@@ -355,6 +358,9 @@ if (typeof localStorage !== 'undefined') {
 		const mode = localStorage.comparatorServerMode;
 		if (mode === 'single' || mode === 'compare') comparatorState.serverMode = mode;
 	}
+	if (localStorage.comparatorAlignArrayRows === 'false') {
+		comparatorState.alignArrayRows = false;
+	}
 	if (localStorage.comparatorResponseHeight) {
 		const h = Number(localStorage.comparatorResponseHeight);
 		if (Number.isFinite(h) && h >= RESPONSE_MIN_HEIGHT) comparatorState.responseHeight = h;
@@ -394,6 +400,10 @@ if (typeof localStorage !== 'undefined') {
 		$effect(() => {
 			const v = comparatorState.server2IdOverride;
 			if (typeof localStorage !== 'undefined') localStorage.comparatorServer2IdOverride = v;
+		});
+		$effect(() => {
+			const v = comparatorState.alignArrayRows;
+			if (typeof localStorage !== 'undefined') localStorage.comparatorAlignArrayRows = String(v);
 		});
 		$effect(() => {
 			const v = comparatorState.serverMode;

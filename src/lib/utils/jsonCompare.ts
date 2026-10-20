@@ -118,10 +118,13 @@ export function sortById(
 	const aId = findIdValue(a);
 	const bId = findIdValue(b);
 	if (aId !== null && bId !== null && !isIdFieldIgnoredAtPath(currentPath, ignoredKeys)) {
-		if (typeof aId === 'number' && typeof bId === 'number') {
-			return aId - bId;
-		}
-		return String(aId).localeCompare(String(bId));
+		const byId =
+			typeof aId === 'number' && typeof bId === 'number'
+				? aId - bId
+				: String(aId).localeCompare(String(bId));
+		// IDs like routeId can repeat, so break ties on content to keep the
+		// order independent of each server's original order.
+		if (byId !== 0) return byId;
 	}
 	return stableStringify(a, ignoredKeys, currentPath).localeCompare(
 		stableStringify(b, ignoredKeys, currentPath)
@@ -198,6 +201,99 @@ export function matchArraysById(
 	}
 
 	return results;
+}
+
+export type AlignedArrayRow = { left?: number; right?: number };
+
+/**
+ * Pairs the items of two arrays so their children can be compared and shown
+ * side by side regardless of order. Pairs identical items first, then
+ * near-equal items (within the numeric tolerance), then items sharing an ID,
+ * and finally pairs whatever is left by position. Rows follow the left array's
+ * order; items with no counterpart come last, with only one side set.
+ */
+export function alignArrays(
+	items: unknown[],
+	other: unknown[],
+	ignoredKeys: string[] = [],
+	numericTolerancePercent: number = 0,
+	currentPath: string = ''
+): AlignedArrayRow[] {
+	const itemPath = currentPath ? `${currentPath}.*` : '*';
+	const partners = new Array<number>(items.length).fill(-1);
+	const used = new Array<boolean>(other.length).fill(false);
+
+	const otherByKey = new Map<string, number[]>();
+	other.forEach((item, j) => {
+		const key = stableStringify(item, ignoredKeys, itemPath);
+		const bucket = otherByKey.get(key);
+		if (bucket) bucket.push(j);
+		else otherByKey.set(key, [j]);
+	});
+	items.forEach((item, i) => {
+		const j = otherByKey.get(stableStringify(item, ignoredKeys, itemPath))?.shift();
+		if (j !== undefined) {
+			partners[i] = j;
+			used[j] = true;
+		}
+	});
+
+	const unmatched = () => partners.flatMap((p, i) => (p === -1 ? [i] : []));
+
+	// Near-equal pass is quadratic, so only run it on small leftovers.
+	const leftovers = unmatched();
+	if (numericTolerancePercent > 0 && leftovers.length <= 200) {
+		for (const i of leftovers) {
+			const j = other.findIndex(
+				(candidate, k) =>
+					!used[k] &&
+					deepEqualIgnoreOrder(items[i], candidate, ignoredKeys, numericTolerancePercent, itemPath)
+			);
+			if (j !== -1) {
+				partners[i] = j;
+				used[j] = true;
+			}
+		}
+	}
+
+	if (!isIdFieldIgnoredAtPath(itemPath, ignoredKeys)) {
+		const otherById = new Map<string | number, number[]>();
+		other.forEach((item, j) => {
+			const id = findIdValue(item);
+			if (used[j] || id === null) return;
+			const bucket = otherById.get(id);
+			if (bucket) bucket.push(j);
+			else otherById.set(id, [j]);
+		});
+		for (const i of unmatched()) {
+			const id = findIdValue(items[i]);
+			const j = id === null ? undefined : otherById.get(id)?.shift();
+			if (j !== undefined) {
+				partners[i] = j;
+				used[j] = true;
+			}
+		}
+	}
+
+	let next = 0;
+	for (const i of unmatched()) {
+		while (next < other.length && used[next]) next++;
+		if (next >= other.length) break;
+		partners[i] = next;
+		used[next] = true;
+	}
+
+	const rows: AlignedArrayRow[] = [];
+	partners.forEach((j, i) => {
+		if (j !== -1) rows.push({ left: i, right: j });
+	});
+	partners.forEach((j, i) => {
+		if (j === -1) rows.push({ left: i });
+	});
+	used.forEach((isUsed, j) => {
+		if (!isUsed) rows.push({ right: j });
+	});
+	return rows;
 }
 
 const equalityCache = new Map<number, WeakMap<object, WeakMap<object, boolean>>>();
@@ -366,8 +462,11 @@ export function countDifferences(
 
 		const aItems = a.map((item) => ({ key: stableStringify(item, ignoredKeys, itemPath), item }));
 		const bItems = b.map((item) => ({ key: stableStringify(item, ignoredKeys, itemPath), item }));
-		aItems.sort((x, y) => sortById(x.item, y.item, ignoredKeys, itemPath));
-		bItems.sort((x, y) => sortById(x.item, y.item, ignoredKeys, itemPath));
+		// The merge walk below compares keys with <, so sort by the same keys.
+		const byKey = (x: { key: string }, y: { key: string }) =>
+			x.key < y.key ? -1 : x.key > y.key ? 1 : 0;
+		aItems.sort(byKey);
+		bItems.sort(byKey);
 		let i = 0;
 		let j = 0;
 		let diff = 0;

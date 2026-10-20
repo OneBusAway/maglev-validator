@@ -7,6 +7,7 @@
 	import GtfsRtLogViewer from '$lib/components/GtfsRtLogViewer.svelte';
 	import GtfsStaticViewer from '$lib/components/GtfsStaticViewer.svelte';
 	import ToolsPanel from '$lib/components/ToolsPanel.svelte';
+	import AppGuide from '$lib/components/AppGuide.svelte';
 	import SplitPane from '$lib/components/SplitPane.svelte';
 
 	type TabType =
@@ -212,6 +213,7 @@
 			</div>
 
 			<div class="flex items-center gap-3">
+				<AppGuide {activeTab} />
 				<button
 					onclick={toggleSplitMode}
 					class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors {isSplitMode

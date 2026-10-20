@@ -2,13 +2,13 @@
 	import { tick } from 'svelte';
 	import JsonTree from './JsonTree.svelte';
 	import {
+		alignArrays,
 		countDifferences,
 		getDiffStatus,
 		isArray,
 		isKeyIgnored,
 		isObject,
-		isPrimitive,
-		sortEntries
+		isPrimitive
 	} from '$lib/utils/jsonCompare';
 	import { comparatorState } from '$lib/panelState.svelte';
 
@@ -181,8 +181,55 @@
 			: countDifferences(value, otherValue, ignoredKeys, 999, numericTolerancePercent, currentPath)
 	);
 
-	const arrayItems = $derived(isArray(value) ? value : []);
-	const otherArrayItems = $derived(isArray(otherValue) ? otherValue : []);
+	// Items/keys that only exist on the other side get a placeholder row, so
+	// every diff counted in a collapsed parent is visible once expanded.
+	const showAbsent = $derived(!skipComparison && !isReference);
+
+	const objectEntries = $derived.by(() => {
+		if (!isObject(value) || !expanded) return [];
+		const other = showAbsent && isObject(otherValue) ? otherValue : {};
+		const keys = new Set([...Object.keys(value), ...Object.keys(other)]);
+		return [...keys]
+			.filter((key) => !isKeyIgnored(key, currentPath, ignoredKeys))
+			.sort((a, b) => a.localeCompare(b))
+			.map((key) => ({ key, absent: !(key in value) }));
+	});
+
+	// Compare each array item with its matched counterpart (by content/ID, not
+	// index) so reordered arrays don't show false diffs. With alignArrayRows the
+	// items are also shown as matched pairs in the same order on both sides;
+	// otherwise each side keeps its real order. Labels keep the original index.
+	type ArrayRow =
+		| { absent?: false; item: unknown; otherItem: unknown; index: number }
+		| { absent: true; index: number };
+
+	const arrayItems = $derived.by((): ArrayRow[] => {
+		if (!isArray(value) || !expanded) return [];
+		if (!isArray(otherValue) || skipComparison) {
+			const other = isArray(otherValue) ? otherValue : [];
+			return value.map((item, index) => ({ item, otherItem: other[index], index }));
+		}
+		const other = otherValue;
+		const [left, right] = side === 'left' ? [value, other] : [other, value];
+		const pairs = alignArrays(left, right, ignoredKeys, numericTolerancePercent, currentPath)
+			.map((row) => (side === 'left' ? row : { left: row.right, right: row.left }))
+			.flatMap(({ left: own, right: partner }): ArrayRow[] =>
+				own === undefined
+					? showAbsent && partner !== undefined
+						? [{ absent: true, index: partner }]
+						: []
+					: [
+							{
+								item: value[own],
+								otherItem: partner === undefined ? undefined : other[partner],
+								index: own
+							}
+						]
+			);
+		if (comparatorState.alignArrayRows) return pairs;
+		// Real order: own items by index, then the other side's extras.
+		return pairs.sort((a, b) => Number(!!a.absent) - Number(!!b.absent) || a.index - b.index);
+	});
 
 	const totalItems = $derived(
 		isArray(value)
@@ -291,6 +338,22 @@
 		return '';
 	}
 </script>
+
+{#snippet absentRow(label: string)}
+	<div class="-mx-1 flex items-center rounded px-1 py-0.5">
+		<span class="mr-1 w-5 flex-shrink-0"></span>
+		<span class="mr-1 w-5 flex-shrink-0"></span>
+		<span class="mr-1 flex-shrink-0 font-semibold text-gray-400 italic dark:text-zinc-500"
+			>{label}<span class="text-gray-400 dark:text-zinc-600">:</span></span
+		>
+		<span
+			class="ml-3 rounded border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[11px] whitespace-nowrap text-orange-600 select-none dark:border-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+			title="Only the other server returned this"
+		>
+			not in this response
+		</span>
+	</div>
+{/snippet}
 
 <div class="font-sans text-[14px] leading-[1.8] tracking-wide">
 	{#if label !== undefined}
@@ -465,26 +528,30 @@
 						>
 					</div>
 				{/if}
-				{#each visibleArrayItems as item, index (index)}
-					{@const otherItem = otherArrayItems[index]}
-					<JsonTree
-						value={item}
-						otherValue={otherItem}
-						label={String(index)}
-						{side}
-						level={level + 1}
-						{isReference}
-						{ignoredKeys}
-						{globalExpand}
-						localExpand={childExpand}
-						{skipComparison}
-						{searchQuery}
-						{matchingPaths}
-						currentPath={currentPath ? `${currentPath}[${index}]` : `[${index}]`}
-						{syncedExpandedPaths}
-						{onToggle}
-						{numericTolerancePercent}
-					/>
+				{#each visibleArrayItems as entry, row (row)}
+					{#if entry.absent}
+						{@render absentRow(String(entry.index))}
+					{:else}
+						{@const { item, otherItem, index } = entry}
+						<JsonTree
+							value={item}
+							otherValue={otherItem}
+							label={String(index)}
+							{side}
+							level={level + 1}
+							{isReference}
+							{ignoredKeys}
+							{globalExpand}
+							localExpand={childExpand}
+							{skipComparison}
+							{searchQuery}
+							{matchingPaths}
+							currentPath={currentPath ? `${currentPath}[${row}]` : `[${row}]`}
+							{syncedExpandedPaths}
+							{onToggle}
+							{numericTolerancePercent}
+						/>
+					{/if}
 				{/each}
 				{#if hasMoreItems}
 					<div class="mt-2 flex items-center gap-2">
@@ -525,9 +592,7 @@
 					</div>
 				{/if}
 			{:else if isObject(value)}
-				{@const entries = sortEntries(value as Record<string, unknown>).filter(
-					([key]) => !isKeyIgnored(key, currentPath, ignoredKeys)
-				)}
+				{@const entries = objectEntries}
 				{@const visibleEntries = entries.slice(0, visibleCount)}
 				{@const hasMoreEntries = entries.length > visibleCount}
 				{#if entries.length > LARGE_THRESHOLD}
@@ -537,27 +602,31 @@
 						>
 					</div>
 				{/if}
-				{#each visibleEntries as [key, childValue] (key)}
-					<JsonTree
-						value={childValue}
-						otherValue={isObject(otherValue)
-							? (otherValue as Record<string, unknown>)[key]
-							: undefined}
-						label={key}
-						{side}
-						level={level + 1}
-						{isReference}
-						{ignoredKeys}
-						{globalExpand}
-						localExpand={childExpand}
-						{skipComparison}
-						{searchQuery}
-						{matchingPaths}
-						currentPath={currentPath ? `${currentPath}.${key}` : key}
-						{syncedExpandedPaths}
-						{onToggle}
-						{numericTolerancePercent}
-					/>
+				{#each visibleEntries as { key, absent } (key)}
+					{#if absent}
+						{@render absentRow(key)}
+					{:else}
+						<JsonTree
+							value={(value as Record<string, unknown>)[key]}
+							otherValue={isObject(otherValue)
+								? (otherValue as Record<string, unknown>)[key]
+								: undefined}
+							label={key}
+							{side}
+							level={level + 1}
+							{isReference}
+							{ignoredKeys}
+							{globalExpand}
+							localExpand={childExpand}
+							{skipComparison}
+							{searchQuery}
+							{matchingPaths}
+							currentPath={currentPath ? `${currentPath}.${key}` : key}
+							{syncedExpandedPaths}
+							{onToggle}
+							{numericTolerancePercent}
+						/>
+					{/if}
 				{/each}
 				{#if hasMoreEntries}
 					<div class="mt-2 flex items-center gap-2">

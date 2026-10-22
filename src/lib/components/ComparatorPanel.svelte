@@ -507,7 +507,11 @@
 	}
 
 	async function fetchBoth() {
+		// Keep a pending refetch from typing if this call is skipped; a fetch
+		// that runs uses the latest params, so it replaces that refetch.
 		if (cmpState.loading) return;
+		clearTimeout(paramDebounceTimer);
+		paramDebounceTimer = undefined;
 		cmpState.loading = true;
 		cmpState.error = undefined;
 
@@ -564,6 +568,8 @@
 				currentUrl2: string;
 				status1?: number;
 				status2?: number;
+				duration1?: number;
+				duration2?: number;
 				error?: string;
 			}
 		>();
@@ -611,6 +617,8 @@
 						response2: data.response2,
 						status1: data.status1,
 						status2: data.status2,
+						duration1: data.duration1,
+						duration2: data.duration2,
 						url1,
 						url2: url2 ?? ''
 					} as const
@@ -644,14 +652,15 @@
 							currentUrl1: result.url1,
 							currentUrl2: result.url2,
 							status1: result.status1,
-							status2: result.status2
+							status2: result.status2,
+							duration1: result.duration1,
+							duration2: result.duration2
 						});
 					}
 				}
 			}
 
 			const firstId = idsToFetch[0];
-			const firstResult = batchResults.get(firstId);
 
 			if (isBatchMode) {
 				cmpState.batchIds = idsToFetch;
@@ -663,17 +672,20 @@
 						: firstId;
 			}
 
-			if (firstResult) {
-				if (firstResult.error) {
-					cmpState.error = firstResult.error;
-				} else {
-					cmpState.response1 = firstResult.response1;
-					cmpState.response2 = firstResult.response2;
-					cmpState.status1 = firstResult.status1 ?? null;
-					cmpState.status2 = firstResult.status2 ?? null;
-					cmpState.currentUrl1 = firstResult.currentUrl1;
-					cmpState.currentUrl2 = firstResult.currentUrl2;
-				}
+			// Show the batch ID the selector points at, which a refresh keeps.
+			const shownResult = batchResults.get(isBatchMode ? cmpState.selectedBatchId : firstId);
+			// A failed result is stored with empty fields, so this also clears
+			// the previous response, as selectBatchId does.
+			if (shownResult) {
+				cmpState.response1 = shownResult.response1;
+				cmpState.response2 = shownResult.response2;
+				cmpState.status1 = shownResult.status1 ?? null;
+				cmpState.status2 = shownResult.status2 ?? null;
+				cmpState.duration1 = shownResult.duration1 ?? null;
+				cmpState.duration2 = shownResult.duration2 ?? null;
+				cmpState.currentUrl1 = shownResult.currentUrl1;
+				cmpState.currentUrl2 = shownResult.currentUrl2;
+				if (shownResult.error) cmpState.error = shownResult.error;
 			}
 
 			const dataSize =
@@ -733,6 +745,8 @@
 			cmpState.response2 = result.response2;
 			cmpState.status1 = result.status1 ?? null;
 			cmpState.status2 = result.status2 ?? null;
+			cmpState.duration1 = result.duration1 ?? null;
+			cmpState.duration2 = result.duration2 ?? null;
 			cmpState.currentUrl1 = result.currentUrl1;
 			cmpState.currentUrl2 = result.currentUrl2;
 			if (result.error) {
@@ -764,6 +778,8 @@
 		);
 	}
 
+	// Refetch only after the user stops typing in a parameter for this long.
+	const PARAM_REFETCH_DELAY_MS = 2000;
 	let paramDebounceTimer: number | undefined = undefined;
 	function handleParamChange(paramName: string, value: string) {
 		cmpState.params = { ...cmpState.params, [paramName]: value };
@@ -783,8 +799,7 @@
 		}
 		paramDebounceTimer = window.setTimeout(() => {
 			fetchBoth();
-			paramDebounceTimer = undefined;
-		}, 600);
+		}, PARAM_REFETCH_DELAY_MS);
 	}
 </script>
 
@@ -1345,6 +1360,29 @@
 			{/if}
 		</div>
 
+		{#snippet durationBadge(
+			ms: number,
+			status: number | null,
+			otherMs: number | null,
+			otherStatus: number | null
+		)}
+			<!-- gap is null in single-server mode or when either fetch failed (status 0);
+			     positive when this server was slower. -->
+			{@const gap =
+				cmpState.serverMode === 'compare' && otherMs !== null && status && otherStatus
+					? ms - otherMs
+					: null}
+			<span
+				class="shrink-0 rounded px-1.5 py-0.5 font-mono text-xs font-medium {gap === null
+					? 'bg-gray-100 text-gray-700 dark:bg-zinc-700 dark:text-zinc-300'
+					: gap <= 0
+						? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
+						: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'}"
+				title="Upstream response time: request sent until the body was downloaded"
+				>{ms} ms{#if gap !== null && gap > 0}&nbsp;(+{gap}){/if}</span
+			>
+		{/snippet}
+
 		{#if cmpState.currentUrl1 || cmpState.currentUrl2}
 			<div
 				class="mb-4 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-zinc-700 dark:bg-zinc-800/50"
@@ -1364,6 +1402,14 @@
 								>{cmpState.status1}</span
 							>
 						{/if}
+						{#if cmpState.duration1 !== null}
+							{@render durationBadge(
+								cmpState.duration1,
+								cmpState.status1,
+								cmpState.duration2,
+								cmpState.status2
+							)}
+						{/if}
 						<code class="text-xs break-all text-gray-700 dark:text-zinc-300"
 							>{cmpState.currentUrl1}</code
 						>
@@ -1382,6 +1428,14 @@
 									: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'}"
 								>{cmpState.status2}</span
 							>
+						{/if}
+						{#if cmpState.duration2 !== null}
+							{@render durationBadge(
+								cmpState.duration2,
+								cmpState.status2,
+								cmpState.duration1,
+								cmpState.status1
+							)}
 						{/if}
 						<code class="text-xs break-all text-gray-700 dark:text-zinc-300"
 							>{cmpState.currentUrl2}</code

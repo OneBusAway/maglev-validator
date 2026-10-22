@@ -27,8 +27,11 @@ export class ComparatorState {
 	lastEndpoint = $state('');
 	server2IdOverride = $state('');
 
-	response1: unknown = $state(null);
-	response2: unknown = $state(null);
+	// Raw, not deep $state: responses are only ever replaced, and walking a
+	// deep proxy inside a $derived (diff counts, tree) tracks every property
+	// read, which froze the page for tens of seconds on GTFS-RT feeds.
+	response1: unknown = $state.raw(null);
+	response2: unknown = $state.raw(null);
 	loading = $state(false);
 	error: string | null | undefined = $state(undefined);
 
@@ -37,6 +40,9 @@ export class ComparatorState {
 
 	status1 = $state<number | null>(null);
 	status2 = $state<number | null>(null);
+	// Upstream response times in ms, measured by the proxy.
+	duration1 = $state<number | null>(null);
+	duration2 = $state<number | null>(null);
 
 	batchIds = $state<string[]>([]);
 	selectedBatchId = $state<string>('');
@@ -50,6 +56,8 @@ export class ComparatorState {
 				currentUrl2: string;
 				status1?: number;
 				status2?: number;
+				duration1?: number;
+				duration2?: number;
 				error?: string;
 			}
 		>

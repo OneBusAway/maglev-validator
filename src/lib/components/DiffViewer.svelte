@@ -118,8 +118,8 @@
 	const focused1 = $derived(trimmedPath ? getByPath(response1, trimmedPath) : response1);
 	const focused2 = $derived(trimmedPath ? getByPath(response2, trimmedPath) : response2);
 
-	let sorted1 = $state<unknown>(null);
-	let sorted2 = $state<unknown>(null);
+	let sorted1 = $state.raw<unknown>(null);
+	let sorted2 = $state.raw<unknown>(null);
 	let sortLoading = $state(false);
 	let sortEnabled = $state(false);
 	let showSortModal = $state(false);

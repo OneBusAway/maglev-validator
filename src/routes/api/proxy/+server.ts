@@ -19,10 +19,12 @@ function isAbsoluteUrl(url: string): boolean {
 async function fetchForComparison(url: string, api: string | undefined) {
 	const start = performance.now();
 	const elapsed = () => Math.round(performance.now() - start);
+	// Set once the body is downloaded, so a decoding failure does not count.
+	let durationMs: number | undefined;
 	try {
 		const r = await fetch(url);
 		const body = await r.arrayBuffer();
-		const durationMs = elapsed();
+		durationMs = elapsed();
 		const data =
 			api === 'gtfs_realtime'
 				? await readGtfsRealtimeResponse(
@@ -33,7 +35,7 @@ async function fetchForComparison(url: string, api: string | undefined) {
 		return { data, status: r.status, durationMs };
 	} catch (e) {
 		const message = e instanceof Error ? e.message : String(e);
-		return { data: { error: message }, status: 0, durationMs: elapsed() };
+		return { data: { error: message }, status: 0, durationMs: durationMs ?? elapsed() };
 	}
 }
 

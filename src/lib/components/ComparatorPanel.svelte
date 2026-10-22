@@ -507,6 +507,9 @@
 	}
 
 	async function fetchBoth() {
+		// A manual run replaces any pending refetch from typing.
+		clearTimeout(paramDebounceTimer);
+		paramDebounceTimer = undefined;
 		if (cmpState.loading) return;
 		cmpState.loading = true;
 		cmpState.error = undefined;
@@ -657,7 +660,6 @@
 			}
 
 			const firstId = idsToFetch[0];
-			const firstResult = batchResults.get(firstId);
 
 			if (isBatchMode) {
 				cmpState.batchIds = idsToFetch;
@@ -669,18 +671,20 @@
 						: firstId;
 			}
 
-			if (firstResult) {
-				if (firstResult.error) {
-					cmpState.error = firstResult.error;
+			// Show the batch ID the selector points at, which a refresh keeps.
+			const shownResult = batchResults.get(isBatchMode ? cmpState.selectedBatchId : firstId);
+			if (shownResult) {
+				if (shownResult.error) {
+					cmpState.error = shownResult.error;
 				} else {
-					cmpState.response1 = firstResult.response1;
-					cmpState.response2 = firstResult.response2;
-					cmpState.status1 = firstResult.status1 ?? null;
-					cmpState.status2 = firstResult.status2 ?? null;
-					cmpState.duration1 = firstResult.duration1 ?? null;
-					cmpState.duration2 = firstResult.duration2 ?? null;
-					cmpState.currentUrl1 = firstResult.currentUrl1;
-					cmpState.currentUrl2 = firstResult.currentUrl2;
+					cmpState.response1 = shownResult.response1;
+					cmpState.response2 = shownResult.response2;
+					cmpState.status1 = shownResult.status1 ?? null;
+					cmpState.status2 = shownResult.status2 ?? null;
+					cmpState.duration1 = shownResult.duration1 ?? null;
+					cmpState.duration2 = shownResult.duration2 ?? null;
+					cmpState.currentUrl1 = shownResult.currentUrl1;
+					cmpState.currentUrl2 = shownResult.currentUrl2;
 				}
 			}
 
@@ -774,6 +778,8 @@
 		);
 	}
 
+	// Refetch only after the user stops typing in a parameter for this long.
+	const PARAM_REFETCH_DELAY_MS = 2000;
 	let paramDebounceTimer: number | undefined = undefined;
 	function handleParamChange(paramName: string, value: string) {
 		cmpState.params = { ...cmpState.params, [paramName]: value };
@@ -793,8 +799,7 @@
 		}
 		paramDebounceTimer = window.setTimeout(() => {
 			fetchBoth();
-			paramDebounceTimer = undefined;
-		}, 600);
+		}, PARAM_REFETCH_DELAY_MS);
 	}
 </script>
 
@@ -1355,9 +1360,18 @@
 			{/if}
 		</div>
 
-		{#snippet durationBadge(ms: number, otherMs: number | null)}
-			<!-- gap is null in single-server mode; positive when this server was slower. -->
-			{@const gap = cmpState.serverMode === 'compare' && otherMs !== null ? ms - otherMs : null}
+		{#snippet durationBadge(
+			ms: number,
+			status: number | null,
+			otherMs: number | null,
+			otherStatus: number | null
+		)}
+			<!-- gap is null in single-server mode or when either fetch failed (status 0);
+			     positive when this server was slower. -->
+			{@const gap =
+				cmpState.serverMode === 'compare' && otherMs !== null && status && otherStatus
+					? ms - otherMs
+					: null}
 			<span
 				class="shrink-0 rounded px-1.5 py-0.5 font-mono text-xs font-medium {gap === null
 					? 'bg-gray-100 text-gray-700 dark:bg-zinc-700 dark:text-zinc-300'
@@ -1389,7 +1403,12 @@
 							>
 						{/if}
 						{#if cmpState.duration1 !== null}
-							{@render durationBadge(cmpState.duration1, cmpState.duration2)}
+							{@render durationBadge(
+								cmpState.duration1,
+								cmpState.status1,
+								cmpState.duration2,
+								cmpState.status2
+							)}
 						{/if}
 						<code class="text-xs break-all text-gray-700 dark:text-zinc-300"
 							>{cmpState.currentUrl1}</code
@@ -1411,7 +1430,12 @@
 							>
 						{/if}
 						{#if cmpState.duration2 !== null}
-							{@render durationBadge(cmpState.duration2, cmpState.duration1)}
+							{@render durationBadge(
+								cmpState.duration2,
+								cmpState.status2,
+								cmpState.duration1,
+								cmpState.status1
+							)}
 						{/if}
 						<code class="text-xs break-all text-gray-700 dark:text-zinc-300"
 							>{cmpState.currentUrl2}</code

@@ -507,10 +507,11 @@
 	}
 
 	async function fetchBoth() {
-		// A manual run replaces any pending refetch from typing.
+		// Keep a pending refetch from typing if this call is skipped; a fetch
+		// that runs uses the latest params, so it replaces that refetch.
+		if (cmpState.loading) return;
 		clearTimeout(paramDebounceTimer);
 		paramDebounceTimer = undefined;
-		if (cmpState.loading) return;
 		cmpState.loading = true;
 		cmpState.error = undefined;
 
@@ -673,19 +674,18 @@
 
 			// Show the batch ID the selector points at, which a refresh keeps.
 			const shownResult = batchResults.get(isBatchMode ? cmpState.selectedBatchId : firstId);
+			// A failed result is stored with empty fields, so this also clears
+			// the previous response, as selectBatchId does.
 			if (shownResult) {
-				if (shownResult.error) {
-					cmpState.error = shownResult.error;
-				} else {
-					cmpState.response1 = shownResult.response1;
-					cmpState.response2 = shownResult.response2;
-					cmpState.status1 = shownResult.status1 ?? null;
-					cmpState.status2 = shownResult.status2 ?? null;
-					cmpState.duration1 = shownResult.duration1 ?? null;
-					cmpState.duration2 = shownResult.duration2 ?? null;
-					cmpState.currentUrl1 = shownResult.currentUrl1;
-					cmpState.currentUrl2 = shownResult.currentUrl2;
-				}
+				cmpState.response1 = shownResult.response1;
+				cmpState.response2 = shownResult.response2;
+				cmpState.status1 = shownResult.status1 ?? null;
+				cmpState.status2 = shownResult.status2 ?? null;
+				cmpState.duration1 = shownResult.duration1 ?? null;
+				cmpState.duration2 = shownResult.duration2 ?? null;
+				cmpState.currentUrl1 = shownResult.currentUrl1;
+				cmpState.currentUrl2 = shownResult.currentUrl2;
+				if (shownResult.error) cmpState.error = shownResult.error;
 			}
 
 			const dataSize =

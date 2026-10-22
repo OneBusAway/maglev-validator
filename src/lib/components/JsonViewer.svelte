@@ -31,8 +31,6 @@
 	let copied = $state(false);
 
 	let rootsAreEqual = $state<boolean | null>(null);
-	let lastDataRef = $state<unknown>(null);
-	let lastOtherDataRef = $state<unknown>(null);
 	let pendingTimer: ReturnType<typeof setTimeout> | undefined;
 
 	$effect(() => {
@@ -44,10 +42,6 @@
 			pendingTimer = undefined;
 		}
 
-		if (data !== lastDataRef || otherData !== lastOtherDataRef) {
-			lastDataRef = data;
-			lastOtherDataRef = otherData;
-		}
 		rootsAreEqual = null;
 		if (data !== undefined && otherData !== undefined) {
 			pendingTimer = setTimeout(() => {

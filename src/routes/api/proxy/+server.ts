@@ -11,14 +11,30 @@ function isAbsoluteUrl(url: string): boolean {
 	}
 }
 
-/** Fetches one URL and reads its body: JSON, or a decoded GTFS-Realtime feed. */
+/**
+ * Fetches one URL and reads its body: JSON, or a decoded GTFS-Realtime feed.
+ * durationMs covers sending the request through downloading the whole body,
+ * not decoding it, so it reflects only the upstream server and network.
+ */
 async function fetchForComparison(url: string, api: string | undefined) {
-	return fetch(url)
-		.then(async (r) => ({
-			data: api === 'gtfs_realtime' ? await readGtfsRealtimeResponse(r) : await r.json(),
-			status: r.status
-		}))
-		.catch((e) => ({ data: { error: e.message }, status: 0 }));
+	const start = performance.now();
+	const elapsed = () => Math.round(performance.now() - start);
+	try {
+		const r = await fetch(url);
+		const body = await r.arrayBuffer();
+		const durationMs = elapsed();
+		const data =
+			api === 'gtfs_realtime'
+				? await readGtfsRealtimeResponse(
+						// A 204/304 must not be given a body, even an empty one.
+						new Response(body.byteLength ? body : null, { status: r.status, headers: r.headers })
+					)
+				: JSON.parse(new TextDecoder().decode(body));
+		return { data, status: r.status, durationMs };
+	} catch (e) {
+		const message = e instanceof Error ? e.message : String(e);
+		return { data: { error: message }, status: 0, durationMs: elapsed() };
+	}
 }
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -40,7 +56,9 @@ export const POST: RequestHandler = async ({ request }) => {
 				response1: result1.data,
 				response2: null,
 				status1: result1.status,
-				status2: null
+				status2: null,
+				duration1: result1.durationMs,
+				duration2: null
 			});
 		}
 
@@ -62,7 +80,9 @@ export const POST: RequestHandler = async ({ request }) => {
 			response1: result1.data,
 			response2: result2.data,
 			status1: result1.status,
-			status2: result2.status
+			status2: result2.status,
+			duration1: result1.durationMs,
+			duration2: result2.durationMs
 		});
 	} catch (error) {
 		return json(

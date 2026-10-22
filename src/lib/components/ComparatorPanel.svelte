@@ -564,6 +564,8 @@
 				currentUrl2: string;
 				status1?: number;
 				status2?: number;
+				duration1?: number;
+				duration2?: number;
 				error?: string;
 			}
 		>();
@@ -611,6 +613,8 @@
 						response2: data.response2,
 						status1: data.status1,
 						status2: data.status2,
+						duration1: data.duration1,
+						duration2: data.duration2,
 						url1,
 						url2: url2 ?? ''
 					} as const
@@ -644,7 +648,9 @@
 							currentUrl1: result.url1,
 							currentUrl2: result.url2,
 							status1: result.status1,
-							status2: result.status2
+							status2: result.status2,
+							duration1: result.duration1,
+							duration2: result.duration2
 						});
 					}
 				}
@@ -671,6 +677,8 @@
 					cmpState.response2 = firstResult.response2;
 					cmpState.status1 = firstResult.status1 ?? null;
 					cmpState.status2 = firstResult.status2 ?? null;
+					cmpState.duration1 = firstResult.duration1 ?? null;
+					cmpState.duration2 = firstResult.duration2 ?? null;
 					cmpState.currentUrl1 = firstResult.currentUrl1;
 					cmpState.currentUrl2 = firstResult.currentUrl2;
 				}
@@ -733,6 +741,8 @@
 			cmpState.response2 = result.response2;
 			cmpState.status1 = result.status1 ?? null;
 			cmpState.status2 = result.status2 ?? null;
+			cmpState.duration1 = result.duration1 ?? null;
+			cmpState.duration2 = result.duration2 ?? null;
 			cmpState.currentUrl1 = result.currentUrl1;
 			cmpState.currentUrl2 = result.currentUrl2;
 			if (result.error) {
@@ -1345,6 +1355,20 @@
 			{/if}
 		</div>
 
+		{#snippet durationBadge(ms: number, otherMs: number | null)}
+			<!-- gap is null in single-server mode; positive when this server was slower. -->
+			{@const gap = cmpState.serverMode === 'compare' && otherMs !== null ? ms - otherMs : null}
+			<span
+				class="shrink-0 rounded px-1.5 py-0.5 font-mono text-xs font-medium {gap === null
+					? 'bg-gray-100 text-gray-700 dark:bg-zinc-700 dark:text-zinc-300'
+					: gap <= 0
+						? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
+						: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'}"
+				title="Upstream response time: request sent until the body was downloaded"
+				>{ms} ms{#if gap !== null && gap > 0}&nbsp;(+{gap}){/if}</span
+			>
+		{/snippet}
+
 		{#if cmpState.currentUrl1 || cmpState.currentUrl2}
 			<div
 				class="mb-4 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-zinc-700 dark:bg-zinc-800/50"
@@ -1364,6 +1388,9 @@
 								>{cmpState.status1}</span
 							>
 						{/if}
+						{#if cmpState.duration1 !== null}
+							{@render durationBadge(cmpState.duration1, cmpState.duration2)}
+						{/if}
 						<code class="text-xs break-all text-gray-700 dark:text-zinc-300"
 							>{cmpState.currentUrl1}</code
 						>
@@ -1382,6 +1409,9 @@
 									: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'}"
 								>{cmpState.status2}</span
 							>
+						{/if}
+						{#if cmpState.duration2 !== null}
+							{@render durationBadge(cmpState.duration2, cmpState.duration1)}
 						{/if}
 						<code class="text-xs break-all text-gray-700 dark:text-zinc-300"
 							>{cmpState.currentUrl2}</code

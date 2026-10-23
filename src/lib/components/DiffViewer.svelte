@@ -137,6 +137,8 @@
 
 	const ID_FIELDS = [
 		{ value: 'auto', label: 'Auto-detect', desc: 'Find best matching ID field' },
+		// Set on decoded GTFS-Realtime entities, whose own IDs differ between servers.
+		{ value: 'matchKey', label: 'matchKey', desc: 'GTFS-Realtime entity match key' },
 		{ value: 'id', label: 'id', desc: 'General ID field' },
 		{ value: 'tripId', label: 'tripId', desc: 'Trip identifier' },
 		{ value: 'activeTripId', label: 'activeTripId', desc: 'Active trip identifier' },
@@ -293,7 +295,11 @@
 				rightMap.get(id)!.push(item);
 			}
 
-			const allIds = new Set([...leftMap.keys(), ...rightMap.keys()]);
+			// Entities only one server has are interleaved in key order instead of
+			// trailing at the end, so both sides read top to bottom by ID.
+			const allIds = [...new Set([...leftMap.keys(), ...rightMap.keys()])].sort((a, b) =>
+				a.localeCompare(b, undefined, { numeric: true })
+			);
 			const matched1: unknown[] = [];
 			const matched2: unknown[] = [];
 

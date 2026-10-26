@@ -15,15 +15,16 @@ export interface Endpoint {
 	/**
 	 * API family the path belongs to. GTFS-Realtime exports live under
 	 * /api/gtfs_realtime/ instead of /api/where/ and return protobuf, which the
-	 * proxy decodes to JSON before diffing. Defaults to 'where'.
+	 * proxy decodes to JSON before diffing. Maglev-only endpoints such as
+	 * metadata.json live under /api/v2/. Defaults to 'where'.
 	 */
-	api?: 'where' | 'gtfs_realtime';
+	api?: 'where' | 'gtfs_realtime' | 'v2';
 }
 
-/** The GTFS-Realtime export base for a server's /api/where/ base URL. */
+/** The base URL for an endpoint's API family, given a server's /api/where/ base. */
 export function apiBaseFor(base: string, endpoint: Endpoint): string {
-	if (endpoint.api !== 'gtfs_realtime') return base;
-	return base.replace(/\/api\/where\/?$/, '/api/gtfs_realtime/');
+	if (endpoint.api === undefined || endpoint.api === 'where') return base;
+	return base.replace(/\/api\/where\/?$/, `/api/${endpoint.api}/`);
 }
 
 function gtfsRealtimeAgencyExport(id: string, name: string): Endpoint {
@@ -1592,5 +1593,23 @@ export const endpoints: Endpoint[] = [
 	},
 	gtfsRealtimeAgencyExport('vehicle-positions-for-agency', 'GTFS-RT Vehicle Positions for Agency'),
 	gtfsRealtimeAgencyExport('trip-updates-for-agency', 'GTFS-RT Trip Updates for Agency'),
-	gtfsRealtimeAgencyExport('alerts-for-agency', 'GTFS-RT Alerts for Agency')
+	gtfsRealtimeAgencyExport('alerts-for-agency', 'GTFS-RT Alerts for Agency'),
+	{
+		// Maglev only. staticGtfsHash is the sha256 of the static GTFS zip the
+		// server loaded, so two servers match when they load the same bundle.
+		id: 'metadata',
+		name: 'Metadata (Maglev)',
+		path: 'metadata.json',
+		api: 'v2',
+		params: [
+			{
+				name: 'key',
+				label: 'API Key',
+				required: true,
+				inPath: false,
+				default: 'test',
+				placeholder: 'API Key'
+			}
+		]
+	}
 ];

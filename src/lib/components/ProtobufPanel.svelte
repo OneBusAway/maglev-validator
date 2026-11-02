@@ -46,6 +46,40 @@
 		readConfigFile(file);
 	}
 
+	const SAVED_CONFIG_KEY = 'protobufSavedConfig';
+
+	function saveConfigToStorage(feeds: GtfsRtFeedConfig[], fileName: string) {
+		if (typeof localStorage === 'undefined') return;
+		try {
+			localStorage.setItem(SAVED_CONFIG_KEY, JSON.stringify({ fileName, feeds }));
+		} catch {
+			// Storage full or unavailable: persistence is best-effort.
+		}
+	}
+
+	function restoreSavedConfig() {
+		if (typeof localStorage === 'undefined' || pbState.configFeeds.length > 0) return;
+		const raw = localStorage.getItem(SAVED_CONFIG_KEY);
+		if (!raw) return;
+		try {
+			const saved = JSON.parse(raw);
+			const feeds = Array.isArray(saved?.feeds) ? saved.feeds : [];
+			if (feeds.length === 0) {
+				localStorage.removeItem(SAVED_CONFIG_KEY);
+				return;
+			}
+			pbState.configFeeds = feeds.map((f: GtfsRtFeedConfig, i: number) => ({
+				...f,
+				id: f.id || `feed-${i}`
+			}));
+			pbState.configFileName = saved.fileName || 'config.json';
+			selectAllFeeds();
+			switchToFeed(pbState.configFeeds[0].id!);
+		} catch {
+			localStorage.removeItem(SAVED_CONFIG_KEY);
+		}
+	}
+
 	function readConfigFile(file: File) {
 		pbState.configError = '';
 		if (!file.name.endsWith('.json')) {
@@ -85,6 +119,7 @@
 				pbState.feedData = null;
 				selectAllFeeds();
 				switchToFeed(feeds[0].id!);
+				saveConfigToStorage(feeds, file.name);
 			} catch {
 				pbState.configError = 'Invalid JSON file';
 			}
@@ -95,6 +130,7 @@
 	let configDragOver = $state(false);
 
 	function clearConfig() {
+		if (typeof localStorage !== 'undefined') localStorage.removeItem(SAVED_CONFIG_KEY);
 		pbState.configFeeds = [];
 		pbState.configFileName = '';
 		pbState.configError = '';
@@ -504,6 +540,8 @@
 			} catch (e) {
 				console.error('Failed to parse URL history', e);
 			}
+
+			restoreSavedConfig();
 		}
 	});
 

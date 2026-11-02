@@ -39,17 +39,6 @@
 	let showChart = $derived(loggerState.showChart);
 	let chartTimeRange = $derived(loggerState.chartTimeRange);
 
-	const matchCache = $derived.by(() => {
-		const map = new SvelteMap<number, boolean>();
-		for (const log of loggerState.logs) {
-			map.set(
-				log.id,
-				valuesMatch(log.server1_value, log.server2_value, comparatorState.numericTolerancePercent)
-			);
-		}
-		return map;
-	});
-
 	const detailMatchCache = $derived.by(() => {
 		const map = new SvelteMap<number, { matched: number; total: number }>();
 		for (const log of loggerState.logs) {
@@ -58,11 +47,27 @@
 			if (Array.isArray(s1) && Array.isArray(s2)) {
 				const rows = computeArrayRows(s1, s2);
 				const matched = rows.filter((r) => r.match).length;
-				map.set(log.id, { matched, total: rows.length });
+				// Two empty arrays are equal; count them as one item so they still
+				// contribute to the aggregate percentage.
+				map.set(
+					log.id,
+					rows.length === 0 ? { matched: 1, total: 1 } : { matched, total: rows.length }
+				);
 			} else {
-				const m = matchCache.get(log.id) ?? false;
+				const m = valuesMatch(s1, s2, comparatorState.numericTolerancePercent);
 				map.set(log.id, { matched: m ? 1 : 0, total: 1 });
 			}
+		}
+		return map;
+	});
+
+	// A key counts as a match only when every compared item matches, which keeps
+	// the row filter, CSV export and match badge consistent with the array detail.
+	const matchCache = $derived.by(() => {
+		const map = new SvelteMap<number, boolean>();
+		for (const log of loggerState.logs) {
+			const detail = detailMatchCache.get(log.id);
+			map.set(log.id, detail !== undefined && detail.matched === detail.total);
 		}
 		return map;
 	});
@@ -103,13 +108,21 @@
 	const globalMatchStats = $derived.by(() => {
 		const logs = globalStatsLogs;
 		const total = logs.length;
-		if (total === 0) return { total: 0, matched: 0, mismatched: 0, matchPct: 0 };
-		const matched = logs.filter((log) => matchCache.get(log.id)).length;
+		if (total === 0) return { total: 0, items: 0, matched: 0, mismatched: 0, matchPct: 0 };
+		let matched = 0;
+		let items = 0;
+		for (const log of logs) {
+			const detail = detailMatchCache.get(log.id);
+			if (!detail) continue;
+			matched += detail.matched;
+			items += detail.total;
+		}
 		return {
 			total,
+			items,
 			matched,
-			mismatched: total - matched,
-			matchPct: Math.round((matched / total) * 100)
+			mismatched: items - matched,
+			matchPct: items > 0 ? Math.round((matched / items) * 100) : 0
 		};
 	});
 
@@ -721,7 +734,7 @@
 			log.key_path,
 			formatValue(log.server1_value),
 			formatValue(log.server2_value),
-			valuesMatch(log.server1_value, log.server2_value) ? 'Yes' : 'No'
+			matchCache.get(log.id) ? 'Yes' : 'No'
 		]);
 
 		const csv = [headers, ...rows]
@@ -762,8 +775,9 @@
 			<div class="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
 				<span
 					class="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700 dark:bg-zinc-800 dark:text-zinc-300"
+					title="Logged key values"
 				>
-					{loggerState.totalCount} total
+					{loggerState.totalCount} keys
 				</span>
 				{#if globalMatchStats.total > 0}
 					<span
@@ -772,6 +786,7 @@
 							: globalMatchStats.matchPct >= 50
 								? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
 								: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}"
+						title="{globalMatchStats.matched} of {globalMatchStats.items} compared items matched"
 					>
 						{globalMatchStats.matchPct}% match
 					</span>
@@ -785,8 +800,12 @@
 							></span>
 						{/each}
 					</span>
-					<span class="text-green-600 dark:text-green-400">{globalMatchStats.matched} ✓</span>
-					<span class="text-red-500">{globalMatchStats.mismatched} ✗</span>
+					<span class="text-green-600 dark:text-green-400" title="Matched compared items"
+						>{globalMatchStats.matched} ✓</span
+					>
+					<span class="text-red-500" title="Mismatched compared items"
+						>{globalMatchStats.mismatched} ✗</span
+					>
 				{/if}
 				{#if Object.keys(columnWidths).length > 0}
 					<button
